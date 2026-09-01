@@ -30,7 +30,7 @@ export function dateRangePx(startDate, task) {
   const from = task.startDate ? new Date(task.startDate) : new Date(startDate);
   const to = task.endDate ? new Date(task.endDate) : from;
   const left = dateOffsetPx(startDate, from);
-  const width = Math.max(GANTT.DAY_WIDTH, daysToPx(to - from + 1));
+  const width = Math.max(GANTT.DAY_WIDTH, daysToPx((to - from) / MS_PER_DAY + 1));
   return { left, width };
 }
 
