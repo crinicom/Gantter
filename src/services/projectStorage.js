@@ -1,6 +1,7 @@
+import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_PROJECT_NAME } from '../constants/project';
 import { normalizeBucket } from '../models/bucket';
-import { normalizeMember } from '../models/member';
+import { normalizeMember, MEMBER_ROLES, MEMBER_STATUS } from '../models/member';
 import { clampProgress } from '../utils/progress';
 
 export function createDefaultProject() {
@@ -9,12 +10,50 @@ export function createDefaultProject() {
     name: DEFAULT_PROJECT_NAME,
     description: '',
     version: 0,
+    ownerId: null,
     members: [],
+    image: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     buckets: [],
     tasks: [],
   };
+}
+
+// Crea un proyecto nuevo con id, propietario (owner activo) y fechas.
+export function createProject({ name, description = '', owner }) {
+  const now = new Date().toISOString();
+  const ownerId = owner?.id || null;
+  return {
+    ...createDefaultProject(),
+    id: uuidv4(),
+    name: name || DEFAULT_PROJECT_NAME,
+    description: description || '',
+    ownerId,
+    members: owner
+      ? [
+          {
+            id: ownerId,
+            name: owner.name || '',
+            email: owner.email || '',
+            role: MEMBER_ROLES.OWNER,
+            status: MEMBER_STATUS.ACTIVE,
+            invitedBy: null,
+            invitedAt: now,
+            updatedAt: now,
+          },
+        ]
+      : [],
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
+// Deduce el owner de un documento legado (miembro con rol owner o el campo ownerId).
+export function inferOwnerId(project) {
+  if (project?.ownerId) return project.ownerId;
+  const owner = (project?.members || []).find((m) => m.role === MEMBER_ROLES.OWNER);
+  return owner?.id || null;
 }
 
 export function normalizeProject(raw) {
@@ -26,10 +65,13 @@ export function normalizeProject(raw) {
   return {
     ...defaults,
     ...project,
+    id: project.id || null,
     createdAt: project.createdAt || defaults.createdAt,
     updatedAt: project.updatedAt || defaults.updatedAt,
     version:
       typeof project.version === 'number' && project.version >= 0 ? Math.floor(project.version) : 0,
+    ownerId: project.ownerId || null,
+    image: typeof project.image === 'string' && project.image ? project.image : null,
     members: Array.isArray(project.members) ? project.members.map(normalizeMember) : [],
     buckets: buckets.map(normalizeBucket),
     tasks: tasks.map((task) => ({
@@ -56,5 +98,5 @@ export function deserializeProject(rawJson) {
 }
 
 export function projectStoredVersion() {
-  return 2;
+  return 3;
 }

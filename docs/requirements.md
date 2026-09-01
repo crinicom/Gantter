@@ -103,6 +103,18 @@ Estados: `pendiente` (product backlog) · `en-progreso` · `hecho` · `cancelada
 - **Criterios:** los cambios de otras pestañas se propagan en vivo (BroadcastChannel); si la misma entidad se edita en dos pestañas se aplica última-escritura-gana y se muestra un aviso; cada pestaña es un usuario distinto (sessionStorage).
 - **Estado:** hecho
 
+### US-016 — Landing multi-proyecto
+
+- **Como** usuario autenticado, **quiero** ver todos mis proyectos como tarjetas y crear/abrir/eliminar varios, **para** gestionar varios trabajos a la vez.
+- **Criterios:** tras iniciar sesión se muestran las tarjetas de proyectos visibles para el usuario (propietario o miembro activo); cada tarjeta muestra nombre, fecha de creación y modificación, y % de avance global; se puede crear un proyecto nuevo con nombre y descripción, navegar a él por hash `#/proyecto/<id>` y volver a la landing con "Mis proyectos"; eliminar un proyecto pide confirmación; en modo offline también se puede crear un proyecto desde el dataset de demostración.
+- **Estado:** hecho
+
+### US-017 — Imagen de portada en los proyectos
+
+- **Como** usuario, **quiero** que cada proyecto tenga una imagen de portada (aleatoria por defecto o subida por mí), **para** identificar cada proyecto de un vistazo.
+- **Criterios:** por defecto se muestra una imagen determinista de picsum (seed = id del proyecto); si falla la red se usa un degradado SVG local; el propietario puede subir una imagen que se redimensiona a 640 px (JPEG q0.82) antes de persistirse.
+- **Estado:** hecho
+
 ---
 
 ## Ideas / futuras mejoras (sin priorizar)

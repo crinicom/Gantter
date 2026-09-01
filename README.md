@@ -40,7 +40,11 @@ Sin backend propio: la persistencia es un archivo `project.json` que se guarda d
 
 ### Modo offline (por defecto)
 
-Sin credenciales externas. La autenticación usa un usuario demo (o "entrar como" un miembro desde el panel de Miembros) y la persistencia se hace en `localStorage` (`gantter.project.v2`, con migración automática desde `v1`). Ideal para evaluar la aplicación y la edición simultánea entre pestañas.
+Sin credenciales externas. La autenticación usa un usuario demo (o "entrar como" un miembro desde el panel de Miembros) y la persistencia se hace en `localStorage` (`gantter.projects.v3`, un mapa de proyectos por id, con migración automática desde `v1`/`v2`). Ideal para evaluar la aplicación y la edición simultánea entre pestañas.
+
+### Landing multi-proyecto
+
+Tras iniciar sesión se muestra la **landing** con una tarjeta por cada proyecto visible para el usuario (propietario o miembro activo): nombre, portada (imagen determinista de picsum con seed = id, subida por el propietario o degradado SVG local), fechas de creación/modificación y % de avance global. Desde ahí se crea un proyecto nuevo, se carga el dataset de demostración en un proyecto nuevo, se elimina (con confirmación) y se navega por hash `#/proyecto/<id>`. El botón "Mis proyectos" de la barra superior vuelve a la landing; "Entrar como" limpia el hash antes de recargar.
 
 ### Modo Google Drive
 
@@ -67,14 +71,16 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
 
 ## Modelo de datos
 
-`project.json` tiene la estructura:
+`gantter.projects.v3` es un mapa `{ [projectId]: Project }`. Cada `Project` tiene la estructura:
 
 ```jsonc
 {
-  "id": null,
+  "id": "uuid",
   "name": "Proyecto sin título",
   "description": "",
-  "version": 0,             // incrementa en cada guardado; lo usa la sincronización
+  "ownerId": "...",          // id del propietario (deducido del miembro con rol owner)
+  "image": "data:...",       // portada subida (dataURL) o null → picsum/SVG por seed
+  "version": 0,              // incrementa en cada guardado; lo usa la sincronización
   "createdAt": "...",
   "updatedAt": "...",
   "members": [
@@ -116,7 +122,7 @@ En modo offline se simula la colaboración multi-usuario con **patrones estánda
 - **Documento versionado**: `project.version` se incrementa en cada guardado.
 - **Identidad por pestaña**: cada pestaña usa un usuario distinto guardado en `sessionStorage` (`AuthService.switchTo` desde el panel de Miembros).
 - **Merge por entidad**: al recibir una versión remota, buckets/tareas/miembros se fusionan entidad por entidad con **última-escritura-gana** (`updatedAt`); las entidades tocadas por ambas partes se reportan como conflictos (LWW resuelto).
-- **Propagación en vivo**: `BroadcastChannel` (con respaldo en el evento `storage`) notifica a las otras pestañas; el banner muestra versiones y avisos.
+- **Propagación en vivo**: `BroadcastChannel` (con respaldo en el evento `storage`) notifica a las otras pestañas; el banner muestra versiones y avisos. Cada mensaje lleva `projectId` y solo se aplica a la pestaña que tiene abierto ese proyecto.
 
 Cómo probarlo: abre la app en dos pestañas, en una ve a **Miembros → Entrar como Ana García**, y edita tareas o el avance en ambas; los cambios se propagan en segundos y si editas la misma entidad a la vez verás el aviso de conflicto en la barra inferior.
 
@@ -133,6 +139,7 @@ src/
 │   ├── common/             # Button, Checkbox, Modal
 │   ├── gantt/              # Vista Gantt (header, barras con %, flechas, línea HOY)
 │   ├── layout/             # AppShell, Navbar (nombre editable + % global), TabsSwitcher
+│   ├── projects/           # Landing multi-proyecto y tarjetas con portada
 │   └── task/               # Detalle de tarea, comentarios, dependencias, avance
 ├── config/                 # Config de la app (modo, credenciales)
 ├── constants/              # Estados y etiquetas

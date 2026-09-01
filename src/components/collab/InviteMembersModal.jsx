@@ -18,7 +18,7 @@ const STATUS_LABELS = {
 };
 
 export default function InviteMembersModal({ open, onClose }) {
-  const { project, sendInvite, acceptInvite, revokeMember } = useProject();
+  const { project, sendInvite, acceptInvite, revokeMember, closeProject } = useProject();
   const { user } = useAuth();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -52,6 +52,7 @@ export default function InviteMembersModal({ open, onClose }) {
     if (pendingMember && pendingMember.status !== MEMBER_STATUS.ACTIVE) {
       await acceptInvite(pendingMember.id);
     }
+    closeProject();
     window.location.reload();
   };
 

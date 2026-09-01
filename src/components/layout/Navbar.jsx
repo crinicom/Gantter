@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { KanbanSquare, LogOut, HardDrive, Pencil, Users } from 'lucide-react';
+import { FolderOpen, KanbanSquare, LogOut, HardDrive, Pencil, Users } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useProject } from '../../hooks/useProject';
 import { APP_CONFIG } from '../../config/appConfig';
@@ -9,7 +9,7 @@ import { projectProgress } from '../../utils/progress';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { project, syncStatus, renameProject } = useProject();
+  const { project, syncStatus, renameProject, closeProject } = useProject();
   const [editingName, setEditingName] = useState(false);
   const [draftName, setDraftName] = useState('');
   const [showMembers, setShowMembers] = useState(false);
@@ -32,6 +32,9 @@ export default function Navbar() {
   return (
     <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
+        <Button variant="ghost" size="sm" onClick={closeProject} title="Volver a mis proyectos">
+          <FolderOpen size={16} /> Mis proyectos
+        </Button>
         <div className="rounded-md bg-violet-600 p-1.5 text-white">
           <KanbanSquare size={20} />
         </div>
@@ -98,7 +101,7 @@ export default function Navbar() {
           </div>
         )}
 
-        <Button variant="ghost" size="sm" onClick={() => logout()}>
+        <Button variant="ghost" size="sm" onClick={() => { closeProject(); logout(); }}>
           <LogOut size={16} /> Salir
         </Button>
       </div>

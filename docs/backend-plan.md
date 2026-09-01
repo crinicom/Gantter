@@ -10,8 +10,8 @@ Hoy la app es 100 % client-side:
 
 - **Persistencia**: `ProjectContext` habla con un *backend pluggable* seleccionado en `src/services/storage.js`
   (`getBackend()/setBackend()`). Hay una sola implementación, `LocalBackend`
-  (`src/services/localStorageBackend.js`), con clave de documentos `gantter.project.v2`
-  (migración automática desde `v1`).
+  (`src/services/localStorageBackend.js`), con clave de documentos `gantter.projects.v3`
+  (un mapa `{ [projectId]: Project }`; migración automática en cadena desde `v1`/`v2`).
 - **Colaboración (simulada)**: cada pestaña es un usuario distinto (`AuthService` usa `sessionStorage`);
   los cambios se propagan entre pestañas con `RealtimeService` (`BroadcastChannel` + respaldo en el
   evento `storage`); el receptor hace un merge por entidad con última-escritura-gana
@@ -36,17 +36,17 @@ Hoy la app es 100 % client-side:
 ### 2.1 Backend de persistencia (ya encaja en `storage.js`)
 
 ```js
-{ 
+{
   name: 'server',
-  loadProject(): Promise<Project>,            // crea o devuelve el documento del usuario actual
-  saveProject(project): Promise<boolean>,     // persiste una versión del documento
-  loadSampleData(): Promise<Project>,         // carga DB/sample_data.json (opcional)
+  loadProjects(): Promise<Record<string, Project>>,  // proyectos visibles para el usuario actual
+  loadProject(projectId): Promise<Project>,          // carga un proyecto (403 si no es miembro activo)
+  saveProject(project): Promise<boolean>,            // persiste una versión del documento
+  deleteProject(projectId): Promise<void>,           // elimina el proyecto (solo owner)
 }
 ```
 
-`ProjectContext` ya usa únicamente ese shape (`backendRef.current.loadProject/saveProject`). Un
-`ServerBackend` con `name: 'server'` y `setBackend(ServerBackend)` es el único cambio que se necesita
-aquí. Conviene añadir `saveProject` con **versión condicional** (ver §4).
+`ProjectContext` ya usa ese shape (resa en modo offline y se ocupa del routing por
+`activeProjectId`); añade `saveProject` con **versión condicional** (ver §4).
 
 ### 2.2 Realtime (ver §6)
 
@@ -65,15 +65,18 @@ sesión del servidor.
 `sendInvite(project, {...})`, `acceptInvite(project, memberId)`, `revokeMember(project, memberId)`
 pasan a delegar en la API del backend (creación real de tokens, email, expiración).
 
-## 3. Modelo de datos persistido (v2)
+## 3. Modelo de datos persistido (v3)
 
-El documento único se mantiene como fuente de verdad cliente:
+El backend guarda una **colección de proyectos por usuario** (uno por fila), y cada proyecto se
+mantiene como fuente de verdad cliente:
 
 ```jsonc
 {
-  "id": "proj_abc",            // asignado por el backend en el primer guardado
+  "id": "proj_abc",            // asignado por el backend en el primer guardado (uuid)
   "name": "...", "description": "...",
-  "version": 42,                // nº de documento; el backend lo valida (optimistic concurrency)
+  "ownerId": "...",            // propietario (deducido del miembro con rol owner)
+  "image": "data:...",         // portada subida (dataURL) o null → picsum/SVG por seed
+  "version": 42,               // nº de documento; el backend lo valida (optimistic concurrency)
   "createdAt": "...", "updatedAt": "...",
   "members": [{ "id", "name", "email", "role": "owner|member", "status": "invited|active",
                 "invitedBy", "invitedAt", "updatedAt" }],
@@ -84,6 +87,8 @@ El documento único se mantiene como fuente de verdad cliente:
 }
 ```
 
+La landing multi-proyecto consume una lista ligera de tarjetas (id, name, image, created/updatedAt,
+avance global) — puede servirse desde los propios documentos o desde una tabla derivada de proyecto.
 **Debe migrarse la tabla sin cliente a servidor** con un import automático (ver §8). Cada entidad que
 participa del merge (bucket, task, member) lleva `updatedAt` (ISO-8601 UTC) — es el único requisito
 temporal del algoritmo LWW actual.
@@ -136,6 +141,9 @@ Coste: cambios en `collab.js` + test de regresión, sin tocar el transporte.
 - `POST /api/projects` → propietario (owner) del documento.
 - `GET/PUT /api/projects/:id` → solo miembros `active` del proyecto (autorización por lista blanca
   de `member_id × user_id`).
+- `GET /api/projects` → proyectos donde el usuario es propietario o miembro activo.
+- `DELETE /api/projects/:id` → solo `owner`.
+- `POST /api/projects/:id/image` → solo `owner` (multipart; el servidor redimensiona/valida).
 - `POST /api/projects/:id/revoke` → solo `owner`.
 - Los tokens JWT expiran (p. ej. 15 min) y se renuevan con refresh token; validar `user_id` en cada
   request mediante middleware.
@@ -143,8 +151,12 @@ Coste: cambios en `collab.js` + test de regresión, sin tocar el transporte.
 ### Tabla propuesta
 | Ruta | Rol requerido |
 | --- | --- |
+| `GET /api/projects` | cualquier autenticado (mis proyectos) |
+| `POST /api/projects` | cualquier autenticado |
 | `GET /api/projects/:id` | member activo |
 | `PUT /api/projects/:id` | member activo |
+| `DELETE /api/projects/:id` | owner |
+| `POST /api/projects/:id/image` | owner |
 | `POST /api/projects/:id/revoke` | owner |
 | `POST /api/projects/:id/invites` | owner |
 | `GET /api/users/me/invitations` | cualquier autenticado |
@@ -177,10 +189,10 @@ Coste: cambios en `collab.js` + test de regresión, sin tocar el transporte.
 
 ## 8. Migración de datos (localStorage → servidor)
 
-1. Mantener `projectStorage` v2 como formato canónico de export.
-2. Opción A (recomendada, sin fricción): al primer login con el documento local existente
-   (`gantter.project.v2` presente), ofrecer "Migrar este proyecto al servidor":
-   `POST /api/projects/import { name, document }` → devuelve `{ id, version }`.
+1. Mantener `projectStorage` v3 como formato canónico de export (mapa de proyectos).
+2. Opción A (recomendada, sin fricción): al primer login con proyectos locales existentes
+   (`gantter.projects.v3` presente), ofrecer "Migrar mis proyectos al servidor":
+   `POST /api/projects/import { name, document }` → devuelve `{ id, version }` por cada proyecto.
 3. A partir de ahí, `ServerBackend` pasa a ser el backend activo (`setBackend`) y el documento local
    se mantiene como copia de respaldo ("modo sin conexión").
 4. Export/import manual JSON (la idea US-F1 del backlog) como camino alternativo para equipos
@@ -246,4 +258,5 @@ Unitarias adicionales en `src/utils/__tests__/collab.test.js` para el merge a ni
 | Perder ediciones de una misma entidad (LWW) | Iteración 2 del §4 (merge por campos); aviso visible de conflicto |
 | Latencia de red rompe la UX de "guardado" | Debounce local (ya existe `SYNC_DEBOUNCE_MS`), estado optimista y badge "Pendiente de sincronizar" |
 | El documento crece (comentarios largos) | Límite por entidad y paginado de comentarios en iteración futura |
-| Migración de datos desde clave v2 falla | Import idempotente validado con `deserializeProject` + test e2e de migración |
+| Imágenes subidas saturan el localStorage/Drive | Redimensionar a 640 px (JPEG q0.82) antes de persistir (ya se hace en `projectImage`); imágenes "lazy" con `loading="lazy"` |
+| Migración de datos desde claves v1/v2 falla | Import idempotente validado con `deserializeProject` + test e2e de migración |
