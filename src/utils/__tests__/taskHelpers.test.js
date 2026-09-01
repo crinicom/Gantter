@@ -43,4 +43,36 @@ describe('taskHelpers', () => {
     expect(getPrecedentTasks(tasks, 'b')).toEqual([tasks[0]]);
     expect(getDependentTasks(tasks, 'a')).toEqual([tasks[1]]);
   });
+
+  it('linkTasks rechaza un vínculo que cerraría un ciclo directo', () => {
+    let tasks = [
+      { id: 'a', precedents: [], dependents: ['b'] },
+      { id: 'b', precedents: ['a'], dependents: [] },
+    ];
+    // Ya existe a→b; intentar b→a cerraría el ciclo.
+    tasks = linkTasks(tasks, 'b', 'a');
+    expect(tasks.find((t) => t.id === 'a').precedents).not.toContain('b');
+    expect(tasks.find((t) => t.id === 'b').dependents).not.toContain('a');
+  });
+
+  it('linkTasks rechaza un ciclo transitivo (a→b→c, añadir c→a)', () => {
+    let tasks = [
+      { id: 'a', precedents: [], dependents: ['b'] },
+      { id: 'b', precedents: ['a'], dependents: ['c'] },
+      { id: 'c', precedents: ['b'], dependents: [] },
+    ];
+    tasks = linkTasks(tasks, 'c', 'a');
+    expect(tasks.find((t) => t.id === 'a').precedents).not.toContain('c');
+    expect(tasks.find((t) => t.id === 'c').dependents).not.toContain('a');
+  });
+
+  it('linkTasks mantiene un vínculo válido entre ramas independientes', () => {
+    let tasks = [
+      { id: 'a', precedents: [], dependents: [] },
+      { id: 'b', precedents: [], dependents: [] },
+    ];
+    tasks = linkTasks(tasks, 'a', 'b');
+    expect(tasks.find((t) => t.id === 'b').precedents).toContain('a');
+    expect(tasks.find((t) => t.id === 'a').dependents).toContain('b');
+  });
 });

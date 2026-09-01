@@ -15,6 +15,10 @@ export function linkTasks(tasks, precedentId, dependentId) {
   );
   if (hasPrecedent) return tasks;
 
+  // Rechazar el vínculo si el antecedente ya depende (directa o
+  // transitivamente) de la tarea: crearía un ciclo A→B y B→A.
+  if (helper_wouldCreateCycle(tasks, precedentId, dependentId)) return tasks;
+
   return tasks.map((task) => {
     if (task.id === dependentId) {
       return { ...task, precedents: [...(task.precedents || []), precedentId] };
@@ -24,6 +28,24 @@ export function linkTasks(tasks, precedentId, dependentId) {
     }
     return task;
   });
+}
+
+// ¿El antecedente tiene a la tarea entre sus antecedentes transitivos?
+function helper_wouldCreateCycle(tasks, newPrecedentId, dependentId) {
+  const byId = new Map(tasks.map((t) => [t.id, t]));
+  const stack = [newPrecedentId];
+  const seen = new Set();
+  while (stack.length) {
+    const id = stack.pop();
+    if (id === dependentId) return true;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    const task = byId.get(id);
+    (task?.precedents || []).forEach((p) => {
+      if (!seen.has(p)) stack.push(p);
+    });
+  }
+  return false;
 }
 
 export function unlinkTasks(tasks, precedentId, dependentId) {

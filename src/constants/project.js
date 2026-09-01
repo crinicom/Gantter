@@ -6,7 +6,7 @@ export const TASK_STATUS = {
 
 export const STATUS_LABELS = {
   [TASK_STATUS.TODO]: 'En trabajo',
-  [TASK_STATUS.IN_PROGRESS]: 'En trabajo',
+  [TASK_STATUS.IN_PROGRESS]: 'En progreso',
   [TASK_STATUS.COMPLETED]: 'Finalizada',
 };
 

@@ -10,6 +10,7 @@ export function createEmptyTask(bucketId) {
     startDate: null,
     endDate: null,
     status: TASK_STATUS.TODO,
+    progress: 0,
     comments: [],
     precedents: [],
     dependents: [],

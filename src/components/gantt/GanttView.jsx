@@ -2,12 +2,14 @@ import React, { useMemo, useRef, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import Checkbox from '../common/Checkbox';
 import GanttHeader from './GanttHeader';
+import GanttBar from './GanttBar';
 import GanttDependencyArrows from './GanttDependencyArrows';
 import TodayLine from './TodayLine';
 import TaskModal from '../task/TaskModal';
 import { useProject } from '../../hooks/useProject';
 import { calculateCpmMap } from '../../utils/cpm';
 import { isTaskCompleted } from '../../models/task';
+import { bucketProgress } from '../../utils/progress';
 import { projectStartDate, projectEndDate, GANTT } from './ganttLayout';
 
 const NAME_COLUMN_WIDTH = 192;
@@ -43,7 +45,7 @@ export default function GanttView() {
     buckets.forEach((bucket) => {
       const bucketTasks = visibleTasks.filter((t) => t.bucketId === bucket.id);
       if (bucketTasks.length === 0) return;
-      rows.push({ type: 'group', bucket });
+      rows.push({ type: 'group', bucket, progress: bucketProgress(tasks, bucket.id) });
       if (!bucket.collapsed) {
         bucketTasks.forEach((task) => {
           rowIndexById[task.id] = rows.length;
@@ -52,9 +54,11 @@ export default function GanttView() {
       }
     });
     return { rows, rowIndexById };
-  }, [buckets, visibleTasks]);
+  }, [buckets, visibleTasks, tasks]);
 
-  const totalHeight = rows.length * GANTT.ROW_HEIGHT;
+  const { rows: rowArray, rowIndexById } = rows;
+
+  const totalHeight = rowArray.length * GANTT.ROW_HEIGHT;
 
   const syncScroll = (fromRef, toRef) => {
     if (!fromRef.current || !toRef.current) return;
@@ -104,7 +108,7 @@ export default function GanttView() {
       >
         <div className="flex" style={{ minWidth: NAME_COLUMN_WIDTH + chartWidth }}>
           <div className="relative shrink-0" style={{ width: NAME_COLUMN_WIDTH }}>
-            {rows.map((row) =>
+            {rowArray.map((row) =>
               row.type === 'group' ? (
                 <div
                   key={`g-${row.bucket.id}`}
@@ -118,6 +122,15 @@ export default function GanttView() {
                   </span>
                   <span className="ml-1 text-xs font-normal text-gray-400">
                     ({visibleTasks.filter((t) => t.bucketId === row.bucket.id).length})
+                  </span>
+                  <span className="ml-auto flex items-center gap-1.5">
+                    <span className="h-1.5 w-14 overflow-hidden rounded bg-gray-200">
+                      <span
+                        className="block h-full rounded bg-violet-500"
+                        style={{ width: `${row.progress}%` }}
+                      />
+                    </span>
+                    <span className="text-[10px] tabular-nums text-gray-500">{row.progress}%</span>
                   </span>
                 </div>
               ) : (
@@ -144,13 +157,13 @@ export default function GanttView() {
           <div className="relative shrink-0" style={{ width: chartWidth }}>
             <TodayLine startDate={startDate} totalWidth={chartWidth} height={totalHeight} visible />
             <GanttDependencyArrows
-              tasks={rows.filter((r) => r.type === 'task').map((r) => r.task)}
+              tasks={rowArray.filter((r) => r.type === 'task').map((r) => r.task)}
               startDate={startDate}
-              rowIndexById={rows.rowIndexById}
+              rowIndexById={rowIndexById}
               totalWidth={chartWidth}
               totalHeight={totalHeight}
             />
-            {rows.map((row) => {
+            {rowArray.map((row) => {
               if (row.type === 'group') {
                 return (
                   <div

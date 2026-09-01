@@ -1,5 +1,5 @@
 import React from 'react';
-import { CloudOff, RefreshCw, Check, AlertTriangle } from 'lucide-react';
+import { CloudOff, RefreshCw, Check, AlertTriangle, Users } from 'lucide-react';
 import { useDriveSync } from '../../hooks/useDriveSync';
 import { PROJECT_STATUS } from '../../constants/project';
 
@@ -11,7 +11,7 @@ const statusConfig = {
 };
 
 export default function SyncStatusBanner() {
-  const { syncStatus, lastSyncAt, error } = useDriveSync();
+  const { syncStatus, lastSyncAt, error, collabNotice, version } = useDriveSync();
   const config = statusConfig[syncStatus] || statusConfig[PROJECT_STATUS.IDLE];
   const Icon = config.icon;
 
@@ -25,11 +25,20 @@ export default function SyncStatusBanner() {
   };
 
   return (
-    <div className="flex items-center gap-2 px-4 py-1.5 text-xs">
-      <Icon size={14} className={config.color} />
-      <span className="text-gray-600">{labels[syncStatus]}</span>
-      {syncStatus === PROJECT_STATUS.ERROR && error && (
-        <span className="text-red-600">— {error}</span>
+    <div className="flex items-center gap-3 px-4 py-1.5 text-xs">
+      <div className="flex items-center gap-2">
+        <Icon size={14} className={config.color} />
+        <span className="text-gray-600">{labels[syncStatus]}</span>
+        {syncStatus === PROJECT_STATUS.ERROR && error && (
+          <span className="text-red-600">— {error}</span>
+        )}
+        <span className="text-gray-300">·</span>
+        <span className="tabular-nums text-gray-400">v{version}</span>
+      </div>
+      {collabNotice && (
+        <span className="flex items-center gap-1.5 rounded-full bg-violet-100 px-2 py-0.5 font-medium text-violet-700">
+          <Users size={12} /> {collabNotice}
+        </span>
       )}
     </div>
   );

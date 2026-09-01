@@ -2,7 +2,7 @@
 
 Aplicación web de gestión colaborativa de tareas y proyectos con dos vistas sobre el mismo estado: un **tablero** (estilo Kanban/Trello con buckets y drag & drop) y un **diagrama de Gantt** (semanas en el eje X, barras de tareas, flechas de dependencias, línea de HOY y cálculo de camino crítico).
 
-Sin backend propio: la persistencia es un archivo `project.json` que se guarda de forma local (modo offline) o en una carpeta de Google Drive (modo Drive, mediante autenticación OAuth).
+Sin backend propio: la persistencia es un archivo `project.json` que se guarda de forma local (modo offline) o en una carpeta de Google Drive (modo Drive, mediante autenticación OAuth). La colaboración entre pestañas se simula en modo offline con un documento versionado, merge por entidad y `BroadcastChannel` (ver [Colaboración](#colaboración-y-edición-simultánea) y el plan de backend real en `docs/backend-plan.md`).
 
 ## Stack
 
@@ -40,7 +40,7 @@ Sin backend propio: la persistencia es un archivo `project.json` que se guarda d
 
 ### Modo offline (por defecto)
 
-Sin credenciales externas. La autenticación usa un usuario demo y la persistencia se hace en `localStorage` (`gantter.project.v1`). Ideal para evaluar la aplicación.
+Sin credenciales externas. La autenticación usa un usuario demo (o "entrar como" un miembro desde el panel de Miembros) y la persistencia se hace en `localStorage` (`gantter.project.v2`, con migración automática desde `v1`). Ideal para evaluar la aplicación y la edición simultánea entre pestañas.
 
 ### Modo Google Drive
 
@@ -74,8 +74,13 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
   "id": null,
   "name": "Proyecto sin título",
   "description": "",
+  "version": 0,             // incrementa en cada guardado; lo usa la sincronización
   "createdAt": "...",
   "updatedAt": "...",
+  "members": [
+    { "id": "...", "name": "...", "email": "...", "role": "owner" | "member",
+      "status": "invited" | "active", "invitedBy": "...", "invitedAt": "...", "updatedAt": "..." }
+  ],
   "buckets": [
     { "id": "...", "name": "Backlog", "color": "#6200ea", "collapsed": false }
   ],
@@ -88,6 +93,7 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
       "startDate": "2026-09-01",
       "endDate": "2026-09-07",
       "status": "todo" | "in-progress" | "completed",
+      "progress": 35,       // entero 0–100, % de avance de la tarea
       "comments": [{ "id": "...", "text": "...", "author": {...}, "createdAt": "..." }],
       "precedents": ["taskIdA"],
       "dependents": [],
@@ -99,8 +105,20 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
 
 ### Reglas de dominio
 
-- Una tarea no puede marcarse como **Finalizada** si tiene antecedentes (`precedents`) pendientes.
+- Una tarea no puede marcarse como **Finalizada** si tiene antecedentes (`precedents`) pendientes; al completarse su `progress` pasa a 100.
+- El **avance** es un entero 0–100 por tarea. El progreso de un bucket y el global se ponderan por duración: `% = Σ(progressᵢ × pesoᵢ) / Σ(pesoᵢ)`, con `pesoᵢ = max(1, duración en días)` (sin fechas pesa 1); sin tareas → 0%.
 - El camino crítico (CPM) se calcula a partir de fechas y dependencias: las tareas críticas se muestran en rojo en el Gantt.
+
+## Colaboración y edición simultánea
+
+En modo offline se simula la colaboración multi-usuario con **patrones estándar** que un backend real reutilizará (ver `docs/backend-plan.md`):
+
+- **Documento versionado**: `project.version` se incrementa en cada guardado.
+- **Identidad por pestaña**: cada pestaña usa un usuario distinto guardado en `sessionStorage` (`AuthService.switchTo` desde el panel de Miembros).
+- **Merge por entidad**: al recibir una versión remota, buckets/tareas/miembros se fusionan entidad por entidad con **última-escritura-gana** (`updatedAt`); las entidades tocadas por ambas partes se reportan como conflictos (LWW resuelto).
+- **Propagación en vivo**: `BroadcastChannel` (con respaldo en el evento `storage`) notifica a las otras pestañas; el banner muestra versiones y avisos.
+
+Cómo probarlo: abre la app en dos pestañas, en una ve a **Miembros → Entrar como Ana García**, y edita tareas o el avance en ambas; los cambios se propagan en segundos y si editas la misma entidad a la vez verás el aviso de conflicto en la barra inferior.
 
 ## Estructura del proyecto
 
@@ -110,21 +128,22 @@ src/
 ├── main.jsx                # Entry point
 ├── components/
 │   ├── auth/               # Login, layout protegido, enlace de proyecto
-│   ├── board/              # Vista tablero (buckets, tarjetas, drag & drop)
+│   ├── board/              # Vista tablero (buckets, tarjetas, drag & drop, %)
+│   ├── collab/             # Modal de miembros/invitaciones
 │   ├── common/             # Button, Checkbox, Modal
-│   ├── gantt/              # Vista Gantt (header, barras, flechas, línea HOY)
-│   ├── layout/             # AppShell, Navbar, TabsSwitcher
-│   └── task/               # Detalle de tarea, comentarios, dependencias
+│   ├── gantt/              # Vista Gantt (header, barras con %, flechas, línea HOY)
+│   ├── layout/             # AppShell, Navbar (nombre editable + % global), TabsSwitcher
+│   └── task/               # Detalle de tarea, comentarios, dependencias, avance
 ├── config/                 # Config de la app (modo, credenciales)
 ├── constants/              # Estados y etiquetas
 ├── context/                # AuthContext, ProjectContext
 ├── hooks/                  # useAuth, useProject, useDriveSync
-├── models/                 # Modelos de dominio (task, bucket)
-└── services/               # Persistencia (local/Drive), auth, storage
+├── models/                 # Modelos de dominio (task, bucket, member)
+└── services/               # Persistencia (local/Drive), auth, invitaciones, realtime
 ```
 
 ## Limitaciones conocidas
 
-- **Última escritura gana**: en modo Drive usa estrategia "última escritura gana"; puede perderse información en ediciones concurrentes.
-- **Sin backend propio**: toda la funcionalidad depende de servicios externos (Drive) o de `localStorage` en modo offline.
+- **Última escritura gana**: entre pestañas (y en modo Drive) los conflictos se resuelven con "última escritura gana" a nivel de entidad; las ediciones concurrentes de la misma entidad pueden perder cambios (se reportan, pero no se fusionan campo a campo).
+- **Sin backend propio**: toda la funcionalidad depende de servicios externos (Drive) o de `localStorage` en modo offline. La colaboración es local (pestañas del mismo navegador); no hay servidor real de invite/sincronización.
 - **Autenticación básica**: en modo offline la autenticación es simulada; en modo Drive depende de la configuración OAuth de Google.

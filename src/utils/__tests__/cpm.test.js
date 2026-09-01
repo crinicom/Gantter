@@ -48,3 +48,35 @@ describe('isCriticalTask', () => {
     expect(isCriticalTask(map, completed)).toBe(false);
   });
 });
+
+describe('calculateCpmMap con dependencias circulares', () => {
+  it('no se desborda con un ciclo de 2 tareas', () => {
+    const cyclic = [
+      {
+        id: 'a', name: 'A', precedents: ['b'], dependents: ['b'],
+        startDate: '2026-09-01', endDate: '2026-09-03', status: TASK_STATUS.TODO,
+      },
+      {
+        id: 'b', name: 'B', precedents: ['a'], dependents: ['a'],
+        startDate: '2026-09-04', endDate: '2026-09-06', status: TASK_STATUS.TODO,
+      },
+    ];
+    const map = calculateCpmMap(cyclic);
+    expect(map.a).toBeDefined();
+    expect(map.b).toBeDefined();
+    expect(typeof map.a.earlyFinish).toBe('number');
+    expect(typeof map.b.lateStart).toBe('number');
+  });
+
+  it('no se desborda con un ciclo de 3 tareas ni en el backward pass', () => {
+    const cyclic = [
+      { id: 'a', precedents: ['c'], dependents: ['b'], startDate: '2026-09-01', endDate: '2026-09-03', status: TASK_STATUS.TODO },
+      { id: 'b', precedents: ['a'], dependents: ['c'], startDate: '2026-09-04', endDate: '2026-09-06', status: TASK_STATUS.TODO },
+      { id: 'c', precedents: ['b'], dependents: ['a'], startDate: '2026-09-07', endDate: '2026-09-09', status: TASK_STATUS.TODO },
+    ];
+    const map = calculateCpmMap(cyclic);
+    expect(map.a).toBeDefined();
+    expect(map.b).toBeDefined();
+    expect(map.c).toBeDefined();
+  });
+});

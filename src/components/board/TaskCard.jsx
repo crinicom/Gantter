@@ -6,6 +6,8 @@ import { MessageSquare, CalendarDays, User } from 'lucide-react';
 import Checkbox from '../common/Checkbox';
 import { TASK_STATUS, STATUS_LABELS } from '../../constants/project';
 import { formatISODate } from '../../utils/dateUtils';
+import { clampProgress } from '../../utils/progress';
+import { useProject } from '../../hooks/useProject';
 
 const statusBadgeClasses = {
   [TASK_STATUS.TODO]: 'bg-gray-100 text-gray-600',
@@ -14,18 +16,18 @@ const statusBadgeClasses = {
 };
 
 export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks }) {
+  const { setTaskProgress } = useProject();
   const isCompleted = task.status === TASK_STATUS.COMPLETED;
-
+  const progress = clampProgress(task.progress);
+  const style = {};
   if (isCompleted && !showCompletedTasks) return null;
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
   });
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
+  style.transform = CSS.Transform.toString(transform);
+  style.transition = transition;
 
   const statusLabel = STATUS_LABELS[task.status] || task.status;
   const hasDependentStatus = task.status === TASK_STATUS.IN_PROGRESS;
@@ -62,6 +64,23 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
         {hasDependentStatus && task.precedents?.length > 0 && (
           <span className="text-amber-600">⚠ tiene antecedentes</span>
         )}
+      </div>
+
+      <div className="mt-2 flex items-center gap-2" onPointerDown={(e) => e.stopPropagation()}>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={5}
+          value={progress}
+          disabled={isCompleted}
+          onChange={(e) => setTaskProgress(task.id, Number(e.target.value))}
+          aria-label={`Avance de ${task.name || 'la tarea'}`}
+          className="h-1 w-full cursor-pointer accent-violet-600 disabled:opacity-50"
+        />
+        <span className="w-9 shrink-0 text-right text-xs tabular-nums text-gray-500">
+          {progress}%
+        </span>
       </div>
 
       <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">

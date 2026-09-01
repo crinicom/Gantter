@@ -1,11 +1,15 @@
 import { DEFAULT_PROJECT_NAME } from '../constants/project';
 import { normalizeBucket } from '../models/bucket';
+import { normalizeMember } from '../models/member';
+import { clampProgress } from '../utils/progress';
 
 export function createDefaultProject() {
   return {
     id: null,
     name: DEFAULT_PROJECT_NAME,
     description: '',
+    version: 0,
+    members: [],
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     buckets: [],
@@ -24,9 +28,13 @@ export function normalizeProject(raw) {
     ...project,
     createdAt: project.createdAt || defaults.createdAt,
     updatedAt: project.updatedAt || defaults.updatedAt,
+    version:
+      typeof project.version === 'number' && project.version >= 0 ? Math.floor(project.version) : 0,
+    members: Array.isArray(project.members) ? project.members.map(normalizeMember) : [],
     buckets: buckets.map(normalizeBucket),
     tasks: tasks.map((task) => ({
       ...task,
+      progress: clampProgress(task.progress),
       precedents: Array.isArray(task.precedents) ? task.precedents : [],
       dependents: Array.isArray(task.dependents) ? task.dependents : [],
       comments: Array.isArray(task.comments) ? task.comments : [],
@@ -48,5 +56,5 @@ export function deserializeProject(rawJson) {
 }
 
 export function projectStoredVersion() {
-  return 1;
+  return 2;
 }

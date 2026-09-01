@@ -28,6 +28,7 @@ export default function TaskModal({ open, task, onClose }) {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState(TASK_STATUS.TODO);
+  const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     if (!task) return;
@@ -36,6 +37,7 @@ export default function TaskModal({ open, task, onClose }) {
     setStartDate(task.startDate || '');
     setEndDate(task.endDate || '');
     setStatus(task.status || TASK_STATUS.TODO);
+    setProgress(task.progress || 0);
   }, [task]);
 
   const allTasks = useMemo(() => project?.tasks || [], [project]);
@@ -49,6 +51,7 @@ export default function TaskModal({ open, task, onClose }) {
       startDate,
       endDate,
       status,
+      progress,
     });
     onClose();
   };
@@ -146,6 +149,35 @@ export default function TaskModal({ open, task, onClose }) {
               <option value={TASK_STATUS.IN_PROGRESS}>En progreso</option>
               <option value={TASK_STATUS.COMPLETED}>Finalizada</option>
             </select>
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">Avance</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={0}
+              max={100}
+              step={5}
+              value={progress}
+              onChange={(e) => setProgress(Number(e.target.value))}
+              className="h-1.5 flex-1 cursor-pointer accent-violet-600"
+            />
+            <div className="flex items-center gap-1">
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={progress}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  setProgress(Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 0);
+                }}
+                className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+              />
+              <span className="text-sm text-gray-500">%</span>
+            </div>
           </div>
         </div>
 

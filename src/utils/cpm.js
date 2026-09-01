@@ -27,11 +27,13 @@ export function calculateCpmMap(tasks) {
     const task = byId[taskId];
     if (!task) return 0;
     if (memo[taskId] !== undefined) return memo[taskId];
+    // Ciclo en el grafo de dependencias: cortar la recursión aquí.
+    if (path.includes(taskId)) return 0;
 
     const dur = durationDays(task);
     const precedents = (task.precedents || []).filter((id) => byId[id]);
     const maxPrecedentFinish = precedents.length
-      ? Math.max(...precedents.map((id) => computeEarly(id, path, memo)))
+      ? Math.max(...precedents.map((id) => computeEarly(id, [...path, taskId], memo)))
       : 0;
 
     const earlyStart = maxPrecedentFinish;
@@ -48,10 +50,12 @@ export function calculateCpmMap(tasks) {
     : 0;
 
   const late = {};
-  const computeLate = (taskId, memo) => {
+  const computeLate = (taskId, path, memo) => {
     const task = byId[taskId];
     if (!task) return projectEnd;
     if (memo[taskId] !== undefined) return memo[taskId];
+    // Ciclo en el grafo de dependencias: cortar la recursión aquí.
+    if (path.includes(taskId)) return projectEnd;
 
     const dur = durationDays(task);
     const dependents = (task.dependents || []).filter((id) => byId[id]);
@@ -59,7 +63,7 @@ export function calculateCpmMap(tasks) {
     // El fin tardío de una tarea es el menor de los inicios tardíos de sus
     // dependientes; si no tiene dependientes, es el fin del proyecto.
     const lateFinish = dependents.length
-      ? Math.min(...dependents.map((id) => computeLate(id, memo) - durationDays(byId[id])))
+      ? Math.min(...dependents.map((id) => computeLate(id, [...path, taskId], memo) - durationDays(byId[id])))
       : projectEnd;
 
     const lateStart = lateFinish - dur;
@@ -68,7 +72,7 @@ export function calculateCpmMap(tasks) {
     return lateFinish;
   };
 
-  datedTasks.forEach((t) => computeLate(t.id, {}));
+  datedTasks.forEach((t) => computeLate(t.id, [], {}));
 
   datedTasks.forEach((task) => {
     const e = early[task.id] || { earlyStart: 0, earlyFinish: 0 };

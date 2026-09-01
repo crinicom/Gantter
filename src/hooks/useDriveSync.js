@@ -5,6 +5,8 @@ export function useDriveSync() {
     syncStatus,
     lastSyncAt,
     error,
+    collabNotice,
+    version,
     reload,
     persist,
   } = useProject();
@@ -13,6 +15,8 @@ export function useDriveSync() {
     syncStatus,
     lastSyncAt,
     error,
+    collabNotice,
+    version,
     reload,
     persist,
   };

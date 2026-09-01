@@ -67,6 +67,42 @@ Estados: `pendiente` (product backlog) · `en-progreso` · `hecho` · `cancelada
 - **Criterios:** desde la pantalla de proyecto vacío se puede cargar la muestra o empezar vacío.
 - **Estado:** hecho
 
+### US-010 — Registrar avance de una tarea
+
+- **Como** miembro del equipo, **quiero** indicar el porcentaje de avance de cada tarea con un slider y un campo numérico, **para** reflejar el estado real del trabajo.
+- **Criterios:** el avance es un entero 0–100 (paso 5 en el slider); al marcar una tarea como finalizada su avance pasa automáticamente a 100; se persiste y aparece en tarjeta, modal y barra del Gantt.
+- **Estado:** hecho
+
+### US-011 — Ver el progreso global del proyecto
+
+- **Como** responsable del proyecto, **quiero** ver el porcentaje de avance global junto al nombre, **para** tener una métrica de avance de un vistazo.
+- **Criterios:** el % global se pondera por la duración de cada tarea (una tarea sin fechas pesa 1); sin tareas muestra 0%.
+- **Estado:** hecho
+
+### US-012 — Ver el progreso por bucket
+
+- **Como** miembro del equipo, **quiero** ver el avance agrupado por bucket en el tablero y en el Gantt, **para** localizar dónde hace falta avanzar.
+- **Criterios:** cada bucket muestra su % (ponderado igual que el global) con una barra; en el Gantt se muestra en la fila de grupo junto al nombre del bucket.
+- **Estado:** hecho
+
+### US-013 — Editar el nombre del proyecto
+
+- **Como** responsable del proyecto, **quiero** cambiar el nombre del proyecto directamente desde la barra superior con un lápiz, **para** mantenerlo al día.
+- **Criterios:** el nombre se edita en línea (Enter guarda, Escape cancela) y se persiste.
+- **Estado:** hecho
+
+### US-014 — Invitar miembros al proyecto
+
+- **Como** propietario del proyecto, **quiero** invitar personas por email, ver su estado y revocar accesos, **para** colaborar con el equipo.
+- **Criterios:** se crea un miembro con rol miembro y estado invitado; la lista muestra rol y estado; se puede revocar; en modo offline la entrega se simula y se puede "entrar como" el invitado.
+- **Estado:** hecho
+
+### US-015 — Edición simultánea y detección de conflictos
+
+- **Como** miembro del equipo, **quiero** ver en vivo los cambios de otras pestañas y saber cuándo hay conflictos, **para** trabajar sin pisarme con mis compañeros.
+- **Criterios:** los cambios de otras pestañas se propagan en vivo (BroadcastChannel); si la misma entidad se edita en dos pestañas se aplica última-escritura-gana y se muestra un aviso; cada pestaña es un usuario distinto (sessionStorage).
+- **Estado:** hecho
+
 ---
 
 ## Ideas / futuras mejoras (sin priorizar)
@@ -75,4 +111,4 @@ Estados: `pendiente` (product backlog) · `en-progreso` · `hecho` · `cancelada
 - US-F2: Notificaciones o badges cuando una tarea tiene dependencias bloqueadas.
 - US-F3: Vista de calendario o agrupación por asignado.
 - US-F4: Reordenamiento visual persistente de tareas dentro de un bucket (drag ordering con posición).
-- US-F5: Detección de conflictos de edición concurrente (no solo "última escritura gana").
+- US-F6: Backend real con WebSocket/SSE y autenticación por correo (ver `docs/backend-plan.md`).

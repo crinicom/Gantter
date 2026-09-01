@@ -1,9 +1,42 @@
-{
+﻿{
   "id": null,
   "name": "Proyecto demo",
   "description": "Proyecto de ejemplo para probar la aplicación en modo local.",
+  "version": 0,
   "createdAt": "2026-09-01T09:00:00.000Z",
   "updatedAt": "2026-09-01T09:00:00.000Z",
+  "members": [
+    {
+      "id": "u_demo",
+      "name": "Usuario demo",
+      "email": "demo@local",
+      "role": "owner",
+      "status": "active",
+      "invitedBy": null,
+      "invitedAt": "2026-09-01T09:00:00.000Z",
+      "updatedAt": "2026-09-01T09:00:00.000Z"
+    },
+    {
+      "id": "u_ana",
+      "name": "Ana García",
+      "email": "ana@local",
+      "role": "member",
+      "status": "active",
+      "invitedBy": "Usuario demo",
+      "invitedAt": "2026-09-01T09:00:00.000Z",
+      "updatedAt": "2026-09-01T09:00:00.000Z"
+    },
+    {
+      "id": "u_carlos",
+      "name": "Carlos Pérez",
+      "email": "carlos@local",
+      "role": "member",
+      "status": "invited",
+      "invitedBy": "Usuario demo",
+      "invitedAt": "2026-09-01T09:00:00.000Z",
+      "updatedAt": "2026-09-01T09:00:00.000Z"
+    }
+  ],
   "buckets": [
     {
       "id": "bucket_1",
@@ -27,6 +60,7 @@
       "startDate": "2026-09-01",
       "endDate": "2026-09-07",
       "status": "in-progress",
+      "progress": 35,
       "comments": [],
       "precedents": [],
       "dependents": ["task_1_2"],
@@ -40,6 +74,7 @@
       "startDate": "2026-09-08",
       "endDate": "2026-09-09",
       "status": "todo",
+      "progress": 0,
       "comments": [],
       "precedents": ["task_1_1"],
       "dependents": [],
@@ -53,6 +88,7 @@
       "startDate": "2026-09-04",
       "endDate": "2026-09-18",
       "status": "todo",
+      "progress": 15,
       "comments": [],
       "precedents": [],
       "dependents": [],
