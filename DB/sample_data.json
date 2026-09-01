@@ -1,0 +1,62 @@
+{
+  "id": null,
+  "name": "Proyecto demo",
+  "description": "Proyecto de ejemplo para probar la aplicación en modo local.",
+  "createdAt": "2026-09-01T09:00:00.000Z",
+  "updatedAt": "2026-09-01T09:00:00.000Z",
+  "buckets": [
+    {
+      "id": "bucket_1",
+      "name": "Proyectos actuales",
+      "color": "#6200ea",
+      "collapsed": false
+    },
+    {
+      "id": "bucket_2",
+      "name": "Tareas pendientes",
+      "color": "#0b7285",
+      "collapsed": false
+    }
+  ],
+  "tasks": [
+    {
+      "id": "task_1_1",
+      "name": "Crear especificaciones del prototipo",
+      "description": "Definir alcance y requisitos del prototipo.",
+      "assignedUser": { "id": "u_demo", "name": "Usuario demo", "email": "demo@local" },
+      "startDate": "2026-09-01",
+      "endDate": "2026-09-07",
+      "status": "in-progress",
+      "comments": [],
+      "precedents": [],
+      "dependents": ["task_1_2"],
+      "bucketId": "bucket_1"
+    },
+    {
+      "id": "task_1_2",
+      "name": "Reunión de productos",
+      "description": "Coordinar reunión con el equipo de producto.",
+      "assignedUser": null,
+      "startDate": "2026-09-08",
+      "endDate": "2026-09-09",
+      "status": "todo",
+      "comments": [],
+      "precedents": ["task_1_1"],
+      "dependents": [],
+      "bucketId": "bucket_1"
+    },
+    {
+      "id": "task_2_1",
+      "name": "Documentación de requerimientos",
+      "description": "Redactar la documentación completa de requerimientos.",
+      "assignedUser": null,
+      "startDate": "2026-09-04",
+      "endDate": "2026-09-18",
+      "status": "todo",
+      "comments": [],
+      "precedents": [],
+      "dependents": [],
+      "bucketId": "bucket_2"
+    }
+  ]
+}

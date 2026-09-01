@@ -1,0 +1,6 @@
+# Enforzar UTF-8 y saltos de linea de Unix para evitar Mojibake
+* text=auto eol=lf
+*.md text working-tree-encoding=UTF-8
+*.js text working-tree-encoding=UTF-8
+*.jsx text working-tree-encoding=UTF-8
+*.json text working-tree-encoding=UTF-8
