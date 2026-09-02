@@ -44,7 +44,7 @@ Sin credenciales externas. La autenticación usa un usuario demo (o "entrar como
 
 ### Landing multi-proyecto
 
-Tras iniciar sesión se muestra la **landing** con una tarjeta por cada proyecto visible para el usuario (propietario o miembro activo): nombre, portada (imagen determinista de picsum con seed = id, subida por el propietario o degradado SVG local), fechas de creación/modificación y % de avance global. Desde ahí se crea un proyecto nuevo, se carga el dataset de demostración en un proyecto nuevo, se elimina (con confirmación) y se navega por hash `#/proyecto/<id>`. El botón "Mis proyectos" de la barra superior vuelve a la landing; "Entrar como" limpia el hash antes de recargar.
+Tras iniciar sesión se muestra la **landing** con una tarjeta por cada proyecto visible para el usuario (propietario o miembro activo): nombre, portada (imagen aleatoria fijada al crear mediante `coverSeed`, subida por el propietario o degradado SVG local), fechas de creación/modificación y % de avance global. La portada no cambia a lo largo de la vida del proyecto salvo que el propietario suba una imagen propia. Desde ahí se crea un proyecto nuevo, se carga el dataset de demostración en un proyecto nuevo, se elimina (con confirmación) y se navega por hash `#/proyecto/<id>`. El botón "Mis proyectos" de la barra superior vuelve a la landing; "Entrar como" limpia el hash antes de recargar.
 
 ### Modo Google Drive
 
@@ -80,6 +80,7 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
   "description": "",
   "ownerId": "...",          // id del propietario (deducido del miembro con rol owner)
   "image": "data:...",       // portada subida (dataURL) o null → picsum/SVG por seed
+  "coverSeed": "...",        // seed de la portada aleatoria, fijado una sola vez al crear el proyecto
   "version": 0,              // incrementa en cada guardado; lo usa la sincronización
   "createdAt": "...",
   "updatedAt": "...",

@@ -28,7 +28,7 @@ function migrateLegacy() {
 
   const project = deserializeProject(legacy);
   const id = project.id || uuidv4();
-  const migrated = { ...project, id, ownerId: inferOwnerId(project) || 'u_demo' };
+  const migrated = { ...project, id, ownerId: inferOwnerId(project) || 'u_demo', coverSeed: project.coverSeed || id };
   writeStore({ [id]: migrated });
   localStorage.removeItem(LEGACY_V2_KEY);
   localStorage.removeItem(LEGACY_V1_KEY);

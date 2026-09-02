@@ -17,7 +17,7 @@ export default function ProjectCard({ project, isOwner = false, onOpen, onDelete
   const fileRef = useRef(null);
 
   const progress = projectProgress(project?.tasks || []);
-  const src = useFallback ? localFallback(project.id) : coverImageUrl(project);
+  const src = useFallback ? localFallback(project.coverSeed || project.id) : coverImageUrl(project);
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];

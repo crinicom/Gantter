@@ -13,6 +13,7 @@ export function createDefaultProject() {
     ownerId: null,
     members: [],
     image: null,
+    coverSeed: null,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     buckets: [],
@@ -20,7 +21,9 @@ export function createDefaultProject() {
   };
 }
 
-// Crea un proyecto nuevo con id, propietario (owner activo) y fechas.
+// Crea un proyecto nuevo con id, propietario (owner activo), portada aleatoria
+// única (coverSeed) y fechas. La portada se asigna una sola vez al crear y no
+// cambia salvo que el propietario suba una imagen propia.
 export function createProject({ name, description = '', owner }) {
   const now = new Date().toISOString();
   const ownerId = owner?.id || null;
@@ -30,6 +33,7 @@ export function createProject({ name, description = '', owner }) {
     name: name || DEFAULT_PROJECT_NAME,
     description: description || '',
     ownerId,
+    coverSeed: uuidv4(),
     members: owner
       ? [
           {
@@ -61,17 +65,20 @@ export function normalizeProject(raw) {
   const project = raw && typeof raw === 'object' ? raw : {};
   const buckets = Array.isArray(project.buckets) ? project.buckets : [];
   const tasks = Array.isArray(project.tasks) ? project.tasks : [];
+  const id = project.id || null;
 
   return {
     ...defaults,
     ...project,
-    id: project.id || null,
+    id,
     createdAt: project.createdAt || defaults.createdAt,
     updatedAt: project.updatedAt || defaults.updatedAt,
     version:
       typeof project.version === 'number' && project.version >= 0 ? Math.floor(project.version) : 0,
     ownerId: project.ownerId || null,
     image: typeof project.image === 'string' && project.image ? project.image : null,
+    coverSeed:
+      typeof project.coverSeed === 'string' && project.coverSeed ? project.coverSeed : id,
     members: Array.isArray(project.members) ? project.members.map(normalizeMember) : [],
     buckets: buckets.map(normalizeBucket),
     tasks: tasks.map((task) => ({

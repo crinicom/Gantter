@@ -34,7 +34,16 @@ describe('coverImageUrl', () => {
     );
   });
 
-  it('usa picsum con seed del id si no hay imagen', () => {
+  it('usa picsum con el coverSeed si no hay imagen', () => {
+    expect(coverImageUrl({ id: 'p1', coverSeed: 's-42' })).toBe('https://picsum.photos/seed/s-42/640/360');
+  });
+
+  it('usa picsum con seed del id si no hay coverSeed (legacy)', () => {
     expect(coverImageUrl({ id: 'p1' })).toBe('https://picsum.photos/seed/p1/640/360');
+  });
+
+  it('devuelve el mismo URL para el mismo proyecto (estable)', () => {
+    const p = { id: 'p1', coverSeed: 's-42' };
+    expect(coverImageUrl(p)).toBe(coverImageUrl(p));
   });
 });

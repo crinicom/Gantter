@@ -17,6 +17,7 @@ describe('projectStorage', () => {
     expect(p.members).toEqual([]);
     expect(p.ownerId).toBeNull();
     expect(p.image).toBeNull();
+    expect(p.coverSeed).toBeNull();
     expect(p.name).toBeTruthy();
   });
 
@@ -31,6 +32,7 @@ describe('projectStorage', () => {
     expect(p.description).toBe('Desc');
     expect(p.ownerId).toBe('u_demo');
     expect(p.image).toBeNull();
+    expect(p.coverSeed).toBeTruthy();
     expect(p.members).toHaveLength(1);
     expect(p.members[0]).toMatchObject({
       id: 'u_demo',
@@ -63,6 +65,22 @@ describe('projectStorage', () => {
     expect(restored.image).toBe('data:image/jpeg;base64,AAA=');
     expect(restored.buckets[0].name).toBe('Backlog');
     expect(restored.tasks[0].precedents).toEqual(['b1']);
+  });
+
+  it('createProject asigna un coverSeed único por proyecto', () => {
+    const a = createProject({ name: 'A', owner: { id: 'u1' } });
+    const b = createProject({ name: 'B', owner: { id: 'u1' } });
+    expect(a.coverSeed).toBeTruthy();
+    expect(a.coverSeed).not.toBe(b.coverSeed);
+  });
+
+  it('normalizeProject conserva coverSeed si existe y lo backfillea desde el id si falta', () => {
+    const withSeed = normalizeProject({ name: 'X', id: 'p1', coverSeed: 's-42' });
+    expect(withSeed.coverSeed).toBe('s-42');
+    const withoutSeed = normalizeProject({ name: 'Y', id: 'p2' });
+    expect(withoutSeed.coverSeed).toBe('p2');
+    const noId = normalizeProject({ name: 'Z', coverSeed: 's-43' });
+    expect(noId.coverSeed).toBe('s-43');
   });
 
   it('deserializeProject tolera JSON inválido y devuelve default', () => {

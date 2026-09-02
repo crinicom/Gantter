@@ -1,9 +1,10 @@
 // Imágenes de portada de los proyectos.
 //
 // Si el proyecto no tiene imagen subida se usa una foto aleatoria de
-// picsum.photos con seed = id del proyecto (estable y determinista). Si
-// falla (sin red), se muestra un degradado SVG local también determinista
-// por seed. Las imágenes subidas se escalan vía canvas antes de persistir.
+// picsum.photos con seed = coverSeed del proyecto (asignado una única vez al
+// crear; estable y determinista). Si falla (sin red), se muestra un degradado
+// SVG local también determinista por seed. Las imágenes subidas se escalan vía
+// canvas antes de persistir.
 
 const PICSUM_URL = 'https://picsum.photos/seed';
 
@@ -43,9 +44,10 @@ export function localFallback(seed) {
 }
 
 // URL de la portada: imagen subida si existe, si no foto aleatoria por seed.
+// El seed queda fijado al crear el proyecto (coverSeed) y no vuelve a cambiar.
 export function coverImageUrl(project) {
   if (project?.image) return project.image;
-  const seed = project?.id || 'proyecto';
+  const seed = project?.coverSeed || project?.id || 'proyecto';
   return `${PICSUM_URL}/${encodeURIComponent(seed)}/640/360`;
 }
 
