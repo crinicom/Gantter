@@ -1,6 +1,8 @@
 import { LocalBackend } from './localStorageBackend';
+import { ServerBackend } from './serverBackend';
+import { isServerMode } from '../config/appConfig';
 
-let activeBackend = LocalBackend;
+let activeBackend = isServerMode() ? ServerBackend : LocalBackend;
 let loadError = null;
 
 export function getBackend() {
@@ -8,7 +10,11 @@ export function getBackend() {
 }
 
 export function setBackend(backend) {
-  activeBackend = backend || LocalBackend;
+  activeBackend = backend || defaultBackend();
+}
+
+function defaultBackend() {
+  return isServerMode() ? ServerBackend : LocalBackend;
 }
 
 export function setLoadError(message) {

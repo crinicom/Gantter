@@ -1,4 +1,4 @@
-import { hasGoogleCredentials } from '../config/appConfig';
+import { hasGoogleCredentials, isServerMode } from '../config/appConfig';
 
 const MOCK_USER = {
   id: 'u_demo',
@@ -22,6 +22,10 @@ const AUTH_KEY = 'gantter.auth.mock.v1';
 
 export const AuthService = {
   async getCurrentUser() {
+    if (isServerMode()) {
+      const { default: serverAuth } = await import('./serverAuth');
+      return serverAuth.getCurrentUser();
+    }
     if (hasGoogleCredentials()) {
       // Modo Drive: delegar en la implementación GIS (authServiceDrive).
       // Por ahora devuelve null para forzar el login en el modo real.
@@ -37,6 +41,10 @@ export const AuthService = {
   },
 
   async login() {
+    if (isServerMode()) {
+      const { default: serverAuth } = await import('./serverAuth');
+      return serverAuth.login();
+    }
     if (hasGoogleCredentials()) {
       const driveAuth = await import('./authServiceDrive');
       return driveAuth.login();
@@ -46,6 +54,10 @@ export const AuthService = {
   },
 
   async logout() {
+    if (isServerMode()) {
+      const { default: serverAuth } = await import('./serverAuth');
+      return serverAuth.logout();
+    }
     if (hasGoogleCredentials()) {
       const driveAuth = await import('./authServiceDrive');
       await driveAuth.logout();

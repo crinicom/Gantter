@@ -8,10 +8,12 @@ import { mergeProjects, sameProjectAs } from '../utils/collab';
 import { isProjectVisible, visibleProjects } from '../utils/projectAccess';
 import { MEMBER_ROLES } from '../models/member';
 import { TASK_STATUS, PROJECT_STATUS } from '../constants/project';
-import { LocalBackend } from '../services/localStorageBackend';
+import { getBackend } from '../services/storage';
 import { RealtimeService } from '../services/realtimeService';
+import { ServerRealtime } from '../services/serverRealtime';
 import { InviteService } from '../services/inviteService';
 import { createProject, deserializeProject } from '../services/projectStorage';
+import { isServerMode } from '../config/appConfig';
 
 export const ProjectContext = createContext(null);
 
@@ -34,9 +36,9 @@ export const ProjectProvider = ({ children }) => {
   const [lastSyncAt, setLastSyncAt] = useState(null);
   const [error, setError] = useState(null);
   const [collabNotice, setCollabNotice] = useState(null);
-  const [backend] = useState(LocalBackend);
-
+  const [backend] = useState(() => getBackend());
   const backendRef = useRef(backend);
+  backendRef.current = getBackend();
   const saveTimer = useRef(null);
   const storeRef = useRef(store);
   storeRef.current = store;
@@ -170,8 +172,8 @@ export const ProjectProvider = ({ children }) => {
   }, []);
 
   // ---- Realtime (solo para el proyecto activo) ----
-  useEffect(() => {
-    const unsubscribe = RealtimeService.subscribe((payload) => {
+  const handleRemote = useCallback(
+    (payload) => {
       const remote = payload?.project;
       const remoteId = payload?.projectId;
       if (!remote || !remoteId || remoteId !== activeIdRef.current) return;
@@ -192,9 +194,21 @@ export const ProjectProvider = ({ children }) => {
       if (!sameProjectAs(merged, remote)) {
         void persistRemote(merged);
       }
-    });
-    return unsubscribe;
-  }, [applyToStore, persistRemote]);
+    },
+    [applyToStore, persistRemote],
+  );
+
+  // Modo offline: BroadcastChannel global, filtrado por proyecto activo.
+  useEffect(() => {
+    if (isServerMode()) return undefined;
+    return RealtimeService.subscribe(handleRemote);
+  }, [handleRemote]);
+
+  // Modo server: suscripción SSE al canal del proyecto activo.
+  useEffect(() => {
+    if (!isServerMode() || !activeProjectId) return undefined;
+    return ServerRealtime.subscribe(activeProjectId, handleRemote);
+  }, [activeProjectId, handleRemote]);
 
   const reload = useCallback(async () => {
     setIsLoading(true);
@@ -215,6 +229,16 @@ export const ProjectProvider = ({ children }) => {
   // ---- Gestión de proyectos ----
   const createNewProject = useCallback(
     ({ name, description }) => {
+      if (isServerMode()) {
+        backendRef.current.createProject({ name, description }).then((doc) => {
+          if (!doc) return;
+          const map = { ...storeRef.current, [doc.id]: doc };
+          storeRef.current = map;
+          setStore(map);
+          openProject(doc.id);
+        });
+        return null;
+      }
       const doc = createProject({ name, description, owner: userRef.current });
       applyToStore(doc.id, doc);
       void persist(doc);
@@ -237,6 +261,16 @@ export const ProjectProvider = ({ children }) => {
 
   const setProjectImage = useCallback(
     (projectId, image) => {
+      if (isServerMode()) {
+        backendRef.current.setProjectImage(projectId, image).then((doc) => {
+          if (doc && doc.id) {
+            const map = { ...storeRef.current, [doc.id]: doc };
+            storeRef.current = map;
+            setStore(map);
+          }
+        });
+        return;
+      }
       const prev = storeRef.current[projectId];
       if (!prev) return;
       const next = bumpVersion({ ...prev, image, updatedAt: new Date().toISOString() });
@@ -265,6 +299,24 @@ export const ProjectProvider = ({ children }) => {
             .filter((m) => m.id !== owner?.id)
             .map((m) => (m.role === MEMBER_ROLES.OWNER ? { ...m, role: MEMBER_ROLES.MEMBER } : m)),
         ].filter(Boolean);
+
+        if (isServerMode()) {
+          const created = await backendRef.current.createProject({
+            name: doc.name,
+            description: doc.description,
+          });
+          if (!created) return;
+          created.buckets = doc.buckets;
+          created.tasks = doc.tasks;
+          created.members = [{ ...(created.members[0] || owner), role: MEMBER_ROLES.OWNER }];
+          await backendRef.current.saveProject(created);
+          const map = { ...storeRef.current, [created.id]: created };
+          storeRef.current = map;
+          setStore(map);
+          openProject(created.id);
+          return;
+        }
+
         applyToStore(doc.id, doc);
         void persist(doc);
         openProject(doc.id);
@@ -523,17 +575,33 @@ export const ProjectProvider = ({ children }) => {
       if (!cleanEmail) return false;
       const alreadyMember = (project?.members || []).some((m) => m.email === cleanEmail);
       if (alreadyMember) return false;
+
+      if (isServerMode()) {
+        const id = activeIdRef.current;
+        if (!id) return false;
+        const backend = backendRef.current;
+        backend.sendInvite(id, { name, email: cleanEmail }).then((doc) => {
+          if (doc) void reload();
+        });
+        return true;
+      }
+
       commitToStore((prev) =>
         InviteService.sendInvite(prev, { name, email: cleanEmail, invitedBy }).project,
       );
       return true;
     },
-    [commitToStore, project],
+    [commitToStore, project, reload],
   );
 
   const acceptInvite = useCallback(
     (memberId) =>
       new Promise((resolve) => {
+        if (isServerMode()) {
+          // En modo server la aceptación se hace por token (flujo real).
+          resolve();
+          return;
+        }
         const id = activeIdRef.current;
         const prev = storeRef.current[id];
         if (!id || !prev) {
@@ -549,9 +617,17 @@ export const ProjectProvider = ({ children }) => {
 
   const revokeMember = useCallback(
     (memberId) => {
+      if (isServerMode()) {
+        const id = activeIdRef.current;
+        if (!id) return;
+        backendRef.current.revokeMember(id, memberId).then((doc) => {
+          if (doc) void reload();
+        });
+        return;
+      }
       commitToStore((prev) => InviteService.revokeMember(prev, memberId).project);
     },
-    [commitToStore],
+    [commitToStore, reload],
   );
 
   const clearCollabNotice = useCallback(() => {

@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "start": "node server/src/index.js",
+    "setup:server": "npm --prefix server install",
     "test": "vitest run",
     "test:watch": "vitest"
   },

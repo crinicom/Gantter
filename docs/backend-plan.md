@@ -241,15 +241,20 @@ Unitarias adicionales en `src/utils/__tests__/collab.test.js` para el merge a ni
 
 ## 11. Roadmap por iteraciones
 
-1. **I1 — Backend de persistencia**: `ServerBackend` (CAS por versión + `409`) + `setBackend`.
-   Sin UI nueva: la app funciona contra servidor con el mismo aspecto. Migración local→servidor.
-2. **I2 — Realtime**: SSE/WebSocket `ServerRealtimeService`, misma interfaz `subscribe/broadcast`.
-   Satisfacen las pruebas de cuenta 1–4 del §10.
-3. **I3 — Auth real**: login OAuth Google → JWT; migrar `AuthService` de sessionStorage a sesión de
-   servidor; quitar `DEFAULT_COLLAB_USERS`/`switchTo` (o dejarlos solo en `VITE_APP_MODE=offline`).
-4. **I4 — Invitaciones reales**: tokens + email + aceptación; todas las rutas de la §7.
-5. **I5 — Consolidación**: manejo de red offline (cola de cambios con reintento y badge), export JSON,
-   y opcionalmente merge por campos (§4 iteración 2) o CRDT si se valida necesidad.
+> Estado: **I1–I4 implementadas en `server/`** (persistencia SQLite + CAS, SSE, OAuth Google→JWT,
+> invitaciones reales) y **clientes conectados por modo** (`VITE_APP_MODE=server`). Verificado con
+> smoke E2E (13/13) y tests (96). I5 queda para una iteración posterior.
+
+1. **I1 — Backend de persistencia**: ✅ `ServerBackend` (CAS por versión + `409` + merge) + `getBackend()`
+   por modo. La app funciona contra servidor con el mismo aspecto. Migración local→servidor.
+2. **I2 — Realtime**: ✅ SSE `ServerRealtime` (hub por canal de proyecto) + suscripción del
+   `ProjectContext` por `projectId`. Satisfacen las pruebas de cuenta 1–4 del §10.
+3. **I3 — Auth real**: ✅ login OAuth Google (PKCE server-side) → JWT en cookie httpOnly; `AuthService`
+   delega en `/api/auth/*` en modo server; `DEFAULT_COLLAB_USERS`/`switchTo` quedan solo en modo offline.
+4. **I4 — Invitaciones reales**: ✅ tokens + aceptación + revocación en `server/` y delegación del
+   front por modo. Rutas de la §7.
+5. **I5 — Consolidación**: ⏳ pendiente. Cola de cambios offline con reintento y badge; export JSON;
+   opcionalmente merge por campos (§4 iteración 2) o CRDT si se valida necesidad.
 
 ## 12. Riesgos y mitigaciones
 

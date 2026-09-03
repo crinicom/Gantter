@@ -59,6 +59,42 @@ VITE_GOOGLE_APP_ID=...
 
 Cuando existen las credenciales, el login cambia automáticamente a OAuth de Google (Google Identity Services) y la persistencia apunta a un archivo `project.json` dentro de una carpeta de Drive vinculada. El modo local sigue disponible como respaldo si las credenciales no están configuradas.
 
+### Modo server (backend real)
+
+Backend Node/Express en `server/` con backup real **SQLite** (`better-sqlite3`), **realtime por SSE**, **auth OAuth Google → JWT en cookie httpOnly** e **invitaciones reales por token**. Sirve la API (`/api/*`) y, en producción, el build de la SPA desde el mismo origen. El front se conecta al modo server en `VITE_APP_MODE=server`.
+
+```
+# .env del front
+VITE_APP_MODE=server
+# VITE_API_BASE=            # vacío = mismo origen; en dev usa el proxy de Vite
+
+# .env del server (o entorno)
+JWT_SECRET=...              # obligatorio
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:3001/api/auth/google/callback
+PORT=3001
+# DATABASE_PATH=server/data.sqlite    # opcional
+```
+
+Arranque en desarrollo (dos terminales):
+
+```
+npm install                # deps del front
+npm run setup:server       # npm --prefix server install (deps del backend)
+npm run dev                # Vite en :5173 con proxy /api -> :3001
+node server/src/index.js   # API en :3001 (JWT_SECRET y credenciales OAuth en el entorno)
+```
+
+En producción (p. ej. DigitalOcean App Platform), el build compila la SPA y `npm start` levanta el server que sirve `dist/` + API:
+
+```
+Build:  npm install && npm run setup:server && npm run build
+Start:  npm start    # node server/src/index.js
+```
+
+En modo server, tanto la **capa de persistencia** (`ServerBackend`), el **realtime** (`ServerRealtime`) y la **autenticación** (`/api/auth/*`) se seleccionan automáticamente según `VITE_APP_MODE`. El "entrar como" y `DEFAULT_COLLAB_USERS` quedan solo para el modo offline/demo.
+
 ## Comandos
 
 | Comando            | Descripción                              |
@@ -66,6 +102,8 @@ Cuando existen las credenciales, el login cambia automáticamente a OAuth de Goo
 | `npm run dev`      | Servidor de desarrollo (Vite)           |
 | `npm run build`    | Compilar para producción                |
 | `npm run preview`  | Previsualizar el build                  |
+| `npm run start`    | Levantar API + SPA en producción        |
+| `npm run setup:server` | Instalar deps del backend (`server/`) |
 | `npm test`         | Ejecutar las pruebas unitarias (Vitest) |
 | `npm run test:watch` | Ejecutar pruebas en modo watch        |
 
