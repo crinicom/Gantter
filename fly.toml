@@ -1,6 +1,3 @@
-# fly.toml — Gantter (Fly.io)
-# https://fly.io/docs/reference/configuration/
-
 app = "gantter"
 primary_region = "iad"
 
@@ -8,23 +5,27 @@ primary_region = "iad"
   dockerfile = "Dockerfile"
 
 [env]
+  APP_BASE_URL = "https://gantter.fly.dev"
+  DATABASE_PATH = "/data/data.sqlite"
+  GOOGLE_REDIRECT_URI = "https://gantter.fly.dev/api/auth/google/callback"
   PORT = "8080"
   VITE_APP_MODE = "server"
-  DATABASE_PATH = "/data/data.sqlite"
-  APP_BASE_URL = "https://gantter.fly.dev"
-  GOOGLE_REDIRECT_URI = "https://gantter.fly.dev/api/auth/google/callback"
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = false
   auto_start_machines = true
   min_machines_running = 1
+
+  # Health Check correcto dentro del servicio HTTP
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/api/health"
+    timeout = "2s"
 
 [[mounts]]
   source = "gantter_data"
   destination = "/data"
-
-[metrics]
-  port = 8080
-  path = "/api/health"
