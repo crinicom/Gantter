@@ -1,0 +1,36 @@
+# Dependencies (build fresh inside the image; native binaries are platform-specific)
+node_modules
+server/node_modules
+
+# Build output
+dist
+build
+coverage
+
+# Env / secrets (never bake into the image)
+.env
+server/.env
+.env.local
+.env.*.local
+
+# SQLite runtime data (lives on the Fly volume, not the image)
+server/data.sqlite
+server/data.sqlite-shm
+server/data.sqlite-wal
+
+# VCS / CI / IDE noise
+.git
+.github
+.gitignore
+.hg
+.svn
+*.log
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# Local tooling config not needed at runtime
+fly.toml
+Dockerfile
+.dockerignore
