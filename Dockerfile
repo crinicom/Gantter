@@ -4,6 +4,11 @@
 FROM node:22-slim AS builder
 WORKDIR /app
 
+# Config build-time del SPA (Vite la lee en compilacion). fly.toml la pasa
+# via [build.args]; el default "server" cubre el caso de que no se inyecten.
+ARG VITE_APP_MODE=server
+ENV VITE_APP_MODE=$VITE_APP_MODE
+
 # Install build toolchain needed by better-sqlite3 (native module)
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*

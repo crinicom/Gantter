@@ -1,47 +1,36 @@
-<<<<<<< HEAD
-app = "gantter"
-primary_region = "iad"
-=======
-# fly.toml app configuration file generated for gantter on 2026-09-04T17:28:45Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
+# fly.toml — Gantter (Fly.io)
+# https://fly.io/docs/reference/configuration/
 
-app = 'gantter'
-primary_region = 'ams'
->>>>>>> 0e47013260cb9804fda73de7f686fc126928f135
+app = "gantter"
+primary_region = "ams"
 
 [build]
-  dockerfile = 'Dockerfile'
+  dockerfile = "Dockerfile"
+
+  # VITE_* se leen en build-time por Vite (import.meta.env): el SPA de
+  # producción debe compilarse en modo server para hablar con la API.
+  [build.args]
+    VITE_APP_MODE = "server"
 
 [env]
-<<<<<<< HEAD
-  APP_BASE_URL = "https://gantter.fly.dev"
-  DATABASE_PATH = "/data/data.sqlite"
-  GOOGLE_REDIRECT_URI = "https://gantter.fly.dev/api/auth/google/callback"
   PORT = "8080"
   VITE_APP_MODE = "server"
-=======
-  APP_BASE_URL = 'https://gantter.fly.dev'
-  DATABASE_PATH = '/data/data.sqlite'
-  GOOGLE_REDIRECT_URI = 'https://gantter.fly.dev/api/auth/google/callback'
-  PORT = '8080'
-  VITE_APP_MODE = 'server'
+  DATABASE_PATH = "/data/data.sqlite"
+  APP_BASE_URL = "https://gantter.fly.dev"
+  GOOGLE_REDIRECT_URI = "https://gantter.fly.dev/api/auth/google/callback"
 
+# SQLite persistente sobre el volumen (sobrevive a redeploys)
 [[mounts]]
-  source = 'gantter_data'
-  destination = '/data'
->>>>>>> 0e47013260cb9804fda73de7f686fc126928f135
+  source = "gantter_data"
+  destination = "/data"
 
 [http_service]
   internal_port = 8080
   force_https = true
-<<<<<<< HEAD
-  auto_stop_machines = false
+  auto_stop_machines = "off" # siempre encendido: el SSE realtime necesita el proceso vivo
   auto_start_machines = true
   min_machines_running = 1
 
-  # Health Check correcto dentro del servicio HTTP
   [[http_service.checks]]
     grace_period = "10s"
     interval = "15s"
@@ -49,21 +38,12 @@ primary_region = 'ams'
     path = "/api/health"
     timeout = "2s"
 
-[[mounts]]
-  source = "gantter_data"
-  destination = "/data"
-=======
-  auto_stop_machines = 'off'
-  auto_start_machines = true
-  min_machines_running = 1
-
+# Dentro de la free allowance de Fly (shared-cpu-1x 256MB)
 [[vm]]
-  memory = '1gb'
-  cpu_kind = 'shared'
+  cpu_kind = "shared"
   cpus = 1
-  memory_mb = 256
+  memory = "256mb"
 
-[[metrics]]
+[metrics]
   port = 8080
-  path = '/api/health'
->>>>>>> 0e47013260cb9804fda73de7f686fc126928f135
+  path = "/api/health"
