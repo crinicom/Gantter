@@ -1,30 +1,38 @@
-# fly.toml — Gantter (Fly.io)
-# https://fly.io/docs/reference/configuration/
+# fly.toml app configuration file generated for gantter on 2026-09-04T17:16:38Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
 
-app = "gantter"
-primary_region = "iad"
+app = 'gantter'
+primary_region = 'gru'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8080"
-  VITE_APP_MODE = "server"
-  DATABASE_PATH = "/data/data.sqlite"
-  APP_BASE_URL = "https://gantter.fly.dev"
-  GOOGLE_REDIRECT_URI = "https://gantter.fly.dev/api/auth/google/callback"
+  APP_BASE_URL = 'https://gantter.fly.dev'
+  DATABASE_PATH = '/data/data.sqlite'
+  GOOGLE_REDIRECT_URI = 'https://gantter.fly.dev/api/auth/google/callback'
+  PORT = '8080'
+  VITE_APP_MODE = 'server'
+
+[[mounts]]
+  source = 'gantter_data'
+  destination = '/data'
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "off"
+  auto_stop_machines = 'off'
   auto_start_machines = true
   min_machines_running = 1
 
-[[mounts]]
-  source = "gantter_data"
-  destination = "/data"
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
 
-[metrics]
+[[metrics]]
   port = 8080
-  path = "/api/health"
+  path = '/api/health'
