@@ -16,6 +16,9 @@ coverage/
 .env.local
 .env.*.local
 
+# Server env (secrets)
+server/.env
+
 # Logs
 *.log
 npm-debug.log*

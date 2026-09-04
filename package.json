@@ -4,7 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "concurrently -k -n web,api -c blue,green \"vite\" \"npm run dev:api\"",
+    "dev:web": "vite",
+    "dev:api": "node server/src/index.js",
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server/src/index.js",
@@ -36,6 +38,11 @@
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.15",
     "vite": "^5.4.11",
-    "vitest": "^2.1.5"
+    "vitest": "^2.1.5",
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
   }
 }

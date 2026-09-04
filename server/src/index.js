@@ -1,14 +1,19 @@
+import dotenv from 'dotenv';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cookieParser from 'cookie-parser';
-import path from 'node:path';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import authRoutes from './routes/auth.js';
 import projectRoutes from './routes/projects.js';
 import inviteRoutes from './routes/invites.js';
 import realtimeRoutes from './routes/realtime.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+// Carga server/.env (JWT_SECRET y credenciales OAuth), independiente del CWD.
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
