@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for gantter on 2026-09-04T17:16:38Z
+# fly.toml app configuration file generated for gantter on 2026-09-04T17:28:45Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
 app = 'gantter'
-primary_region = 'gru'
+primary_region = 'ams'
 
 [build]
   dockerfile = 'Dockerfile'
