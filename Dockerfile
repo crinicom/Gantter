@@ -24,6 +24,10 @@ RUN npm ci --prefix server
 # App source
 COPY . .
 
+# Vite lee las VITE_* solo desde archivos .env*, no del entorno del proceso;
+# se inyecta VITE_APP_MODE (build-time) como .env.production del SPA.
+RUN echo "VITE_APP_MODE=$VITE_APP_MODE" > /app/.env.production
+
 # Build the SPA -> dist/
 RUN npm run build
 
