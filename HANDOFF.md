@@ -35,12 +35,13 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-07 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 3 — Tokens visuales (done). No hay slice `opencode` in-progress |
+| Slice en curso | 4 — Panel Maie + scanner determinístico (implementado por OpenCode, review de Grok pendiente) |
 | Owner | **opencode** |
-| Status | `done` |
+| Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
+| Slice 4 | `review` (implementado por OpenCode, pendiente review de Grok) |
 
 ---
 
@@ -54,7 +55,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
 | 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **done** | §5–6 | implementado, fixes Grok |
 | 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **done** | §14 | commits `a8a7e95`, `17838c0` y `21a0258` (fix H1) |
-| 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
+| 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | opencode | **review** | §7–8 | commit `35adb76` (implementado; review Grok pendiente) |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
 | 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
 | 7 | Huddle in-app + standup demo que **muta** el tablero | grok | pending | §10, §17.5 | si el demo no mueve cartas, v1 no está |
@@ -151,7 +152,7 @@ Tocar: `src/services/projectStorage.js`, `src/models/*`, `DB/sample_data.json` (
 Slice 1 implementado por OpenCode (2026-09-07). Notas para Grok:
 
 - **Adapter único** en `src/services/projectStorage.js`: `toDocument(runtime→canónico)` y `fromDocumentCanonical/normalizeProject` (canónico o legacy v2/v3 → runtime). Board/Gantt/context siguen consumiendo `buckets`/`tasks`/`assignedUser`; el documento persistido es canónico §12 (`columns`/`cards`/`assigneeIds[]`/`settings{applyMode,staleDays}` + `inquiries[]`/`actionLog[]`/`huddle`).
-- **Decisión humana**: fechas del seed **fijas en `DB/sample_data.json`** (hoy_ref ≈ 2026-09-05; stale ≈ 18d → lastActivityAt 2026-08-18; hito go-live → 2026-09-12). Sin builder dinámico.
+- **Decisión humana (actualizada en slice 4, reemplaza la anterior)**: fechas del seed **relativas al primer run**. `DB/sample_data.json` sigue estático como template; al sembrar (`loadSeedProjects`) `reanchorSeedDates` ancla el hito go-live a **hoy + 7 días** y corrió todo el calendario con el mismo delta (gaps preservados: stale ~18 días, hito ~7 días, overlap). Sin builder dinámico; el re-anclaje es idempotente.
 - **Decisión humana**: proyectos nuevos parten de **2 columnas** "Por hacer"/"En curso" (`createDefaultProject`). Asignación sin hardcode: `AssigneeSelector` lista los `members` del proyecto.
 - **Auto-seed al primer arranque** (`localStorageBackend.loadProjects`). Store vacío (`{}`) respeta borrados. `projectStoredVersion` → 4 (clave `v3` intacta).
 - **Identidad**: `ACTIVE_USER` = Lucía Ríos (`u_lucia`) en `constants/project.js`, usada por auth seed y migraciones.
@@ -212,5 +213,19 @@ _(Grok escribe aquí tras un review del diff del slice 3.)_
 4. Cero emojis verificado (incl. `⚠` reemplazado); fondos en papel; fuentes con pesos 400–700; fixtures de datos en paleta.
 
 Aceptación re-verificada: `npm test` 122/122 · `npm run build` OK. **Slice 3 → `done`**.
+
+### Slice 4 implementado por OpenCode (2026-09-07) — notas para Grok
+
+Decisión humana previa al build: **el slice 4 lo implementa OpenCode** (aunque en la tabla dice grok) con las tres decisiones de `§19`: (1) ownership → opencode; (2) toggle applyMode **visible y persistente** desde el panel (el comportamiento auto/confirmar real es slice 5); (3) fechas del seed **relativas al primer run**.
+
+- **Scanner determinístico** (`src/services/inquiryEngine.js` + `src/constants/maie.js`): 5 kinds sin LLM — `thin`/`unassigned`/`stale` solo en columnas de trabajo (Listo/En curso, nunca Backlog ni Hecho); `missing-date` = carta sin rango completo en la columna de un hito próximo (≤10 días) o en la columna de trabajo previa, sin duplicar avisos sobre cartas que ya avisan thin/unassigned; `overlap` = un inquiry por responsable con barras que se pisan vía `findOverlaps`, anclado a la primera carta solapada. El rescan con el mismo set devuelve lo mismo (anti-loop).
+- **Hilos y ciclo de vida**: identidad `kind:cardId`; Snoozed se respeta; cuando la condición desaparece se **auto-resuelve** con `resolvedNote` + entrada en `actionLog` (`source: 'auto'`) y motivo ("volvió a moverse", "cargó sus fechas", etc.). Una carta que deja de ser stale frente al hito puede reflotar como missing-date (cambio de lente, no duplicación).
+- **`MaieContext`** fuera de `ProjectContext.jsx`: escucha `project.version`, rescannea y **escribe solo si cambió** vía `mutateProject` (wrapper expuesto por ProjectContext). Expone `inquiries`, `openCount`, `actionLog`, `applyMode`, `staleDays` y `setApplyMode` (persiste en `settings.applyMode`).
+- **Panel Maie** (`components/maie/`): dock derecho `w-[360px]` en `AppShell` (`hidden lg:flex`, mobile = slice 8). `MaieMark` (monograma geométrico con arco de escucha, bosque sobre papel, sin cara/emoji §14), header con contador de abiertas, toggle de modo, pestañas **Preguntas | Huddle | Registro**. Preguntas lista open/chatting + separa Aparcadas; Huddle = estado vacío (slice 7); Registro = actionLog read-only con tiempo relativo en español.
+- **Plumbing de datos**: `ProjectContext` ahora expone `mutateProject` y `setSettings` (puerta de datos para Maie, commitToStore sigue privado). `mergeProjects` (collab) conserva los **campos de documento** `ownerId/teamName/summary/image/coverSeed/inquiries/actionLog/huddle/settings` por LWW del doc más reciente (no se pierde estado de Maie en un merge realtime).
+- **Seed relativo**: `src/utils/seedAnchoring.js` `reanchorSeedDates` corre el calendario del template (go-live → hoy+7, timestamps y date-only incluidos, comentarios y miembros también); se aplica en `loadSeedProjects` (único loader: primer run, reset demo y mode server comparten). `DB/sample_data.json` no se tocó.
+- Tests: `npm test` **140/140** · `npm run build` OK. Nuevos: `inquiryEngine.test.js` (6), `seedAnchoring.test.js` (5), `MaiePanel.test.jsx` (4); extensión `collab.test.js` (campos doc) y `seed.test.js` (ancla ≈ hoy+7, gaps preservados, reset determinista).
+
+_(Grok escribe aquí tras un review del diff del slice 4.)_
 
 ---
