@@ -15,12 +15,12 @@ export default function BucketColumn({ bucket, tasks, showCompletedTasks, onOpen
       ref={setNodeRef}
       className={clsx(
         'flex w-72 flex-col rounded-lg border border-gray-200 bg-gray-100/60 p-2',
-        isOver && 'border-violet-400 bg-violet-50',
+        isOver && 'border-forest-400 bg-forest-50',
       )}
     >
       <div className="mb-1.5 px-1">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-700" style={{ borderLeft: `3px solid ${bucket.color || '#6200ea'}`, paddingLeft: 6 }}>
+          <span className="font-medium text-gray-700" style={{ borderLeft: `3px solid ${bucket.color || '#2B4D42'}`, paddingLeft: 6 }}>
             {bucket.name}
           </span>
           <span className="flex items-center gap-1 text-xs text-gray-400">
@@ -43,7 +43,7 @@ export default function BucketColumn({ bucket, tasks, showCompletedTasks, onOpen
         <div className="mt-1 flex items-center gap-1.5">
           <div className="h-1.5 flex-1 overflow-hidden rounded bg-gray-200">
             <div
-              className="h-full rounded bg-violet-500 transition-all"
+              className="h-full rounded bg-forest-500 transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>

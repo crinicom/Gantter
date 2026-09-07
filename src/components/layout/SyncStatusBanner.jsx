@@ -36,7 +36,7 @@ export default function SyncStatusBanner() {
         <span className="tabular-nums text-gray-400">v{version}</span>
       </div>
       {collabNotice && (
-        <span className="flex items-center gap-1.5 rounded-full bg-violet-100 px-2 py-0.5 font-medium text-violet-700">
+        <span className="flex items-center gap-1.5 rounded-full bg-forest-100 px-2 py-0.5 font-medium text-forest-700">
           <Users size={12} /> {collabNotice}
         </span>
       )}

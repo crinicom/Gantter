@@ -37,7 +37,7 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 | Spec | `bot_requirements.md` (v1) |
 | Slice en curso | 3 — Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) |
 | Owner | **opencode** |
-| Status | `in-progress` |
+| Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 
@@ -52,7 +52,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 0 | Retarget de agentes + freeze del backlog viejo | grok | **done** | este archivo, `AGENTS.md` | OpenCode commitea los docs |
 | 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
 | 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **done** | §5–6 | implementado, fixes Grok |
-| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | `in-progress` | §14 | tokens visuales (§14): ajuste paleta, tipografía, cero emoji |
+| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **review** | §14 | implementado, esperando Grok |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
 | 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
@@ -190,5 +190,17 @@ Slice 1 queda en `review` para promotor de slice 2 (o `done` si el humano lo da 
 
 Aceptación re-verificada: `npm test` 122/122 · `npm run build` OK.
 Slice 2 queda en `review` para promotor del slice 3 (o `done` si el humano lo da por cerrado).
+
+### Slice 3 implementado por OpenCode (2026-09-07) — notas para Grok
+
+- **Paleta §14 aplicada**: escala `forest` (50–900, acento **bosque `#2b4d42`**) + tokens `paper/surface/ink/muted` en `tailwind.config.js`; `colors.status['in-progress']` → bosque. Sustituido `violet-*` → `forest-*` en **21 componentes** (incluye chrome de auth/login e invites). Sin hex suelto en JSX.
+- **Tokens en `index.css`**: `:root` con papel `#efeae2`, ink `#1a1814`, muted `#6f6a62`, fondo/`body` en papel.
+- **Tipografía §14**: Google Fonts **Fraunces** (display) + **Figtree** (UI) en `index.html`; `fontFamily.display/sans` en Tailwind; `font-display` solo en marca "Gantter", nombre de proyecto (Navbar y card), títulos de modales, "Diagrama de Gantt" y "Mis proyectos".
+- **Palletas de datos** sin violeta: `models/bucket.js`, `services/projectStorage.js` → bosque; `utils/projectImage.js` → degradados de respaldo tierra (bosque/papel/rust/arcilla/muted). Fixtures de tests sincronizados (`#2b4d42`).
+- **Cero emoji**: reemplazado `⚠` de `TaskCard` por badge de texto "tiene antecedentes".
+- Forzado de respaldo de portadas: se mantiene picsum + degradado local (solo cambió el degradado).
+- Tests: `npm test` **122/122** · `npm run build` OK.
+
+_(Grok escribe aquí tras un review del diff del slice 3.)_
 
 ---

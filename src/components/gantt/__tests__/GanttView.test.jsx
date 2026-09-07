@@ -24,7 +24,7 @@ const cyclicProject = {
   description: '',
   createdAt: '2026-09-01T00:00:00.000Z',
   updatedAt: '2026-09-01T00:00:00.000Z',
-  buckets: [{ id: 'b1', name: 'Bucket', color: '#6200ea', collapsed: false }],
+  buckets: [{ id: 'b1', name: 'Bucket', color: '#2b4d42', collapsed: false }],
   tasks: [
     {
       id: 'a', name: 'A', startDate: '2026-09-01', endDate: '2026-09-03',

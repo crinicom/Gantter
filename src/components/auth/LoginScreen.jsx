@@ -8,14 +8,14 @@ export default function LoginScreen() {
   const { login, isLoggingIn } = useAuth();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-paper px-4">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-lg">
         <div className="mb-6 flex items-center gap-3">
-          <div className="rounded-lg bg-violet-600 p-2.5 text-white">
+          <div className="rounded-lg bg-forest-600 p-2.5 text-white">
             <KanbanSquare size={28} />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-800">Gantter</h1>
+            <h1 className="font-display text-xl font-bold text-gray-800">Gantter</h1>
             <p className="text-sm text-gray-500">Tablero y Gantt colaborativo</p>
           </div>
         </div>

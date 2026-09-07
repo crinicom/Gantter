@@ -35,7 +35,7 @@ export default function Navbar() {
         <Button variant="ghost" size="sm" onClick={closeProject} title="Volver a mis proyectos">
           <FolderOpen size={16} /> Mis proyectos
         </Button>
-        <div className="rounded-md bg-violet-600 p-1.5 text-white">
+        <div className="rounded-md bg-forest-600 p-1.5 text-white">
           <KanbanSquare size={20} />
         </div>
 
@@ -51,16 +51,16 @@ export default function Navbar() {
                   if (e.key === 'Enter') commitName();
                   if (e.key === 'Escape') setEditingName(false);
                 }}
-                className="w-64 rounded-md border border-violet-400 px-2 py-0.5 text-lg font-bold text-gray-800 focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+                className="w-64 rounded-md border border-forest-400 px-2 py-0.5 text-lg font-bold text-gray-800 focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500"
                 aria-label="Nombre del proyecto"
               />
             ) : (
               <>
-                <span className="truncate text-lg font-bold text-gray-800">{projectName}</span>
+                <span className="truncate font-display text-lg font-bold text-gray-800">{projectName}</span>
                 <button
                   type="button"
                   onClick={startEdit}
-                  className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-violet-50 hover:text-violet-600"
+                  className="shrink-0 rounded p-1 text-gray-400 transition-colors hover:bg-forest-50 hover:text-forest-600"
                   aria-label="Editar nombre del proyecto"
                   title="Editar nombre"
                 >
@@ -75,7 +75,7 @@ export default function Navbar() {
 
           <div className="flex items-center gap-1.5">
             <div className="h-1 w-28 overflow-hidden rounded bg-gray-200">
-              <div className="h-full rounded bg-violet-500 transition-all" style={{ width: `${progress}%` }} />
+              <div className="h-full rounded bg-forest-500 transition-all" style={{ width: `${progress}%` }} />
             </div>
             <span className="text-xs tabular-nums text-gray-500">{progress}%</span>
           </div>
@@ -94,7 +94,7 @@ export default function Navbar() {
 
         {user && (
           <div className="flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-forest-100 text-sm font-semibold text-forest-700">
               {user.name?.[0]?.toUpperCase() || 'U'}
             </span>
             <span className="hidden text-sm text-gray-700 sm:inline">{user.name}</span>

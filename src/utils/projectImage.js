@@ -17,15 +17,17 @@ export function seedFromString(str) {
   return h;
 }
 
+// Degradados de respaldo con la paleta §14 (tierra: bosque, papel, rust, arcilla,
+// muted). Sin violeta ni neón.
 const GRADIENTS = [
-  ['#6200ea', '#b388ff'],
-  ['#0b7285', '#66d9e8'],
-  ['#c2255c', '#f783ac'],
-  ['#2b8a3e', '#8ce99a'],
-  ['#e8590c', '#ffd8a8'],
-  ['#364fc7', '#91a7ff'],
-  ['#862e9c', '#e599f7'],
-  ['#c92a2a', '#ffa8a8'],
+  ['#2b4d42', '#608d7a'],
+  ['#6f6a62', '#a89f93'],
+  ['#a33a32', '#d98b7d'],
+  ['#efeae2', '#d9cfbf'],
+  ['#23403a', '#90b1a2'],
+  ['#7a5c3e', '#c4a48b'],
+  ['#4a6b63', '#b9cdc3'],
+  ['#7d5247', '#c89a8c'],
 ];
 
 // SVG degradado determinista (data URI) para usar cuando no hay imagen ni red.

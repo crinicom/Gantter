@@ -45,7 +45,7 @@ export default function AssigneeSelector({ value = [], onChange, members = [] })
         <button
           type="button"
           onClick={togglePicker}
-          className="flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-500 hover:border-violet-400 hover:text-violet-600"
+          className="flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2 py-1 text-xs text-gray-500 hover:border-forest-400 hover:text-forest-600"
         >
           <Plus size={12} /> Asignar
         </button>
@@ -66,7 +66,7 @@ export default function AssigneeSelector({ value = [], onChange, members = [] })
                 add(member);
                 setShowPicker(false);
               }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-violet-50"
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-gray-700 hover:bg-forest-50"
             >
               <User size={14} className="text-gray-400" />
               {member.name}

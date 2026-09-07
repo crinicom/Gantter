@@ -21,7 +21,7 @@ export default function GanttBar({ task, startDate, isCritical, overlapped = fal
           : isCompleted
             ? 'border-green-700 bg-green-600'
             : task.status === TASK_STATUS.IN_PROGRESS
-              ? 'border-violet-800 bg-violet-600'
+              ? 'border-forest-800 bg-forest-600'
               : 'border-gray-400 bg-gray-500',
         isCompleted && 'opacity-60',
         overlapped && 'ring-2 ring-red-400',

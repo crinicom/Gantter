@@ -17,7 +17,7 @@ function renderColumn(bucket, tasks) {
 describe('BucketColumn', () => {
   it('muestra el WIP n/límite y se pone ámbar si se excede', () => {
     const { container } = renderColumn(
-      { id: 'b1', name: 'En curso', color: '#6200ea', wipLimit: 3 },
+      { id: 'b1', name: 'En curso', color: '#2b4d42', wipLimit: 3 },
       [{ id: 't1' }, { id: 't2' }, { id: 't3' }, { id: 't4' }],
     );
     expect(screen.getByText('4/3')).toBeInTheDocument();

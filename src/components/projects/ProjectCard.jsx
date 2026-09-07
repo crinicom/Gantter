@@ -50,7 +50,7 @@ export default function ProjectCard({ project, isOwner = false, onOpen, onDelete
             onKeyDown={(e) => {
               if (e.key === 'Enter') fileRef.current?.click();
             }}
-            className="absolute bottom-2 right-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition hover:bg-violet-600 group-hover:opacity-100"
+            className="absolute bottom-2 right-2 inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition hover:bg-forest-600 group-hover:opacity-100"
             title="Subir imagen de portada"
           >
             <Camera size={15} />
@@ -64,7 +64,7 @@ export default function ProjectCard({ project, isOwner = false, onOpen, onDelete
       <div className="p-3">
         <h3
           onClick={() => onOpen(project.id)}
-          className="cursor-pointer truncate text-sm font-semibold text-gray-800 hover:text-violet-700"
+          className="cursor-pointer truncate font-display text-sm font-semibold text-gray-800 hover:text-forest-700"
           title={project.name}
         >
           {project.name}
@@ -74,7 +74,7 @@ export default function ProjectCard({ project, isOwner = false, onOpen, onDelete
         </p>
         <div className="mt-2 flex items-center gap-1.5">
           <div className="h-1.5 flex-1 overflow-hidden rounded bg-gray-200">
-            <div className="h-full rounded bg-violet-500 transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-full rounded bg-forest-500 transition-all" style={{ width: `${progress}%` }} />
           </div>
           <span className="text-[11px] tabular-nums text-gray-500">{progress}%</span>
         </div>
@@ -84,7 +84,7 @@ export default function ProjectCard({ project, isOwner = false, onOpen, onDelete
         <button
           type="button"
           onClick={() => onOpen(project.id)}
-          className="text-xs font-medium text-violet-600 hover:text-violet-800"
+          className="text-xs font-medium text-forest-600 hover:text-forest-800"
         >
           Abrir proyecto
         </button>

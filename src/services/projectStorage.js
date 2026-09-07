@@ -72,7 +72,7 @@ export function createDefaultProject() {
     buckets: DEFAULT_PROJECT_COLUMNS.map((title) => ({
       id: uuidv4(),
       name: title,
-      color: '#6200ea',
+      color: '#2b4d42',
       collapsed: false,
       createdAt: now,
       updatedAt: now,
@@ -178,7 +178,7 @@ function fromDocumentCanonical(project) {
   const buckets = columns.map((c, i) => ({
     id: c.id,
     name: c.title,
-    color: '#6200ea',
+    color: '#2b4d42',
     collapsed: false,
     createdAt: NOW(),
     updatedAt: NOW(),

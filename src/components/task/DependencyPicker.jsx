@@ -59,8 +59,8 @@ export default function DependencyPicker({ tasks, task, addDependency, removeDep
               onClick={() => toggleDependency(t)}
               className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
                 precedents.includes(t.id)
-                  ? 'border-violet-400 bg-violet-50 text-violet-700'
-                  : 'border-gray-200 text-gray-500 hover:border-violet-300'
+                  ? 'border-forest-400 bg-forest-50 text-forest-700'
+                  : 'border-gray-200 text-gray-500 hover:border-forest-300'
               }`}
             >
               <Link2 size={12} />

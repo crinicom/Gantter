@@ -3,10 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --primary-color: #6200ea;
-  --secondary-color: #6c757d;
-  --background-color: #f8f9fa;
-  --font-family: 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
+  --primary-color: #2b4d42;
+  --secondary-color: #6f6a62;
+  --background-color: #efeae2;
+  --ink-color: #1a1814;
+  --muted-color: #6f6a62;
+  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Figtree', 'Segoe UI', system-ui, -apple-system, Arial, sans-serif;
 }
 
 html,
@@ -17,9 +20,9 @@ body {
 }
 
 body {
-  font-family: var(--font-family);
+  font-family: var(--font-sans);
   background-color: var(--background-color);
-  color: #333;
+  color: var(--ink-color);
   scroll-behavior: smooth;
 }
 

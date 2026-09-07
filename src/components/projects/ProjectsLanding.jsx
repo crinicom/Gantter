@@ -45,7 +45,7 @@ function CreateProjectModal({ open, onClose, onCreate }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre del proyecto"
             autoFocus
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
           />
         </div>
         <div>
@@ -55,7 +55,7 @@ function CreateProjectModal({ open, onClose, onCreate }) {
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
             placeholder="Descripción opcional"
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
           />
         </div>
       </form>
@@ -75,15 +75,15 @@ export default function ProjectsLanding() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-6 py-3">
+    <div className="flex min-h-screen flex-col bg-paper">
+      <header className="flex items-center justify-between border-b border-gray-200 bg-surface px-6 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="rounded-md bg-violet-600 p-1.5 text-white">
+          <div className="rounded-md bg-forest-600 p-1.5 text-white">
             <KanbanSquare size={20} />
           </div>
-          <span className="text-lg font-bold text-gray-800">Gantter</span>
+          <span className="font-display text-lg font-bold text-gray-800">Gantter</span>
           {user && (
-            <span className="rounded-full bg-violet-50 px-2.5 py-0.5 text-xs font-medium text-violet-700">
+            <span className="rounded-full bg-forest-50 px-2.5 py-0.5 text-xs font-medium text-forest-700">
               {user.name}
             </span>
           )}
@@ -95,7 +95,7 @@ export default function ProjectsLanding() {
 
       <main className="mx-auto w-full max-w-6xl flex-1 px-6 py-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-gray-800">Mis proyectos</h1>
+          <h1 className="font-display text-xl font-semibold text-gray-800">Mis proyectos</h1>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={() => resetDemo()}>
               <Sparkles size={16} /> Restaurar demo

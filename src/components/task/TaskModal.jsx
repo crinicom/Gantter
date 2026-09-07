@@ -108,7 +108,7 @@ export default function TaskModal({ open, task, onClose }) {
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-base font-medium focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-base font-medium focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500"
             placeholder="Nombre de la tarea"
           />
         </div>
@@ -117,7 +117,7 @@ export default function TaskModal({ open, task, onClose }) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+          className="w-full resize-none rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500"
           placeholder="Descripción…"
         />
 
@@ -128,7 +128,7 @@ export default function TaskModal({ open, task, onClose }) {
               type="date"
               value={startDate || ''}
               onChange={(e) => setStartDate(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
             />
           </div>
           <div>
@@ -137,7 +137,7 @@ export default function TaskModal({ open, task, onClose }) {
               type="date"
               value={endDate || ''}
               onChange={(e) => setEndDate(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
             />
           </div>
           <div>
@@ -149,7 +149,7 @@ export default function TaskModal({ open, task, onClose }) {
                 setTaskStatus(task.id, next);
                 setStatus(next);
               }}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
             >
               <option value={TASK_STATUS.TODO}>En trabajo</option>
               <option value={TASK_STATUS.IN_PROGRESS}>En progreso</option>
@@ -168,7 +168,7 @@ export default function TaskModal({ open, task, onClose }) {
               step={5}
               value={progress}
               onChange={(e) => setProgress(Number(e.target.value))}
-              className="h-1.5 flex-1 cursor-pointer accent-violet-600"
+              className="h-1.5 flex-1 cursor-pointer accent-forest-600"
             />
             <div className="flex items-center gap-1">
               <input
@@ -180,7 +180,7 @@ export default function TaskModal({ open, task, onClose }) {
                   const v = Number(e.target.value);
                   setProgress(Number.isFinite(v) ? Math.min(100, Math.max(0, Math.round(v))) : 0);
                 }}
-                className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-violet-500 focus:outline-none"
+                className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-forest-500 focus:outline-none"
               />
               <span className="text-sm text-gray-500">%</span>
             </div>
@@ -212,7 +212,7 @@ export default function TaskModal({ open, task, onClose }) {
               type="text"
               value={blockedReason}
               onChange={(e) => setBlockedReason(e.target.value)}
-              className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+              className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
               placeholder="Motivo de la bloqueada…"
             />
           )}

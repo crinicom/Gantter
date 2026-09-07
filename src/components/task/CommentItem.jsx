@@ -5,7 +5,7 @@ export default function CommentItem({ comment }) {
 
   return (
     <div className="flex gap-2 rounded-lg bg-gray-50 p-3">
-      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-violet-100 text-xs font-semibold text-violet-700">
+      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-forest-100 text-xs font-semibold text-forest-700">
         {authorName?.[0]?.toUpperCase() || 'U'}
       </span>
       <div className="min-w-0">

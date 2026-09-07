@@ -12,7 +12,7 @@ import { useProject } from '../../hooks/useProject';
 
 const statusBadgeClasses = {
   [TASK_STATUS.TODO]: 'bg-gray-100 text-gray-600',
-  [TASK_STATUS.IN_PROGRESS]: 'bg-violet-100 text-violet-700',
+  [TASK_STATUS.IN_PROGRESS]: 'bg-forest-100 text-forest-700',
   [TASK_STATUS.COMPLETED]: 'bg-green-100 text-green-700',
 };
 
@@ -64,7 +64,9 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
           {statusLabel}
         </span>
         {hasDependentStatus && task.precedents?.length > 0 && (
-          <span className="text-amber-600">⚠ tiene antecedentes</span>
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+            tiene antecedentes
+          </span>
         )}
       </div>
 
@@ -78,7 +80,7 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
           disabled={isCompleted}
           onChange={(e) => setTaskProgress(task.id, Number(e.target.value))}
           aria-label={`Avance de ${task.name || 'la tarea'}`}
-          className="h-1 w-full cursor-pointer accent-violet-600 disabled:opacity-50"
+          className="h-1 w-full cursor-pointer accent-forest-600 disabled:opacity-50"
         />
         <span className="w-9 shrink-0 text-right text-xs tabular-nums text-gray-500">
           {progress}%

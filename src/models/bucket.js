@@ -4,7 +4,7 @@ export function createEmptyBucket() {
   return {
     id: uuidv4(),
     name: '',
-    color: '#6200ea',
+    color: '#2b4d42',
     collapsed: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -15,7 +15,7 @@ export function normalizeBucket(bucket) {
   const defaults = {
     id: null,
     name: '',
-    color: '#6200ea',
+    color: '#2b4d42',
     collapsed: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

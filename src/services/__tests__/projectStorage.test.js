@@ -86,7 +86,7 @@ describe('projectStorage', () => {
       ownerId: 'u_lucia',
       members: [{ id: 'u_lucia', name: 'Lucía Ríos', email: 'lucia@rio.local', role: 'owner', status: 'active' }],
       buckets: [
-        { id: 'b1', name: 'Backlog', color: '#6200ea', collapsed: false },
+        { id: 'b1', name: 'Backlog', color: '#2b4d42', collapsed: false },
         { id: 'b2', name: 'En curso', color: '#0b7285', collapsed: false },
       ],
       tasks: [
@@ -139,7 +139,7 @@ describe('projectStorage', () => {
         { id: 'u_lucia', name: 'Lucía Ríos', email: 'lucia@rio.local', role: 'owner', status: 'active' },
         { id: 'u_sofia', name: 'Sofía Chen', email: 'sofia@rio.local', role: 'member', status: 'active' },
       ],
-      buckets: [{ id: 'b1', name: 'En curso', color: '#6200ea', collapsed: false, wipLimit: 3 }],
+      buckets: [{ id: 'b1', name: 'En curso', color: '#2b4d42', collapsed: false, wipLimit: 3 }],
       tasks: [
         {
           id: 't1',

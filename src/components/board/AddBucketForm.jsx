@@ -20,11 +20,11 @@ export default function AddBucketForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         placeholder="Nombre del bucket…"
-        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500"
+        className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none focus:ring-1 focus:ring-forest-500"
       />
       <button
         type="submit"
-        className="flex items-center justify-center gap-1.5 rounded-md bg-violet-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-violet-700"
+        className="flex items-center justify-center gap-1.5 rounded-md bg-forest-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-forest-700"
       >
         <Plus size={16} /> Añadir bucket
       </button>

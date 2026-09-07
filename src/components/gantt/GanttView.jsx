@@ -101,13 +101,13 @@ export default function GanttView() {
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-gray-800">Diagrama de Gantt</h1>
+        <h1 className="font-display text-xl font-semibold text-gray-800">Diagrama de Gantt</h1>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-3 w-3 rounded bg-red-600" /> Crítica
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded bg-violet-600" /> En progreso
+            <span className="inline-block h-3 w-3 rounded bg-forest-600" /> En progreso
           </span>
           <label className="flex cursor-pointer items-center gap-2">
             <Checkbox checked={showCompletedTasks} onChange={() => setShowCompletedTasks((v) => !v)} />
@@ -152,14 +152,14 @@ export default function GanttView() {
                   ) : (
                     <span className="inline-block w-[14px]" />
                   )}
-                  <span style={{ borderLeft: `3px solid ${row.bucket.color || '#6200ea'}`, paddingLeft: 6 }}>
+                  <span style={{ borderLeft: `3px solid ${row.bucket.color || '#2B4D42'}`, paddingLeft: 6 }}>
                     {row.bucket.name}
                   </span>
                   <span className="ml-1 text-xs font-normal text-gray-400">({row.taskCount})</span>
                   <span className="ml-auto flex items-center gap-1.5">
                     <span className="h-1.5 w-14 overflow-hidden rounded bg-gray-200">
                       <span
-                        className="block h-full rounded bg-violet-500"
+                        className="block h-full rounded bg-forest-500"
                         style={{ width: `${row.progress}%` }}
                       />
                     </span>

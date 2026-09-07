@@ -62,7 +62,7 @@ export default function InviteMembersModal({ open, onClose }) {
   return (
     <Modal open={open} onClose={onClose} title="Miembros e invitaciones" width="max-w-2xl">
       {notice && (
-        <div className="mb-3 rounded-md bg-violet-50 px-3 py-2 text-xs text-violet-700">{notice}</div>
+        <div className="mb-3 rounded-md bg-forest-50 px-3 py-2 text-xs text-forest-700">{notice}</div>
       )}
 
       <form onSubmit={handleInvite} className="mb-5 rounded-lg border border-gray-200 p-3">
@@ -75,7 +75,7 @@ export default function InviteMembersModal({ open, onClose }) {
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Nombre"
-            className="w-1/3 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+            className="w-1/3 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
           />
           <input
             type="email"
@@ -83,7 +83,7 @@ export default function InviteMembersModal({ open, onClose }) {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="correo@ejemplo.com"
             required
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-forest-500 focus:outline-none"
           />
           <Button type="submit" size="md">
             Invitar
@@ -105,7 +105,7 @@ export default function InviteMembersModal({ open, onClose }) {
               key={member.id}
               className="flex items-center gap-2.5 rounded-md border border-gray-100 px-3 py-2"
             >
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700">
+              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-forest-100 text-sm font-semibold text-forest-700">
                 {member.name?.[0]?.toUpperCase() || '?'}
               </span>
               <div className="min-w-0 flex-1">
@@ -157,7 +157,7 @@ export default function InviteMembersModal({ open, onClose }) {
               type="button"
               disabled={isCurrentIdentity(candidate)}
               onClick={() => handleEnterAs(candidate)}
-              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors disabled:cursor-default disabled:opacity-60 disabled:border-violet-400 disabled:bg-violet-50 disabled:text-violet-700 border-gray-200 text-gray-600 hover:border-violet-400"
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors disabled:cursor-default disabled:opacity-60 disabled:border-forest-400 disabled:bg-forest-50 disabled:text-forest-700 border-gray-200 text-gray-600 hover:border-forest-400"
             >
               <Mail size={12} />
               {candidate.name}
