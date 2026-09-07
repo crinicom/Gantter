@@ -24,7 +24,7 @@ export default function AppShell() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-paper">
       <Navbar />
       <TabsSwitcher activeView={activeView} onChange={setActiveView} />
       <SyncStatusBanner />

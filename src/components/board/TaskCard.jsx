@@ -64,7 +64,7 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
           {statusLabel}
         </span>
         {hasDependentStatus && task.precedents?.length > 0 && (
-          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+          <span className="rounded-full bg-rust/15 px-2 py-0.5 text-[10px] font-medium text-rust">
             tiene antecedentes
           </span>
         )}

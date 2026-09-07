@@ -20,7 +20,7 @@ export default function BucketColumn({ bucket, tasks, showCompletedTasks, onOpen
     >
       <div className="mb-1.5 px-1">
         <div className="flex items-center justify-between">
-          <span className="font-medium text-gray-700" style={{ borderLeft: `3px solid ${bucket.color || '#2B4D42'}`, paddingLeft: 6 }}>
+          <span className="font-medium text-gray-700" style={{ borderLeft: `3px solid ${bucket.color || '#2b4d42'}`, paddingLeft: 6 }}>
             {bucket.name}
           </span>
           <span className="flex items-center gap-1 text-xs text-gray-400">

@@ -35,14 +35,14 @@ export default function GanttDependencyArrows({ tasks, startDate, rowIndexById, 
     <svg
       width={totalWidth}
       height={totalHeight}
-      className="pointer-events-none absolute inset-0 z-10"
+      className="pointer-events-none absolute inset-0 z-10 text-gray-300"
     >
       {arrows.map((arrow) => (
         <path
           key={arrow.key}
           d={arrow.path}
           fill="none"
-          stroke="#94a3b8"
+          stroke="currentColor"
           strokeWidth={1.5}
           strokeDasharray="4 3"
           markerEnd="none"

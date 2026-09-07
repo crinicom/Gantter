@@ -9,6 +9,7 @@ export default {
         surface: '#f7f3ec',
         ink: '#1a1814',
         muted: '#6f6a62',
+        rust: '#7d5247',
         forest: {
           50: '#eef2ef',
           100: '#dce6e0',

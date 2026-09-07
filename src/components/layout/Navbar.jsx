@@ -30,7 +30,7 @@ export default function Navbar() {
   };
 
   return (
-    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
+    <header className="flex items-center justify-between border-b border-gray-200 bg-surface px-4 py-2.5">
       <div className="flex min-w-0 items-center gap-2.5">
         <Button variant="ghost" size="sm" onClick={closeProject} title="Volver a mis proyectos">
           <FolderOpen size={16} /> Mis proyectos

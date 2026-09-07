@@ -8,7 +8,7 @@ export const VIEWS = {
 
 export default function TabsSwitcher({ activeView, onChange }) {
   return (
-    <div className="flex gap-1 border-b border-gray-200 bg-white px-4 pt-2">
+    <div className="flex gap-1 border-b border-gray-200 bg-surface px-4 pt-2">
       {[
         { key: VIEWS.BOARD, label: 'Tablero' },
         { key: VIEWS.GANTT, label: 'Gantt' },

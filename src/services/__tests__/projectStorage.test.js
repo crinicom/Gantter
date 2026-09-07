@@ -87,7 +87,7 @@ describe('projectStorage', () => {
       members: [{ id: 'u_lucia', name: 'Lucía Ríos', email: 'lucia@rio.local', role: 'owner', status: 'active' }],
       buckets: [
         { id: 'b1', name: 'Backlog', color: '#2b4d42', collapsed: false },
-        { id: 'b2', name: 'En curso', color: '#0b7285', collapsed: false },
+        { id: 'b2', name: 'En curso', color: '#7d5247', collapsed: false },
       ],
       tasks: [
         {

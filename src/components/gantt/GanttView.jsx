@@ -152,7 +152,7 @@ export default function GanttView() {
                   ) : (
                     <span className="inline-block w-[14px]" />
                   )}
-                  <span style={{ borderLeft: `3px solid ${row.bucket.color || '#2B4D42'}`, paddingLeft: 6 }}>
+                  <span style={{ borderLeft: `3px solid ${row.bucket.color || '#2b4d42'}`, paddingLeft: 6 }}>
                     {row.bucket.name}
                   </span>
                   <span className="ml-1 text-xs font-normal text-gray-400">({row.taskCount})</span>

@@ -5,7 +5,7 @@ import { PROJECT_STATUS } from '../../constants/project';
 
 const statusConfig = {
   [PROJECT_STATUS.IDLE]: { color: 'text-gray-500', icon: CloudOff },
-  [PROJECT_STATUS.SYNCING]: { color: 'text-blue-600', icon: RefreshCw },
+  [PROJECT_STATUS.SYNCING]: { color: 'text-forest-600', icon: RefreshCw },
   [PROJECT_STATUS.SYNCED]: { color: 'text-green-600', icon: Check },
   [PROJECT_STATUS.ERROR]: { color: 'text-red-600', icon: AlertTriangle },
 };
