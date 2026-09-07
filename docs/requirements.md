@@ -1,7 +1,9 @@
-# Requisitos — Gantter
+# Requisitos — Gantter (congelado)
 
-Este archivo es la **única fuente de verdad** del backlog de historias de usuario del proyecto.
-El agente de OpenCode debe consultarlo y actualizarlo al implementar cambios.
+**Este backlog está congelado.** US-001–017 describen el Kanban/Gantt que ya se construyó. No implementar historias nuevas desde acá. No retomar US-F6 ni auth/Drive/invites como trabajo de v1.
+
+Fuente de verdad de producto v1: [`bot_requirements.md`](../bot_requirements.md).  
+Slices y quién implementa: [`HANDOFF.md`](../HANDOFF.md).
 
 ## Formato
 

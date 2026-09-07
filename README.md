@@ -1,6 +1,8 @@
 # Gantter
 
-Aplicación web de gestión colaborativa de tareas y proyectos con dos vistas sobre el mismo estado: un **tablero** (estilo Kanban/Trello con buckets y drag & drop) y un **diagrama de Gantt** (semanas en el eje X, barras de tareas, flechas de dependencias, línea de HOY y cálculo de camino crítico).
+Aplicación web de gestión de trabajo: **tablero Kanban** + **Gantt** sobre las mismas cartas, más **Maie** (facilitadora socrática) y huddle in-app.
+
+**Producto v1:** [`bot_requirements.md`](bot_requirements.md). **Quién implementa qué:** [`HANDOFF.md`](HANDOFF.md). Este README describe el stack y el código que ya existe (persistencia local/Drive/server, collab). No usar las secciones de Drive/backend como permiso para ampliarlos en v1.
 
 Sin backend propio: la persistencia es un archivo `project.json` que se guarda de forma local (modo offline) o en una carpeta de Google Drive (modo Drive, mediante autenticación OAuth). La colaboración entre pestañas se simula en modo offline con un documento versionado, merge por entidad y `BroadcastChannel` (ver [Colaboración](#colaboración-y-edición-simultánea) y el plan de backend real en `docs/backend-plan.md`).
 

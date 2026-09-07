@@ -1,15 +1,18 @@
-# TASKS.md — Historia de trabajo y plan hacia adelante
+# TASKS.md — Historia de trabajo (legado hasta Maie)
 
-Registro único de la evolución de **Gantter** y su plan a futuro. Complementa a
-`docs/requirements.md` (única fuente de verdad del backlog de historias de usuario), a
-`README.md` (arquitectura) y a `docs/backend-plan.md` (plan del backend real). **No duplica
-backlog**: aquí se resume lo ya hecho (con sus commits) y se prioriza lo que viene.
+Registro de lo **ya construido** (Kanban/Gantt, landing, collab simulada) y sus commits.
+**No es el plan de v1.** El producto ahora es Maie + huddle; el trabajo vivo está en
+`HANDOFF.md` contra `bot_requirements.md`.
 
-> **Fuentes de verdad:**
-> - Backlog de historias → `docs/requirements.md`
+No implementar el P1/P2 de más abajo (export JSON, backend real, invitaciones, OAuth).
+Eso quedó como v2 o fuera de alcance.
+
+> **Fuentes de verdad (2026-09-06):**
+> - Producto v1 → `bot_requirements.md`
+> - Slices / ownership → `HANDOFF.md`
 > - Arquitectura y configuración → `README.md`
-> - Plan de backend real → `docs/backend-plan.md`
-> - Buenas prácticas → `AGENTS.md`
+> - Agentes → `AGENTS.md`
+> - Este archivo y `docs/requirements.md` → historia, no backlog
 
 ---
 

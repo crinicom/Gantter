@@ -4,6 +4,8 @@ Producto: tablero Kanban + vista Gantt + facilitadora socrática (Maie) con hudd
 
 Este archivo es la fuente de verdad para implementar. No inventar features fuera de acá. Lo que está en **v2** no se construye ahora.
 
+**Cómo se implementa:** slices y ownership en `HANDOFF.md`. OpenCode commitea y deploya; Grok especifica y revisa. El backlog `docs/requirements.md` está congelado.
+
 ---
 
 ## 1. Tesis
