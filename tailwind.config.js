@@ -10,6 +10,7 @@ export default {
         ink: '#1a1814',
         muted: '#6f6a62',
         rust: '#7d5247',
+        critical: '#a33a32',
         forest: {
           50: '#eef2ef',
           100: '#dce6e0',

@@ -17,7 +17,7 @@ export default function GanttBar({ task, startDate, isCritical, overlapped = fal
       className={clsx(
         'absolute overflow-hidden rounded-md border px-1.5 text-center text-[11px] font-medium leading-6 text-white shadow-sm',
         isCritical
-          ? 'border-red-700 bg-red-600'
+          ? 'border-critical bg-critical'
           : isCompleted
             ? 'border-green-700 bg-green-600'
             : task.status === TASK_STATUS.IN_PROGRESS

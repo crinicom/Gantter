@@ -104,7 +104,7 @@ export default function GanttView() {
         <h1 className="font-display text-xl font-semibold text-gray-800">Diagrama de Gantt</h1>
         <div className="flex items-center gap-4 text-xs text-gray-500">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-3 w-3 rounded bg-red-600" /> Crítica
+            <span className="inline-block h-3 w-3 rounded bg-critical" /> Crítica
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block h-3 w-3 rounded bg-forest-600" /> En progreso

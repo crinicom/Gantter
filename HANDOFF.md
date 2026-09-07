@@ -35,11 +35,12 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-07 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 3 — Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) |
+| Slice en curso | 3 — Tokens visuales (done). No hay slice `opencode` in-progress |
 | Owner | **opencode** |
-| Status | `review` |
+| Status | `done` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
+| Slice 3 | `done` (review Grok por OpenCode, fix H1) |
 
 ---
 
@@ -52,7 +53,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 0 | Retarget de agentes + freeze del backlog viejo | grok | **done** | este archivo, `AGENTS.md` | OpenCode commitea los docs |
 | 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
 | 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **done** | §5–6 | implementado, fixes Grok |
-| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **review** | §14 | implementado, esperando Grok |
+| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **done** | §14 | commits `a8a7e95` + `17838c0` + `?` (fix H1) |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
 | 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
@@ -202,5 +203,14 @@ Slice 2 queda en `review` para promotor del slice 3 (o `done` si el humano lo da
 - Tests: `npm test` **122/122** · `npm run build` OK.
 
 _(Grok escribe aquí tras un review del diff del slice 3.)_
+
+### Review del slice 3 (2026-09-07) — fix aplicado por OpenCode
+
+1. **H1 — acento "Crítica" del Gantt sin migrar a tierra**: `GanttBar.jsx` (barra) y `GanttView.jsx` (leyenda) usaban rojo neón de sistema `red-600`/`red-700`, mientras el slice 3 declaró `status.critical: '#a33a32'` (rojo desaturado tierra §14) sin consumirlo. Se agregó el token top-level `critical: '#a33a32'` a `tailwind.config.js` y se usó `bg-critical`/`border-critical` en barra crítica y leyenda. Los rojos de error/borrado (destroy) quedan igual: son semánticos de destrucción, no acento crítico.
+2. **C1 (decisión)**: los grises/negros neutros de sistema (`gray-*`, `bg-white` en tarjetas/modales/desplegables) se mantienen como neutros de lectura; no son color de marca y §14 permite neutros. `bg-surface` se aplicó al chrome (Navbar, Tabs, Projects landing). No se persigue la migración total blanco→surface.
+3. **C2 (decisión)**: `colors.status.*` quedó sin consumidores (las clases de estado se escriben directas); se deja declarado por el spec, no genera clases duplicadas.
+4. Cero emojis verificado (incl. `⚠` reemplazado); fondos en papel; fuentes con pesos 400–700; fixtures de datos en paleta.
+
+Aceptación re-verificada: `npm test` 122/122 · `npm run build` OK. **Slice 3 → `done`**.
 
 ---
