@@ -64,7 +64,7 @@ function CreateProjectModal({ open, onClose, onCreate }) {
 }
 
 export default function ProjectsLanding() {
-  const { projects, createProject, deleteProject, setProjectImage, openProject, useSampleData, closeProject } =
+  const { projects, createProject, deleteProject, setProjectImage, openProject, resetDemo, closeProject } =
     useProject();
   const { user, logout } = useAuth();
   const [creating, setCreating] = useState(false);
@@ -97,8 +97,8 @@ export default function ProjectsLanding() {
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <h1 className="text-xl font-semibold text-gray-800">Mis proyectos</h1>
           <div className="flex gap-2">
-            <Button variant="secondary" size="sm" onClick={useSampleData}>
-              <Sparkles size={16} /> Proyecto demo
+            <Button variant="secondary" size="sm" onClick={() => resetDemo()}>
+              <Sparkles size={16} /> Restaurar demo
             </Button>
             <Button size="sm" onClick={() => setCreating(true)}>
               <Plus size={16} /> Nuevo proyecto
@@ -110,11 +110,11 @@ export default function ProjectsLanding() {
           <div className="rounded-xl border border-dashed border-gray-300 bg-white p-10 text-center">
             <p className="text-sm text-gray-500">Aún no tienes proyectos.</p>
             <p className="mb-4 text-xs text-gray-400">
-              Crea uno nuevo o carga el proyecto de demostración.
+              Crea uno nuevo o restaura los proyectos de demostración.
             </p>
             <div className="flex justify-center gap-2">
-              <Button variant="secondary" size="sm" onClick={useSampleData}>
-                <Sparkles size={16} /> Proyecto demo
+              <Button variant="secondary" size="sm" onClick={() => resetDemo()}>
+                <Sparkles size={16} /> Restaurar demo
               </Button>
               <Button size="sm" onClick={() => setCreating(true)}>
                 <Plus size={16} /> Nuevo proyecto

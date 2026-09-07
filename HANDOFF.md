@@ -33,12 +33,12 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 
 | Campo | Valor |
 |---|---|
-| Fecha | 2026-09-06 |
+| Fecha | 2026-09-07 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | **1 — modelo + seed** |
+| Slice en curso | 1 — modelo + seed (en review) |
 | Owner | **opencode** |
-| Status | `in-progress` |
-| Slice 0 | `done` (docs; OpenCode commitea este paquete) |
+| Status | `review` |
+| Slice 0 | `done` (docs commitado por OpenCode) |
 
 ---
 
@@ -49,7 +49,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | # | Slice | Owner | Status | Spec | Entrega |
 |---|---|---|---|---|---|
 | 0 | Retarget de agentes + freeze del backlog viejo | grok | **done** | este archivo, `AGENTS.md` | OpenCode commitea los docs |
-| 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **in-progress** | §12–13, §15.1/9/10 | ver abajo |
+| 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **review** | §12–13, §15.1/9/10 | implementado, esperando Grok |
 | 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | pending | §5–6 | después de 1 |
 | 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | pending | §14 | un solo owner de CSS |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
@@ -146,6 +146,18 @@ Tocar: `src/services/projectStorage.js`, `src/models/*`, `DB/sample_data.json` (
 
 ## Punch list / notas
 
-_(Grok escribe aquí tras un review. Vacío = slice 1 todavía no revisado.)_
+Slice 1 implementado por OpenCode (2026-09-07). Notas para Grok:
+
+- **Adapter único** en `src/services/projectStorage.js`: `toDocument(runtime→canónico)` y `fromDocumentCanonical/normalizeProject` (canónico o legacy v2/v3 → runtime). Board/Gantt/context siguen consumiendo `buckets`/`tasks`/`assignedUser`; el documento persistido es canónico §12 (`columns`/`cards`/`assigneeIds[]`/`settings{applyMode,staleDays}` + `inquiries[]`/`actionLog[]`/`huddle`).
+- **Decisión humana**: fechas del seed **fijas en `DB/sample_data.json`** (hoy_ref ≈ 2026-09-05; stale ≈ 18d → lastActivityAt 2026-08-18; hito go-live → 2026-09-12). Sin builder dinámico.
+- **Decisión humana**: proyectos nuevos parten de **2 columnas** "Por hacer"/"En curso" (`createDefaultProject`). Asignación sin hardcode: `AssigneeSelector` lista los `members` del proyecto.
+- **Auto-seed al primer arranque** (`localStorageBackend.loadProjects`). Store vacío (`{}`) respeta borrados. `projectStoredVersion` → 4 (clave `v3` intacta).
+- **Identidad**: `ACTIVE_USER` = Lucía Ríos (`u_lucia`) en `constants/project.js`, usada por auth seed y migraciones.
+- `lastActivityAt` se pisa en addTask, updateTask (assign/fechas/bloqueo), moveTaskToBucket, addComment, toggleTaskCompleted y setTaskStatus ($§12: move, comentario, assign, fechas, bloqueo).
+- Reset demo disponible en Home ("Restaurar demo" → `resetDemo`). No hay panel de settings por proyecto todavía (slice 2+ lo dirá).
+- Aceptación verificada: seeds ≥2 y cartas §13 (con huecos), reset determinista, tests 109 verdes, build OK. La app en Fly (modo server) no se tocó.
+- MIRROR de cartas para review de Grok: 9+1 (incl. go-live), ver `src/services/__tests__/seed.test.js`.
+
+_(Grok escribe aquí tras un review. Punch list del diff pendiente.)_
 
 ---

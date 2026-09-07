@@ -10,7 +10,7 @@ const mocks = {
   createProject: vi.fn(),
   deleteProject: vi.fn(),
   setProjectImage: vi.fn(),
-  useSampleData: vi.fn(),
+  resetDemo: vi.fn(),
   closeProject: vi.fn(),
   logout: vi.fn(),
 };
@@ -28,7 +28,7 @@ const renderLanding = (projects) =>
           deleteProject: mocks.deleteProject,
           setProjectImage: mocks.setProjectImage,
           openProject: mocks.openProject,
-          useSampleData: mocks.useSampleData,
+          resetDemo: mocks.resetDemo,
           closeProject: mocks.closeProject,
         }}
       >

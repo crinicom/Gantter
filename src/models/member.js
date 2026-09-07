@@ -24,11 +24,22 @@ export function createInvitedMember({ name, email, invitedBy }) {
   };
 }
 
+// Iniciales humanas (v1): primera letra de las primeras dos palabras.
+export function initialsOf(name) {
+  const clean = (name || '').trim();
+  if (!clean) return '';
+  const words = clean.split(/\s+/).filter(Boolean);
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
 export function normalizeMember(member) {
+  const name = member?.name || '';
   return {
     id: member?.id ?? null,
-    name: member?.name || '',
+    name,
     email: member?.email || '',
+    initials: member?.initials || initialsOf(name),
     role: member?.role || MEMBER_ROLES.MEMBER,
     status: member?.status || MEMBER_STATUS.ACTIVE,
     invitedBy: member?.invitedBy ?? null,

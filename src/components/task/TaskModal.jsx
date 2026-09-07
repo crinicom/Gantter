@@ -185,6 +185,7 @@ export default function TaskModal({ open, task, onClose }) {
           <label className="mb-1 block text-xs text-gray-500">Asignado</label>
           <AssigneeSelector
             value={task.assignedUser}
+            members={project?.members || []}
             onChange={(member) => updateTask(task.id, { assignedUser: member })}
           />
         </div>

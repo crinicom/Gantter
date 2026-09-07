@@ -1,7 +1,9 @@
 import { v4 as uuidv4 } from 'uuid';
-import { deserializeProject, inferOwnerId } from './projectStorage';
+import { deserializeProject, inferOwnerId, toDocument } from './projectStorage';
 
-// Almacén v3: mapa de proyectos `{ [projectId]: Project }` en una sola clave.
+// Almacén v4: mapa de proyectos `{ [projectId]: DocumentoCanónico }` en una
+// sola clave. El documento persistido es canónico v1 (§12); al cargar se
+// normaliza a runtime (buckets/tasks).
 const STORAGE_KEY = 'gantter.projects.v3';
 const LEGACY_V2_KEY = 'gantter.project.v2';
 const LEGACY_V1_KEY = 'gantter.project.v1';
@@ -28,11 +30,23 @@ function migrateLegacy() {
 
   const project = deserializeProject(legacy);
   const id = project.id || uuidv4();
-  const migrated = { ...project, id, ownerId: inferOwnerId(project) || 'u_demo', coverSeed: project.coverSeed || id };
-  writeStore({ [id]: migrated });
+  const migrated = {
+    ...project,
+    id,
+    ownerId: inferOwnerId(project) || 'u_lucia',
+    coverSeed: project.coverSeed || id,
+  };
+  writeStore({ [id]: toDocument(migrated) });
   localStorage.removeItem(LEGACY_V2_KEY);
   localStorage.removeItem(LEGACY_V1_KEY);
   return migrated;
+}
+
+// Retorna los proyectos del seed (canónico §13) normalizados a runtime.
+export async function loadSeedProjects() {
+  const { default: raw } = await import('../../DB/sample_data.json');
+  const list = Array.isArray(raw?.projects) ? raw.projects : (raw ? [raw] : []);
+  return list.map((p) => deserializeProject(JSON.stringify(p)));
 }
 
 export const LocalBackend = {
@@ -41,17 +55,23 @@ export const LocalBackend = {
   async loadProjects() {
     const store = readRawStore();
     if (store) {
-      return Object.values(store).map((p) => deserializeProject(p));
+      return Object.values(store)
+        .filter((p) => p && p.id)
+        .map((p) => deserializeProject(p));
     }
     const migrated = migrateLegacy();
     if (migrated) return [migrated];
-    return [];
+    // First run: sembrar 2 proyectos demo y persistirlos para que Home y la
+    // persistencia arranquen con contenido (Board y Gantt no quedan en blanco).
+    const seeds = await loadSeedProjects();
+    writeStore(Object.fromEntries(seeds.map((s) => [s.id, toDocument(s)])));
+    return seeds;
   },
 
   async saveProject(project) {
     try {
       const store = readRawStore() || {};
-      store[project.id] = project;
+      if (project?.id) store[project.id] = toDocument(project);
       writeStore(store);
       return true;
     } catch {
@@ -72,8 +92,7 @@ export const LocalBackend = {
   },
 
   async loadSampleData() {
-    const raw = await import('../../DB/sample_data.json');
-    return deserializeProject(JSON.stringify(raw.default));
+    return loadSeedProjects();
   },
 };
 

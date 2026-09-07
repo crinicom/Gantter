@@ -3,7 +3,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import GanttView from '../GanttView';
 import { ProjectContext } from '../../../context/ProjectContext';
-import sample from '../../../../DB/sample_data.json';
+import seedRaw from '../../../../DB/sample_data.json';
+import { deserializeProject } from '../../../services/projectStorage';
+
+const seedProject = deserializeProject(JSON.stringify(seedRaw.projects[0]));
 
 function renderGantt(project) {
   const toggleBucketCollapse = vi.fn();
@@ -36,7 +39,7 @@ const cyclicProject = {
 
 describe('GanttView', () => {
   it('renderiza el diagrama con el proyecto sample sin lanzar errores', () => {
-    renderGantt(sample);
+    renderGantt(seedProject);
     expect(screen.getByText('Diagrama de Gantt')).toBeInTheDocument();
   });
 

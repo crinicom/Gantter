@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { User, X } from 'lucide-react';
 
-const MEMBER_SUGGESTIONS = [
-  { id: 'u_ana', name: 'Ana García', email: 'ana@local' },
-  { id: 'u_carlos', name: 'Carlos Pérez', email: 'carlos@local' },
-  { id: 'u_lucia', name: 'Lucía Fernández', email: 'lucia@local' },
-];
-
-export default function AssigneeSelector({ value, onChange }) {
+export default function AssigneeSelector({ value, onChange, members = [] }) {
   const [showPicker, setShowPicker] = useState(false);
 
   const assign = (member) => {
@@ -44,11 +38,14 @@ export default function AssigneeSelector({ value, onChange }) {
 
       {showPicker && !value && (
         <div className="absolute z-10 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg">
-          {MEMBER_SUGGESTIONS.map((member) => (
+          {members.length === 0 && (
+            <div className="px-3 py-2 text-sm text-gray-400">Sin miembros para asignar</div>
+          )}
+          {members.map((member) => (
             <button
               key={member.id}
               type="button"
-              onClick={() => assign(member)}
+              onClick={() => assign({ id: member.id, name: member.name, email: member.email })}
               className="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-violet-50"
             >
               {member.name}

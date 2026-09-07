@@ -1,19 +1,16 @@
 import { hasGoogleCredentials, isServerMode } from '../config/appConfig';
+import { ACTIVE_USER } from '../constants/project';
 
-const MOCK_USER = {
-  id: 'u_demo',
-  name: 'Usuario demo',
-  email: 'demo@local',
-  picture: null,
-};
+const MOCK_USER = ACTIVE_USER;
 
 // Catálogo de identidades disponibles para simular el uso simultáneo:
-// cada pestaña puede "entrar como" un usuario distinto.
+// cada pestaña puede "entrar como" un usuario distinto. Alineado con el seed.
 export const DEFAULT_COLLAB_USERS = [
-  MOCK_USER,
-  { id: 'u_ana', name: 'Ana García', email: 'ana@local', picture: null },
-  { id: 'u_carlos', name: 'Carlos Pérez', email: 'carlos@local', picture: null },
-  { id: 'u_lucia', name: 'Lucía Fernández', email: 'lucia@local', picture: null },
+  ACTIVE_USER,
+  { id: 'u_martin', name: 'Martín Vega', email: 'martin@rio.local', picture: null },
+  { id: 'u_ana', name: 'Ana Soler', email: 'ana@rio.local', picture: null },
+  { id: 'u_sofia', name: 'Sofía Chen', email: 'sofia@rio.local', picture: null },
+  { id: 'u_diego', name: 'Diego Palacios', email: 'diego@rio.local', picture: null },
 ];
 
 // sessionStorage: cada pestaña mantiene su propia identidad (una pestaña = un

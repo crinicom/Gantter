@@ -12,7 +12,7 @@ import { getBackend } from '../services/storage';
 import { RealtimeService } from '../services/realtimeService';
 import { ServerRealtime } from '../services/serverRealtime';
 import { InviteService } from '../services/inviteService';
-import { createProject, deserializeProject } from '../services/projectStorage';
+import { createProject } from '../services/projectStorage';
 import { isServerMode } from '../config/appConfig';
 
 export const ProjectContext = createContext(null);
@@ -280,51 +280,59 @@ export const ProjectProvider = ({ children }) => {
     [applyToStore, persist],
   );
 
-  const useSampleData = useCallback(() => {
-    (async () => {
+  // Persiste en lote los proyectos dados (para el reset local).
+  const persistTeam = useCallback(async (map) => {
+    const values = Object.values(map || {});
+    for (const p of values) {
       try {
-        const { default: raw } = await import('../../DB/sample_data.json');
-        const sample = deserializeProject(JSON.stringify(raw));
-        const owner = userRef.current;
-        const doc = createProject({
-          name: sample.name || 'Proyecto demo',
-          description: sample.description || '',
-          owner,
-        });
-        doc.buckets = sample.buckets || [];
-        doc.tasks = sample.tasks || [];
-        doc.members = [
-          doc.members[0],
-          ...(sample.members || [])
-            .filter((m) => m.id !== owner?.id)
-            .map((m) => (m.role === MEMBER_ROLES.OWNER ? { ...m, role: MEMBER_ROLES.MEMBER } : m)),
-        ].filter(Boolean);
+        await backendRef.current.saveProject(p);
+      } catch {
+        // Best-effort: si un guardado falla seguimos con el resto.
+      }
+    }
+  }, []);
 
-        if (isServerMode()) {
+  const resetDemo = useCallback(async () => {
+    try {
+      const { loadSeedProjects } = await import('../services/localStorageBackend');
+      const seeds = await loadSeedProjects();
+
+      if (isServerMode()) {
+        // Best-effort: crea los proyectos seed vía el backend existente.
+        for (const seed of seeds) {
+          const existing = Object.values(storeRef.current).find((p) => p.id === seed.id);
+          if (existing) continue;
           const created = await backendRef.current.createProject({
-            name: doc.name,
-            description: doc.description,
+            name: seed.name,
+            description: seed.description,
           });
-          if (!created) return;
-          created.buckets = doc.buckets;
-          created.tasks = doc.tasks;
-          created.members = [{ ...(created.members[0] || owner), role: MEMBER_ROLES.OWNER }];
+          if (!created) continue;
+          created.buckets = seed.buckets;
+          created.tasks = seed.tasks;
+          created.columns = seed.columns;
+          created.cards = seed.cards;
+          created.members = seed.members.map((m) =>
+            m.role === MEMBER_ROLES.OWNER ? { ...m, role: MEMBER_ROLES.OWNER } : m,
+          );
           await backendRef.current.saveProject(created);
           const map = { ...storeRef.current, [created.id]: created };
           storeRef.current = map;
           setStore(map);
-          openProject(created.id);
-          return;
         }
-
-        applyToStore(doc.id, doc);
-        void persist(doc);
-        openProject(doc.id);
-      } catch (err) {
-        setError(err.message || 'No se pudo cargar la muestra');
+        return;
       }
-    })();
-  }, [applyToStore, persist, openProject]);
+
+      const map = { ...storeRef.current };
+      for (const seed of seeds) {
+        map[seed.id] = seed;
+      }
+      storeRef.current = map;
+      setStore(map);
+      void persistTeam(map);
+    } catch (err) {
+      setError(err.message || 'No se pudo restablecer la demo');
+    }
+  }, [persistTeam]);
 
   // ---- Project metadata ----
   const renameProject = useCallback(
@@ -404,6 +412,7 @@ export const ProjectProvider = ({ children }) => {
       const task = { ...createEmptyTask(bucketId), ...(partial || {}) };
       if (!task.name) return;
       task.name = task.name.trim();
+      if (!task.lastActivityAt) task.lastActivityAt = new Date().toISOString();
       commitToStore((prev) => ({ ...prev, tasks: [...prev.tasks, task] }));
     },
     [commitToStore],
@@ -415,7 +424,12 @@ export const ProjectProvider = ({ children }) => {
         ...prev,
         tasks: prev.tasks.map((task) =>
           task.id === taskId
-            ? { ...task, ...patch, updatedAt: new Date().toISOString() }
+            ? {
+                ...task,
+                ...patch,
+                updatedAt: new Date().toISOString(),
+                lastActivityAt: new Date().toISOString(),
+              }
             : task,
         ),
       }));
@@ -456,7 +470,11 @@ export const ProjectProvider = ({ children }) => {
     (taskId, bucketId) => {
       commitToStore((prev) => ({
         ...prev,
-        tasks: prev.tasks.map((t) => (t.id === taskId ? { ...t, bucketId } : t)),
+        tasks: prev.tasks.map((t) =>
+          t.id === taskId
+            ? { ...t, bucketId, lastActivityAt: new Date().toISOString() }
+            : t,
+        ),
       }));
     },
     [commitToStore],
@@ -483,6 +501,7 @@ export const ProjectProvider = ({ children }) => {
                   status: newStatus,
                   progress: newStatus === TASK_STATUS.COMPLETED ? 100 : t.progress,
                   updatedAt: new Date().toISOString(),
+                  lastActivityAt: new Date().toISOString(),
                 }
               : t,
           ),
@@ -513,6 +532,7 @@ export const ProjectProvider = ({ children }) => {
                   status,
                   progress: status === TASK_STATUS.COMPLETED ? 100 : t.progress,
                   updatedAt: new Date().toISOString(),
+                  lastActivityAt: new Date().toISOString(),
                 }
               : t,
           ),
@@ -539,7 +559,12 @@ export const ProjectProvider = ({ children }) => {
         ...prev,
         tasks: prev.tasks.map((t) =>
           t.id === taskId
-            ? { ...t, comments: [...(t.comments || []), comment], updatedAt: new Date().toISOString() }
+            ? {
+                ...t,
+                comments: [...(t.comments || []), comment],
+                updatedAt: new Date().toISOString(),
+                lastActivityAt: new Date().toISOString(),
+              }
             : t,
         ),
       }));
@@ -662,7 +687,7 @@ export const ProjectProvider = ({ children }) => {
       createProject: createNewProject,
       deleteProject,
       setProjectImage,
-      useSampleData,
+      resetDemo,
       renameProject,
       addBucket,
       renameBucket,
@@ -700,7 +725,7 @@ export const ProjectProvider = ({ children }) => {
       createNewProject,
       deleteProject,
       setProjectImage,
-      useSampleData,
+      resetDemo,
       renameProject,
       addBucket,
       renameBucket,
