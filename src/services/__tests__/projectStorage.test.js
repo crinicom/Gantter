@@ -183,7 +183,8 @@ describe('projectStorage', () => {
     const p = normalizeProject({ name: 'X' });
     expect(p.buckets.map((b) => b.name)).toEqual(['Por hacer', 'En curso']);
     expect(p.tasks).toEqual([]);
-    expect(p.ownerId).toBeNull();
+    // Sin rastro de owner, cae en la identidad v1 (Lucía) para no perder visibilidad.
+    expect(p.ownerId).toBe('u_lucia');
     expect(p.image).toBeNull();
     expect(p.createdAt).toBeTruthy();
   });

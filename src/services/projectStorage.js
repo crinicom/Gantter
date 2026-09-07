@@ -3,6 +3,7 @@ import {
   DEFAULT_PROJECT_NAME,
   PROJECT_SETTINGS_DEFAULTS,
   DEFAULT_PROJECT_COLUMNS,
+  ACTIVE_USER,
 } from '../constants/project';
 import { normalizeBucket } from '../models/bucket';
 import { normalizeMember, MEMBER_ROLES, MEMBER_STATUS } from '../models/member';
@@ -123,10 +124,21 @@ export function createProject({ name, description = '', owner }) {
 }
 
 // Deduce el owner de un documento legado (miembro con rol owner o el campo ownerId).
+// Si no hay rastro de owner, la identidad v1 (Lucía) es el default para que el
+// proyecto siga siendo visible al entrar.
 export function inferOwnerId(project) {
   if (project?.ownerId) return project.ownerId;
   const owner = (project?.members || []).find((m) => m.role === MEMBER_ROLES.OWNER);
   return owner?.id || null;
+}
+
+// Identidades demo de versiones anteriores: v1 tiene una sola identidad activa
+// (Lucía), así que un owner viejo/de autenticación antigua queda bajo ella.
+const LEGACY_OWNER_ALIASES = { u_demo: ACTIVE_USER.id };
+
+function resolveOwnerId(project) {
+  const explicit = project?.ownerId || inferOwnerId(project);
+  return LEGACY_OWNER_ALIASES[explicit] || explicit || ACTIVE_USER.id;
 }
 
 // --- Adaptadores canónico <-> runtime ---
@@ -194,7 +206,7 @@ function fromDocumentCanonical(project) {
       typeof project.version === 'number' && project.version >= 0
         ? Math.floor(project.version)
         : 0,
-    ownerId: project.ownerId || inferOwnerId(project) || null,
+    ownerId: resolveOwnerId(project),
     members: Array.isArray(project.members)
       ? project.members.map(normalizeMember)
       : [],
@@ -234,7 +246,7 @@ export function toDocument(runtime) {
     summary: p.summary || p.description || '',
     version:
       typeof p.version === 'number' && p.version >= 0 ? Math.floor(p.version) : 0,
-    ownerId: p.ownerId || inferOwnerId(p) || null,
+    ownerId: resolveOwnerId(p),
     members: Array.isArray(p.members) ? p.members.map(normalizeMember) : [],
     image: p.image ?? null,
     coverSeed: p.coverSeed || p.id || null,
@@ -296,7 +308,7 @@ export function normalizeProject(raw) {
       typeof project.version === 'number' && project.version >= 0
         ? Math.floor(project.version)
         : 0,
-    ownerId: project.ownerId || null,
+    ownerId: resolveOwnerId(project),
     image: typeof project.image === 'string' && project.image ? project.image : null,
     coverSeed:
       typeof project.coverSeed === 'string' && project.coverSeed

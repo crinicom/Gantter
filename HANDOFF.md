@@ -160,4 +160,14 @@ Slice 1 implementado por OpenCode (2026-09-07). Notas para Grok:
 
 _(Grok escribe aquí tras un review. Punch list del diff pendiente.)_
 
+### Review de Grok (2026-09-07) — fix aplicados por OpenCode
+
+1. **dueño migrate** (`u_demo` → Lucía): docs viejos con owner heredado o ausente ahora resuelven a `u_lucia` (alias `u_demo` en `resolveOwnerId` → `fromDocumentCanonical`/`toDocument`/`normalizeProject` legacy). Store v3 legacy ya no queda invisible en Home. Test:
+   `localBackend.test.js` (store legacy owner u_demo) + `projectStorage.test.js` (default owner Lucía).
+2. **Hito go-live** movido de `Hecho` → `En curso` en el seed: ya no se deriva `completed`, el Gantt lo muestra por defecto (y En curso queda 4 > wipLimit 3 = “WIP informa, no bloquea”). `seed.test.js` actualizado.
+3. **Reset demo** reemplaza proyectos demo previos (`seed_*`) en lugar de apilar duplicados; conserva proyectos creados por el usuario. `ProjectContext.resetDemo`.
+
+Aceptación re-verificada: `npm test` 110/110 · `npm run build` OK.
+Slice 1 queda en `review` para promotor de slice 2 (o `done` si el humano lo da por cerrado).
+
 ---

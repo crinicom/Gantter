@@ -12,7 +12,7 @@ const MIRROR = [
   { title: 'Copy legal de reembolsos', assignee: null, column: 'Backlog', thin: true, noDates: true },
   { title: 'Fix timeout 3DS', assignee: 'u_ana', column: 'Hecho' },
   { title: 'Documentar API pública', assignee: 'u_lucia', column: 'Listo', thin: true, noDates: true },
-  { title: 'Go-live portal', assignee: 'u_lucia', column: 'Hecho', hito: true },
+  { title: 'Go-live portal', assignee: 'u_lucia', column: 'En curso', hito: true },
 ];
 
 function cardByTitle(project, title) {

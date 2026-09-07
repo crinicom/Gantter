@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from 'uuid';
-import { deserializeProject, inferOwnerId, toDocument } from './projectStorage';
+import { deserializeProject, toDocument } from './projectStorage';
 
 // Almacén v4: mapa de proyectos `{ [projectId]: DocumentoCanónico }` en una
 // sola clave. El documento persistido es canónico v1 (§12); al cargar se
@@ -33,7 +33,7 @@ function migrateLegacy() {
   const migrated = {
     ...project,
     id,
-    ownerId: inferOwnerId(project) || 'u_lucia',
+    // el owner ya quedó resuelto por deserializeProject (identidad v1: Lucía).
     coverSeed: project.coverSeed || id,
   };
   writeStore({ [id]: toDocument(migrated) });

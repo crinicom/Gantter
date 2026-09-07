@@ -75,7 +75,8 @@ describe('LocalBackend', () => {
     expect(first).toHaveLength(1);
     const migrated = first[0];
     expect(migrated.name).toBe('Legacy');
-    expect(migrated.ownerId).toBe('u_demo');
+    // El owner demo viejo se asimila a la identidad v1 (Lucía) para no perder visibilidad.
+    expect(migrated.ownerId).toBe('u_lucia');
     expect(migrated.id).toBeTruthy();
     expect(migrated.buckets).toHaveLength(1);
 
@@ -88,6 +89,33 @@ describe('LocalBackend', () => {
     localStorage.setItem('gantter.project.v1', JSON.stringify({ name: 'Viejo', buckets: [], tasks: [] }));
     const [migrated] = await LocalBackend.loadProjects();
     expect(migrated.ownerId).toBe('u_lucia');
+  });
+
+  it('un store legacy v4 con owner u_demo queda visible para Lucía', async () => {
+    const legacy = {
+      id: 'old-demo',
+      name: 'Portal viejo',
+      buckets: [{ id: 'b1', name: 'Hecho', color: '#123' }],
+      tasks: [
+        {
+          id: 't1',
+          name: 'Tarea vieja',
+          bucketId: 'b1',
+          assignedUser: { id: 'u_demo', name: 'Usuario demo', email: 'demo@local' },
+          comments: [],
+          precedents: [],
+          dependents: [],
+        },
+      ],
+      members: [{ id: 'u_demo', name: 'Usuario demo', email: 'demo@local', role: 'owner', status: 'active' }],
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ 'old-demo': legacy }));
+
+    const [loaded] = await LocalBackend.loadProjects();
+    expect(loaded.id).toBe('old-demo');
+    expect(loaded.ownerId).toBe('u_lucia');
+    expect(loaded.buckets).toHaveLength(1);
+    expect(loaded.tasks).toHaveLength(1);
   });
 
   it('STORAGE_KEY apunta a v3', () => {

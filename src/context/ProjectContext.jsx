@@ -323,6 +323,11 @@ export const ProjectProvider = ({ children }) => {
       }
 
       const map = { ...storeRef.current };
+      // Remplaza los proyectos demo previos (ids `seed_*`) pero conserva los
+      // proyectos creados por el usuario, para que el reset no borre trabajo.
+      for (const id of Object.keys(map)) {
+        if (typeof id === 'string' && id.startsWith('seed_')) delete map[id];
+      }
       for (const seed of seeds) {
         map[seed.id] = seed;
       }

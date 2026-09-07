@@ -162,7 +162,7 @@
           "id": "card_go_live",
           "title": "Go-live portal",
           "description": "Hito de entrega del portal.",
-          "columnId": "c_hecho",
+          "columnId": "c_curso",
           "assigneeIds": ["u_lucia"],
           "startDate": "2026-09-12",
           "endDate": "2026-09-12",
