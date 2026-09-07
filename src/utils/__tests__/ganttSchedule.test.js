@@ -30,6 +30,13 @@ describe('ganttSchedule', () => {
     expect(list.map((t) => t.id)).toEqual(['t4', 't5']);
   });
 
+  it('una carta con solo fin cae en Sin fechas y no genera overlap ni barra', () => {
+    const partial = [{ id: 't6', name: 'Media fecha', assignedUsers: [lucia], startDate: null, endDate: '2026-09-10' }];
+    expect(tasksWithoutDates(partial).map((t) => t.id)).toEqual(['t6']);
+    expect(findOverlaps(partial).byTask.t6).toBeUndefined();
+    expect(milestones(partial)).toEqual([]);
+  });
+
   it('milestones expone solo los hitos con fecha', () => {
     expect(milestones(tasks).map((t) => t.id)).toEqual(['t3']);
   });

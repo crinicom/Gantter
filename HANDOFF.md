@@ -179,6 +179,15 @@ Slice 1 queda en `review` para promotor de slice 2 (o `done` si el humano lo da 
 - **Además**: mantiene CPM/arrows, "mostrar finalizadas", colapso de grupos, drag&drop de buckets como antes.
 - Tests: `npm test` **119/119** · `npm run build` OK. Nuevo `src/utils/__tests__/ganttSchedule.test.js`; `GanttView.test.jsx` chequea canal Sin fechas, overlap ≥2 e hito; `projectStorage.test.js` cubre multi + blocked + milestone round-trip y legacy single→multi; `seed.test.js` valida el hito multi.
 
-_(Grok escribe aquí tras un review del diff del slice 2.)_
+### Review del slice 2 (2026-09-07) — fix aplicados por OpenCode
+
+1. **Import muerto**: `clampProgress` sin uso en `ganttSchedule.js` eliminado.
+2. **Fechas parciales** (solo inicio o solo fin, posibles desde el modal): antes esas cartas desaparecían del Gantt. Ahora el canal **Sin fechas** captura cualquier carta sin rango completo (`!(startDate && endDate)`) y `GanttBar` solo dibuja barra si existen ambas fechas (§6 “no se inventa una barra”). Test en `ganttSchedule.test.js` (solo fin → Sin fechas, sin overlap).
+3. **Test WIP**: `BucketColumn.test.jsx` (nuevo) verifica el badge `n/límite` y el estado ámbar al excederlo; sin `wipLimit` no aparece.
+4. **Nota**: el badge WIP cuenta todas las cartas del bucket (incluye finalizadas ocultas). Informativo, se deja así; el WIP nunca bloquea el drop.
+5. **Alcance asumido**: `findOverlaps` marca overlap si un hito (mismo día) coincide con otra barra del responsable; aceptado como edge.
+
+Aceptación re-verificada: `npm test` 122/122 · `npm run build` OK.
+Slice 2 queda en `review` para promotor del slice 3 (o `done` si el humano lo da por cerrado).
 
 ---

@@ -1,5 +1,3 @@
-import { clampProgress } from './progress';
-
 // Utilidades de programación para el Gantt (§6): solapamientos de responsables,
 // cartas sin fechas e hitos.
 
@@ -47,9 +45,10 @@ export function findOverlaps(tasks) {
 
 export const NO_DATES_GROUP_ID = '__sin-fechas__';
 
-// Cartas sin rango de fechas (viven en el canal "Sin fechas", no se inventa barra).
+// Cartas sin rango completo (les falta inicio o fin): viven en el canal "Sin
+// fechas", no se inventa una barra (§6).
 export function tasksWithoutDates(tasks) {
-  return (tasks || []).filter((t) => !t.startDate && !t.endDate);
+  return (tasks || []).filter((t) => !(t.startDate && t.endDate));
 }
 
 // Hitos marcados (§6: se ven en el header del timeline).

@@ -5,8 +5,8 @@ import { TASK_STATUS } from '../../constants/project';
 import { clampProgress } from '../../utils/progress';
 
 export default function GanttBar({ task, startDate, isCritical, overlapped = false }) {
-  // Las cartas sin fechas viven en el canal "Sin fechas"; no se dibuja una barra.
-  if (!task.startDate && !task.endDate) return null;
+  // Las cartas sin rango completo viven en el canal "Sin fechas"; no se dibuja una barra.
+  if (!task.startDate || !task.endDate) return null;
 
   const isCompleted = task.status === TASK_STATUS.COMPLETED;
   const progress = clampProgress(task.progress);
