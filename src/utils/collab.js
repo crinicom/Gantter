@@ -65,6 +65,21 @@ function canonicalJson(value) {
  * Fusiona el documento local con uno remoto (entidad por entidad).
  * @returns {{ project: object, conflicts: Array<{kind,id,name}> }}
  */
+// Campos de estado de Maie y metadatos que no se fusionan entidad por entidad:
+// se conserva la versión más reciente del documento (LWW simple). Evita perder
+// inquiries/actionLog/settings en un merge realtime.
+const DOC_FIELDS = [
+  'ownerId',
+  'teamName',
+  'summary',
+  'image',
+  'coverSeed',
+  'inquiries',
+  'actionLog',
+  'huddle',
+  'settings',
+];
+
 export function mergeProjects(local, remote) {
   const conflicts = [];
   const merged = {
@@ -79,5 +94,9 @@ export function mergeProjects(local, remote) {
     tasks: mergeEntities(local.tasks, remote.tasks, 'id', 'task', conflicts),
     members: mergeEntities(local.members, remote.members, 'id', 'member', conflicts),
   };
+  DOC_FIELDS.forEach((key) => {
+    merged[key] =
+      ts(remote) >= ts(local) ? (remote[key] ?? local[key]) : (local[key] ?? remote[key]);
+  });
   return { project: merged, conflicts };
 }

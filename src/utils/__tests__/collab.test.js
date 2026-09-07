@@ -93,4 +93,36 @@ describe('mergeProjects', () => {
     const { project } = mergeProjects(first, remote);
     expect(sameProjectAs(project, first)).toBe(true);
   });
+
+  it('conserva el estado de Maie del documento más reciente (inquiries/actionLog/settings)', () => {
+    const local = {
+      ...baseProject,
+      updatedAt: '2026-09-01T12:00:00.000Z',
+      inquiries: [{ id: 'q1' }],
+      actionLog: [{ id: 'L1' }],
+      settings: { applyMode: 'confirm', staleDays: 15 },
+    };
+    const remote = {
+      ...baseProject,
+      updatedAt: '2026-09-02T12:00:00.000Z',
+      inquiries: [{ id: 'q2' }],
+      actionLog: [{ id: 'L2' }],
+      settings: { applyMode: 'auto', staleDays: 7 },
+      huddle: { recordedAt: '2026-09-02T12:00:00.000Z' },
+    };
+    const { project } = mergeProjects(local, remote);
+    expect(project.inquiries).toEqual([{ id: 'q2' }]);
+    expect(project.actionLog).toEqual([{ id: 'L2' }]);
+    expect(project.settings.applyMode).toBe('auto');
+    expect(project.huddle.recordedAt).toBe('2026-09-02T12:00:00.000Z');
+  });
+
+  it('conserva metadatos (teamName/summary/image/coverSeed/ownerId) sin perderlos', () => {
+    const local = { ...baseProject, ownerId: 'u_lucia', teamName: 'Equipo Río' };
+    const remote = { ...baseProject, ownerId: 'u_lucia', teamName: 'Equipo Río', summary: 'Demo' };
+    const { project } = mergeProjects(local, remote);
+    expect(project.ownerId).toBe('u_lucia');
+    expect(project.teamName).toBe('Equipo Río');
+    expect(project.summary).toBe('Demo');
+  });
 });

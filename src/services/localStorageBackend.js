@@ -1,5 +1,10 @@
 import { v4 as uuidv4 } from 'uuid';
 import { deserializeProject, toDocument } from './projectStorage';
+import { reanchorSeedDates } from '../utils/seedAnchoring';
+
+// El template del seed es estático; al sembrar se ancla el hito go-live a ~7
+// días de hoy para que stale/overlap/missing-date del demo sigan vivos.
+const SEED_ANCHOR = { anchorCardId: 'card_go_live', daysAhead: 7 };
 
 // Almacén v4: mapa de proyectos `{ [projectId]: DocumentoCanónico }` en una
 // sola clave. El documento persistido es canónico v1 (§12); al cargar se
@@ -46,7 +51,7 @@ function migrateLegacy() {
 export async function loadSeedProjects() {
   const { default: raw } = await import('../../DB/sample_data.json');
   const list = Array.isArray(raw?.projects) ? raw.projects : (raw ? [raw] : []);
-  return list.map((p) => deserializeProject(JSON.stringify(p)));
+  return list.map((p) => deserializeProject(JSON.stringify(reanchorSeedDates(p, SEED_ANCHOR))));
 }
 
 export const LocalBackend = {

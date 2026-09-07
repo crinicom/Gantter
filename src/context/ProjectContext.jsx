@@ -664,6 +664,24 @@ export const ProjectProvider = ({ children }) => {
     setCollabNotice(null);
   }, []);
 
+  // Aplica un mutador arbitrario al proyecto activo y persiste. Es la puerta
+  // de datos que usan otros contextos (p. ej. Maie) sin tomar control del store.
+  const mutateProject = useCallback(
+    (mutator, opts) => commitToStore(mutator, opts),
+    [commitToStore],
+  );
+
+  // Persiste un ajuste del proyecto (applyMode/staleDays).
+  const setSettings = useCallback(
+    (patch) => {
+      commitToStore((prev) => ({
+        ...prev,
+        settings: { ...(prev.settings || {}), ...patch },
+      }));
+    },
+    [commitToStore],
+  );
+
   const projects = useMemo(() => {
     const list = Object.values(store || {});
     return visibleProjects(list, user).sort((a, b) =>
@@ -680,13 +698,16 @@ export const ProjectProvider = ({ children }) => {
       isLoading,
       syncStatus,
       lastSyncAt,
-      error,
+error,
       collabNotice,
       backend,
-      setError,
       clearCollabNotice,
+      mutateProject,
+      setSettings,
       reload,
       persist,
+      mutateProject,
+      setSettings,
       openProject,
       closeProject,
       createProject: createNewProject,
@@ -751,6 +772,8 @@ export const ProjectProvider = ({ children }) => {
       acceptInvite,
       revokeMember,
       clearCollabNotice,
+      mutateProject,
+      setSettings,
     ],
   );
 

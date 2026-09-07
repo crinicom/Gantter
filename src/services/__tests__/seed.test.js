@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { addDays, differenceInCalendarDays, parseISO } from 'date-fns';
 import { loadSeedProjects } from '../localStorageBackend';
 import seedRaw from '../../../DB/sample_data.json';
 
@@ -128,5 +129,25 @@ describe('seed demo (DB/sample_data.json)', () => {
         settings: x.settings,
       }));
     expect(JSON.stringify(stable(a))).toBe(JSON.stringify(stable(b)));
+  });
+
+  it('al sembrar, el hito go-live queda anclado a hoy + 7 días (seed relativo)', async () => {
+    const [portal] = await loadSeedProjects();
+    const rawPortal = seedRaw.projects.find((p) => p.id === 'seed_portal');
+    const goLive = portal.cards.find((c) => c.title === 'Go-live portal');
+
+    // Máximo ±1 día de diferencia por el guard de la medianoche del test.
+    const distance = Math.abs(
+      differenceInCalendarDays(parseISO(goLive.endDate), addDays(new Date(), 7)),
+    );
+    expect(distance).toBeLessThanOrEqual(1);
+
+    // El modelo no se re-ancla en cada load: solo la primera vez contra el template.
+    const stale = portal.cards.find((c) => c.title === 'Rediseñar onboarding');
+    const rawStale = rawPortal.cards.find((c) => c.title === 'Rediseñar onboarding');
+    const rawGoLive = rawPortal.cards.find((c) => c.title === 'Go-live portal');
+    const rawGap = differenceInCalendarDays(parseISO(rawGoLive.endDate), parseISO(rawStale.lastActivityAt));
+    const newGap = differenceInCalendarDays(parseISO(goLive.endDate), parseISO(stale.lastActivityAt));
+    expect(newGap).toBe(rawGap);
   });
 });
