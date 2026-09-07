@@ -35,10 +35,11 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-07 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 2 — Board/Gantt (en review) |
+| Slice en curso | 3 — Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) |
 | Owner | **opencode** |
-| Status | `review` |
+| Status | `in-progress` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
+| Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 
 ---
 
@@ -50,8 +51,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 |---|---|---|---|---|---|
 | 0 | Retarget de agentes + freeze del backlog viejo | grok | **done** | este archivo, `AGENTS.md` | OpenCode commitea los docs |
 | 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
-| 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **review** | §5–6 | implementado, esperando Grok |
-| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | pending | §14 | un solo owner de CSS |
+| 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **done** | §5–6 | implementado, fixes Grok |
+| 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | `in-progress` | §14 | tokens visuales (§14): ajuste paleta, tipografía, cero emoji |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
 | 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
