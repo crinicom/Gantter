@@ -2,10 +2,11 @@ import React from 'react';
 import clsx from 'clsx';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { MessageSquare, CalendarDays, User } from 'lucide-react';
+import { MessageSquare, CalendarDays } from 'lucide-react';
 import Checkbox from '../common/Checkbox';
 import { TASK_STATUS, STATUS_LABELS } from '../../constants/project';
 import { formatISODate } from '../../utils/dateUtils';
+import { initialsOf } from '../../models/member';
 import { clampProgress } from '../../utils/progress';
 import { useProject } from '../../hooks/useProject';
 
@@ -42,6 +43,7 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
         'group mb-2 cursor-grab rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md',
         isDragging && 'opacity-50',
         isCompleted && 'bg-gray-50 opacity-70',
+        task.blocked && 'border-l-4 border-l-red-500',
       )}
       onClick={() => onOpen(task)}
     >
@@ -90,10 +92,25 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
             {formatISODate(task.startDate)} → {formatISODate(task.endDate)}
           </span>
         )}
-        {task.assignedUser && (
-          <span className="flex items-center gap-1">
-            <User size={12} />
-            {task.assignedUser.name}
+        <span className="flex items-center gap-1.5">
+          {(task.assignedUsers || []).slice(0, 3).map((user) => (
+            <span
+              key={user.id}
+              className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-200 text-[10px] font-semibold text-gray-600"
+              title={user.name}
+            >
+              {initialsOf(user.name)}
+            </span>
+          ))}
+          {(task.assignedUsers || []).length > 3 && (
+            <span className="text-[10px] text-gray-400">
+              +{(task.assignedUsers || []).length - 3}
+            </span>
+          )}
+        </span>
+        {task.blocked && (
+          <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+            bloqueada
           </span>
         )}
         {task.comments?.length > 0 && (

@@ -11,6 +11,12 @@ import { calculateCpmMap } from '../../utils/cpm';
 import { isTaskCompleted } from '../../models/task';
 import { bucketProgress } from '../../utils/progress';
 import { projectStartDate, projectEndDate, GANTT } from './ganttLayout';
+import {
+  findOverlaps,
+  tasksWithoutDates,
+  milestones,
+  NO_DATES_GROUP_ID,
+} from '../../utils/ganttSchedule';
 
 const NAME_COLUMN_WIDTH = 192;
 
@@ -29,6 +35,8 @@ export default function GanttView() {
   const endDate = useMemo(() => projectEndDate(project, startDate), [project, startDate]);
 
   const cpmMap = useMemo(() => calculateCpmMap(tasks), [tasks]);
+  const overlap = useMemo(() => findOverlaps(tasks), [tasks]);
+  const milestoneList = useMemo(() => milestones(tasks), [tasks]);
 
   const visibleTasks = useMemo(
     () => (showCompletedTasks ? tasks : tasks.filter((t) => !isTaskCompleted(t))),
@@ -38,14 +46,23 @@ export default function GanttView() {
   const totalDays = Math.ceil((endDate - startDate) / 86400000);
   const chartWidth = Math.max(400, totalDays * GANTT.DAY_WIDTH);
 
-  // Construir filas visibles por bucket (incluyendo cabeceras de grupo).
+  // Construir filas visibles por bucket (incluyendo cabeceras de grupo). Las
+  // cartas sin fechas viven en su propio canal "Sin fechas" (§6), no se inventa
+  // una barra.
   const rows = useMemo(() => {
     const rows = [];
     const rowIndexById = {};
     buckets.forEach((bucket) => {
-      const bucketTasks = visibleTasks.filter((t) => t.bucketId === bucket.id);
+      const bucketTasks = visibleTasks.filter(
+        (t) => t.bucketId === bucket.id && t.startDate && t.endDate,
+      );
       if (bucketTasks.length === 0) return;
-      rows.push({ type: 'group', bucket, progress: bucketProgress(tasks, bucket.id) });
+      rows.push({
+        type: 'group',
+        bucket,
+        taskCount: bucketTasks.length,
+        progress: bucketProgress(tasks, bucket.id),
+      });
       if (!bucket.collapsed) {
         bucketTasks.forEach((task) => {
           rowIndexById[task.id] = rows.length;
@@ -53,6 +70,20 @@ export default function GanttView() {
         });
       }
     });
+
+    const nodate = tasksWithoutDates(visibleTasks);
+    if (nodate.length > 0) {
+      rows.push({
+        type: 'group',
+        taskCount: nodate.length,
+        progress: 0,
+        bucket: { id: NO_DATES_GROUP_ID, name: 'Sin fechas', color: '#9ca3af', collapsed: false },
+      });
+      nodate.forEach((task) => {
+        rowIndexById[task.id] = rows.length;
+        rows.push({ type: 'task', task });
+      });
+    }
     return { rows, rowIndexById };
   }, [buckets, visibleTasks, tasks]);
 
@@ -94,7 +125,7 @@ export default function GanttView() {
         <div className="flex">
           <div className="shrink-0 border-r border-gray-200" style={{ width: NAME_COLUMN_WIDTH }} />
           <div style={{ width: chartWidth }}>
-            <GanttHeader startDate={startDate} endDate={endDate} />
+            <GanttHeader startDate={startDate} endDate={endDate} milestones={milestoneList} />
           </div>
         </div>
       </div>
@@ -116,13 +147,15 @@ export default function GanttView() {
                   style={{ height: GANTT.ROW_HEIGHT }}
                   onClick={() => toggleBucketCollapse(row.bucket.id)}
                 >
-                  {row.bucket.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                  {row.bucket.id !== NO_DATES_GROUP_ID ? (
+                    row.bucket.collapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />
+                  ) : (
+                    <span className="inline-block w-[14px]" />
+                  )}
                   <span style={{ borderLeft: `3px solid ${row.bucket.color || '#6200ea'}`, paddingLeft: 6 }}>
                     {row.bucket.name}
                   </span>
-                  <span className="ml-1 text-xs font-normal text-gray-400">
-                    ({visibleTasks.filter((t) => t.bucketId === row.bucket.id).length})
-                  </span>
+                  <span className="ml-1 text-xs font-normal text-gray-400">({row.taskCount})</span>
                   <span className="ml-auto flex items-center gap-1.5">
                     <span className="h-1.5 w-14 overflow-hidden rounded bg-gray-200">
                       <span
@@ -144,6 +177,11 @@ export default function GanttView() {
                   {cpmMap[row.task.id]?.isCritical && (
                     <span className="shrink-0 rounded-full bg-red-100 px-1.5 text-[10px] font-semibold text-red-700">
                       crítica
+                    </span>
+                  )}
+                  {overlap.byAssignee[row.task.id]?.size > 0 && (
+                    <span className="shrink-0 rounded-full bg-red-100 px-1.5 text-[10px] font-semibold text-red-700">
+                      overlap
                     </span>
                   )}
                   {isTaskCompleted(row.task) && (
@@ -183,6 +221,7 @@ export default function GanttView() {
                     task={row.task}
                     startDate={startDate}
                     isCritical={Boolean(cpmMap[row.task.id]?.isCritical)}
+                    overlapped={Boolean(overlap.byTask[row.task.id])}
                   />
                 </div>
               );

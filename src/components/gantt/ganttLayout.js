@@ -41,8 +41,8 @@ export function projectStartDate(project) {
     .map((t) => new Date(t.startDate).getTime());
   const min = Math.min(...(dates.length ? dates : [Date.now()]));
   const d = new Date(min);
-  // Comenzar el eje una semana antes para dar aire a la izquierda.
-  d.setDate(d.getDate() - 7);
+  // §6: el eje arranca ~10 días antes de hoy para dar aire y contexto a la izquierda.
+  d.setDate(d.getDate() - 10);
   return d;
 }
 
@@ -53,7 +53,7 @@ export function projectEndDate(project, startDate) {
     .map((t) => new Date(t.endDate).getTime());
   const max = Math.max(...(dates.length ? dates : [Date.now()]));
   const d = new Date(max);
-  // Añadir un pequeño margen a la derecha.
-  d.setDate(d.getDate() + 7);
+  // §6: margen hacia adelante ~3 semanas para ver hitos próximos.
+  d.setDate(d.getDate() + 21);
   return d;
 }

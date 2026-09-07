@@ -12,7 +12,7 @@ const MIRROR = [
   { title: 'Copy legal de reembolsos', assignee: null, column: 'Backlog', thin: true, noDates: true },
   { title: 'Fix timeout 3DS', assignee: 'u_ana', column: 'Hecho' },
   { title: 'Documentar API pública', assignee: 'u_lucia', column: 'Listo', thin: true, noDates: true },
-  { title: 'Go-live portal', assignee: 'u_lucia', column: 'En curso', hito: true },
+  { title: 'Go-live portal', assignee: ['u_lucia', 'u_sofia'], column: 'En curso', hito: true },
 ];
 
 function cardByTitle(project, title) {
@@ -57,8 +57,10 @@ describe('seed demo (DB/sample_data.json)', () => {
     for (const m of MIRROR) {
       const card = cardByTitle(portal, m.title);
       expect(card, `carta ${m.title}`).toBeTruthy();
-      if (m.assignee) expect(card.assigneeIds).toEqual([m.assignee]);
-      else expect(card.assigneeIds).toEqual([]);
+      if (m.assignee) {
+        const expected = Array.isArray(m.assignee) ? m.assignee : [m.assignee];
+        expect(card.assigneeIds).toEqual(expected);
+      } else expect(card.assigneeIds).toEqual([]);
       expect(portal.columns.find((c) => c.id === card.columnId).title).toBe(m.column);
       if (m.thin) expect(card.description).toBe('');
       if (m.noDates) {
@@ -86,6 +88,8 @@ describe('seed demo (DB/sample_data.json)', () => {
     const hito = cardByTitle(portal, 'Go-live portal');
     expect(hito.endDate).toBe('2026-09-12');
     expect(hito.startDate).toBe(hito.endDate);
+    expect(hito.milestone).toBe(true);
+    expect(hito.assigneeIds).toEqual(['u_lucia', 'u_sofia']);
 
     // Overlap de Martín: checkout (8-11 sep) se pisa con analytics (10-12 sep).
     const checkout = cardByTitle(portal, 'Migrar checkout a v3');

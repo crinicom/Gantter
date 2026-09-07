@@ -124,9 +124,85 @@ describe('projectStorage', () => {
     expect(restored.name).toBe('Portal');
     expect(restored.buckets.map((b) => b.name)).toEqual(['Backlog', 'En curso']);
     expect(restored.tasks[0].name).toBe('Rediseñar onboarding');
-    expect(restored.tasks[0].assignedUser.id).toBe('u_lucia');
+    expect(restored.tasks[0].assignedUsers[0].id).toBe('u_lucia');
     // status deriva de la columna en v1.
     expect(restored.tasks[0].status).toBe('in-progress');
+  });
+
+  it('round-trip canónico con múltiples responsables, bloqueada e hito', () => {
+    const runtime = {
+      ...createDefaultProject(),
+      id: 'p1',
+      name: 'Portal',
+      ownerId: 'u_lucia',
+      members: [
+        { id: 'u_lucia', name: 'Lucía Ríos', email: 'lucia@rio.local', role: 'owner', status: 'active' },
+        { id: 'u_sofia', name: 'Sofía Chen', email: 'sofia@rio.local', role: 'member', status: 'active' },
+      ],
+      buckets: [{ id: 'b1', name: 'En curso', color: '#6200ea', collapsed: false, wipLimit: 3 }],
+      tasks: [
+        {
+          id: 't1',
+          name: 'Hito go-live',
+          bucketId: 'b1',
+          assignedUsers: [
+            { id: 'u_lucia', name: 'Lucía Ríos', email: 'lucia@rio.local' },
+            { id: 'u_sofia', name: 'Sofía Chen', email: 'sofia@rio.local' },
+          ],
+          startDate: '2026-09-12',
+          endDate: '2026-09-12',
+          status: 'in-progress',
+          progress: 0,
+          blocked: true,
+          blockedReason: 'Certificados pendientes',
+          milestone: true,
+          comments: [],
+          precedents: [],
+          dependents: [],
+        },
+      ],
+    };
+
+    const doc = JSON.parse(serializeProject(runtime));
+    expect(doc.cards[0].assigneeIds).toEqual(['u_lucia', 'u_sofia']);
+    expect(doc.cards[0].blocked).toBe(true);
+    expect(doc.cards[0].blockedReason).toBe('Certificados pendientes');
+    expect(doc.cards[0].milestone).toBe(true);
+    expect(doc.columns[0].wipLimit).toBe(3);
+
+    const restored = deserializeProject(JSON.stringify(doc));
+    expect(restored.tasks[0].assignedUsers.map((u) => u.id)).toEqual(['u_lucia', 'u_sofia']);
+    expect(restored.tasks[0].blocked).toBe(true);
+    expect(restored.tasks[0].blockedReason).toBe('Certificados pendientes');
+    expect(restored.tasks[0].milestone).toBe(true);
+    expect(restored.buckets[0].wipLimit).toBe(3);
+  });
+
+  it('normaliza un task legacy con assignedUser único a assignedUsers', () => {
+    const p = normalizeProject({
+      id: 'p-old',
+      name: 'Legacy',
+      members: [{ id: 'u_demo', name: 'Demo', email: 'demo@local', role: 'owner', status: 'active' }],
+      buckets: [{ id: 'b1', name: 'Backlog', color: '#123' }],
+      tasks: [
+        {
+          id: 't1',
+          name: 'Tarea',
+          bucketId: 'b1',
+          assignedUser: { id: 'u_demo', name: 'Demo', email: 'demo@local' },
+          status: 'todo',
+          progress: 0,
+          comments: [],
+          precedents: [],
+          dependents: [],
+        },
+      ],
+    });
+    expect(p.tasks[0].assignedUsers).toEqual([
+      { id: 'u_demo', name: 'Demo', email: 'demo@local' },
+    ]);
+    const doc = JSON.parse(serializeProject(p));
+    expect(doc.cards[0].assigneeIds).toEqual(['u_demo']);
   });
 
   it('normaliza documentos legacy (buckets/tasks) a runtime y genera correos canónicos', () => {

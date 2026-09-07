@@ -23,7 +23,22 @@ export default function BucketColumn({ bucket, tasks, showCompletedTasks, onOpen
           <span className="font-medium text-gray-700" style={{ borderLeft: `3px solid ${bucket.color || '#6200ea'}`, paddingLeft: 6 }}>
             {bucket.name}
           </span>
-          <span className="text-xs text-gray-400">{tasks.length}</span>
+          <span className="flex items-center gap-1 text-xs text-gray-400">
+            {tasks.length}
+            {bucket.wipLimit != null && (
+              <span
+                className={clsx(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                  tasks.length > bucket.wipLimit
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-gray-200 text-gray-500',
+                )}
+                title="Límite de trabajo en curso (informativo, no bloquea)"
+              >
+                {tasks.length}/{bucket.wipLimit}
+              </span>
+            )}
+          </span>
         </div>
         <div className="mt-1 flex items-center gap-1.5">
           <div className="h-1.5 flex-1 overflow-hidden rounded bg-gray-200">

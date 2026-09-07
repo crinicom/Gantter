@@ -29,6 +29,8 @@ export default function TaskModal({ open, task, onClose }) {
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState(TASK_STATUS.TODO);
   const [progress, setProgress] = useState(0);
+  const [blocked, setBlocked] = useState(false);
+  const [blockedReason, setBlockedReason] = useState('');
 
   useEffect(() => {
     if (!task) return;
@@ -38,6 +40,8 @@ export default function TaskModal({ open, task, onClose }) {
     setEndDate(task.endDate || '');
     setStatus(task.status || TASK_STATUS.TODO);
     setProgress(task.progress || 0);
+    setBlocked(Boolean(task.blocked));
+    setBlockedReason(task.blockedReason || '');
   }, [task]);
 
   const allTasks = useMemo(() => project?.tasks || [], [project]);
@@ -52,6 +56,8 @@ export default function TaskModal({ open, task, onClose }) {
       endDate,
       status,
       progress,
+      blocked,
+      blockedReason: blocked ? blockedReason?.trim() : '',
     });
     onClose();
   };
@@ -182,12 +188,34 @@ export default function TaskModal({ open, task, onClose }) {
         </div>
 
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Asignado</label>
+          <label className="mb-1 block text-xs text-gray-500">Responsables</label>
           <AssigneeSelector
-            value={task.assignedUser}
+            value={task.assignedUsers || []}
             members={project?.members || []}
-            onChange={(member) => updateTask(task.id, { assignedUser: member })}
+            onChange={(list) => updateTask(task.id, { assignedUsers: list })}
           />
+        </div>
+
+        <div className="rounded-md border border-gray-200 p-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-700">
+            <Checkbox
+              checked={blocked}
+              onChange={() => {
+                setBlocked((v) => !v);
+                if (!blocked) setBlockedReason('');
+              }}
+            />
+            Bloqueada
+          </label>
+          {blocked && (
+            <input
+              type="text"
+              value={blockedReason}
+              onChange={(e) => setBlockedReason(e.target.value)}
+              className="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-violet-500 focus:outline-none"
+              placeholder="Motivo de la bloqueada…"
+            />
+          )}
         </div>
 
         <DependencyPicker

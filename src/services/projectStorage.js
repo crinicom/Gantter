@@ -38,11 +38,14 @@ function toCards(tasks) {
     title: t.name || '',
     description: t.description || '',
     columnId: t.bucketId ?? null,
-    assigneeIds: t.assignedUser ? [t.assignedUser.id] : [],
+    assigneeIds: Array.isArray(t.assignedUsers)
+      ? t.assignedUsers.map((u) => u?.id).filter(Boolean)
+      : [],
     startDate: t.startDate ?? null,
     endDate: t.endDate ?? null,
     blocked: Boolean(t.blocked),
     blockedReason: t.blockedReason || '',
+    milestone: Boolean(t.milestone),
     comments: Array.isArray(t.comments) ? t.comments : [],
     createdAt: t.createdAt || NOW(),
     updatedAt: t.updatedAt || NOW(),
@@ -141,6 +144,22 @@ function resolveOwnerId(project) {
   return LEGACY_OWNER_ALIASES[explicit] || explicit || ACTIVE_USER.id;
 }
 
+// Convierte ids de responsables (canónico) a la lista de runtime {id,name,email}.
+function toAssigneeList(ids, members) {
+  return (ids || [])
+    .map((id) => {
+      const m = (members || []).find((x) => x.id === id);
+      return m ? { id: m.id, name: m.name, email: m.email || '' } : null;
+    })
+    .filter(Boolean);
+}
+
+function fromAssigneeList(task) {
+  if (Array.isArray(task?.assignedUsers)) return task.assignedUsers;
+  if (task?.assignedUser) return [{ ...task.assignedUser }];
+  return [];
+}
+
 // --- Adaptadores canónico <-> runtime ---
 
 function hasCanonicalShape(project) {
@@ -168,14 +187,11 @@ function fromDocumentCanonical(project) {
   }));
   const tasks = cards.map((card) => {
     const col = columns.find((c) => c.id === card.columnId);
-    const member = (project.members || []).find((m) => m.id === card.assigneeIds[0]);
     return {
       id: card.id,
       name: card.title,
       description: card.description,
-      assignedUser: member
-        ? { id: member.id, name: member.name, email: member.email || '' }
-        : null,
+      assignedUsers: toAssigneeList(card.assigneeIds, project.members),
       startDate: card.startDate ?? null,
       endDate: card.endDate ?? null,
       status: statusForColumn(col?.title),
@@ -186,6 +202,7 @@ function fromDocumentCanonical(project) {
           : clampProgress(card.progress ?? 0),
       blocked: card.blocked,
       blockedReason: card.blockedReason || '',
+      milestone: Boolean(card.milestone),
       comments: Array.isArray(card.comments) ? card.comments : [],
       precedents: [],
       dependents: [],
@@ -289,7 +306,10 @@ export function normalizeProject(raw) {
         precedents: Array.isArray(task.precedents) ? task.precedents : [],
         dependents: Array.isArray(task.dependents) ? task.dependents : [],
         comments: Array.isArray(task.comments) ? task.comments : [],
-        assignedUser: task.assignedUser ?? null,
+        assignedUsers: fromAssigneeList(task),
+        blocked: Boolean(task.blocked),
+        blockedReason: task.blockedReason || '',
+        milestone: Boolean(task.milestone),
         status: VALID_STATUS.has(task.status) ? task.status : statusForColumn('todo'),
       }))
     : [];

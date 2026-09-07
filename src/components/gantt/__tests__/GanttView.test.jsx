@@ -10,12 +10,12 @@ const seedProject = deserializeProject(JSON.stringify(seedRaw.projects[0]));
 
 function renderGantt(project) {
   const toggleBucketCollapse = vi.fn();
-  render(
+  const view = render(
     <ProjectContext.Provider value={{ project, toggleBucketCollapse }}>
       <GanttView />
     </ProjectContext.Provider>,
   );
-  return { toggleBucketCollapse };
+  return { toggleBucketCollapse, ...view };
 }
 
 const cyclicProject = {
@@ -46,5 +46,18 @@ describe('GanttView', () => {
   it('no revienta con dependencias circulares guardadas', () => {
     renderGantt(cyclicProject);
     expect(screen.getByText('Diagrama de Gantt')).toBeInTheDocument();
+  });
+
+  it('las cartas sin fechas viven en el canal Sin fechas', () => {
+    renderGantt(seedProject);
+    expect(screen.getByText('Sin fechas')).toBeInTheDocument();
+    expect(screen.getByText('Auth magic link')).toBeInTheDocument();
+    expect(screen.getByText('QA staging release')).toBeInTheDocument();
+  });
+
+  it('marca el overlap de Martín y pinta el hito en el header', () => {
+    const { container } = renderGantt(seedProject);
+    expect(screen.getAllByText('overlap').length).toBeGreaterThanOrEqual(2);
+    expect(container.querySelector('[data-testid="milestone-card_go_live"]')).toBeInTheDocument();
   });
 });

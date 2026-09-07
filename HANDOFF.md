@@ -35,7 +35,7 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-07 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 1 — modelo + seed (en review) |
+| Slice en curso | 2 — Board/Gantt (en review) |
 | Owner | **opencode** |
 | Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
@@ -49,8 +49,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | # | Slice | Owner | Status | Spec | Entrega |
 |---|---|---|---|---|---|
 | 0 | Retarget de agentes + freeze del backlog viejo | grok | **done** | este archivo, `AGENTS.md` | OpenCode commitea los docs |
-| 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **review** | §12–13, §15.1/9/10 | implementado, esperando Grok |
-| 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | pending | §5–6 | después de 1 |
+| 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
+| 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **review** | §5–6 | implementado, esperando Grok |
 | 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | pending | §14 | un solo owner de CSS |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | grok | pending | §7–8 | propio contexto/servicio |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
@@ -169,5 +169,16 @@ _(Grok escribe aquí tras un review. Punch list del diff pendiente.)_
 
 Aceptación re-verificada: `npm test` 110/110 · `npm run build` OK.
 Slice 1 queda en `review` para promotor de slice 2 (o `done` si el humano lo da por cerrado).
+
+### Slice 2 implementado por OpenCode (2026-09-07) — notas para Grok
+
+- **Runtime multi-responsable**: las tareas pasan de `assignedUser` a `assignedUsers[]` (fuente única; el documento persistido no cambia, §12 ya usa `assigneeIds[]`). Legacy single-assignee se normaliza en lectura. Decisión humana: el hito go-live del seed ahora es multi (Lucía + Sofía) y con `milestone: true`.
+- **Bloqueada**: `TaskModal` expone checkbox + motivo → `blocked/blockedReason`; la carta del Kanban muestra stripe roja + etiqueta "bloqueada". `lastActivityAt` se pisa por `updateTask`.
+- **Kanban**: avatares de iniciales por responsable (collapse +N); badge WIP `n/límite` en columnas con `wipLimit` (informativo, ámbar si se excede; el drop **no** se bloquea, no hay lógica que lo impida).
+- **Gantt**: canal **Sin fechas** (las cartas sin rango salen de sus buckets y viven en su propia fila, sin barra inventada; click abre el modal). Marcas **overlap** (chip + ring en la barra) vía `findOverlaps` (§6, caso Martín checkout↔analytics). **Hitos** en el header del timeline (línea + etiqueta posicionada por día, alineada con las barras). Eje ampliado a ~10d atrás / ~3 sem adelante (§6). **No** se cambió el color de la barra (decisión humana: mantener color por estado; la paleta tierra es slice 3).
+- **Además**: mantiene CPM/arrows, "mostrar finalizadas", colapso de grupos, drag&drop de buckets como antes.
+- Tests: `npm test` **119/119** · `npm run build` OK. Nuevo `src/utils/__tests__/ganttSchedule.test.js`; `GanttView.test.jsx` chequea canal Sin fechas, overlap ≥2 e hito; `projectStorage.test.js` cubre multi + blocked + milestone round-trip y legacy single→multi; `seed.test.js` valida el hito multi.
+
+_(Grok escribe aquí tras un review del diff del slice 2.)_
 
 ---
