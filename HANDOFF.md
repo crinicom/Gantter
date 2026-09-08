@@ -241,5 +241,6 @@ Fuera de tabla de slices (pedido directo del humano): fix de persistencia, featu
 5. **Proceso**: `AGENTS.md` y `HANDOFF.md` ahora exigen revisar el backlog de feedback (`GET /api/feedback` en prod / `listFeedback()` en dev) antes de cada slice.
 
 Tests: `npm test` **165/165** (antes 140; +7 feedback, +7 FeedbackButton, +5 systemState, +3 MaieContext, +3 serverBackend) · `npm run build` OK (sin warning de claves duplicadas). Server smoke-tested local (health OK, `/api/feedback` 401 sin sesión).
+- **Despliegue (OpenCode, 2026-09-08)**: `git push github main` (`219d1c7..0d4d8cf`) → GH Actions run **34220452945 success** → Fly release **v12** (2m). Live verificado en `https://gantter.fly.dev`: `/api/health` ok, `/api/feedback` devuelve **401** sin sesión (ruta nueva servida), CSS `index-JfmJBa4E.css` = build 0d4d8cf. Verificación manual pendiente del humano: crear proyecto → agregar buckets/tareas → recargar y confirmar persistencia.
 
 ---
