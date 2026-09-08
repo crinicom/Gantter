@@ -36,14 +36,14 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-08 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 5 — Click → hilo, auto/confirmar, propuestas, log (asignado a OpenCode por el humano, mismo precedente que slice 4) |
+| Slice en curso | 6 — Chat LLM (`grok-4.5`) + fallback templated (asignado a OpenCode por el humano, mismo precedente que slices 4 y 5) |
 | Owner | **opencode** |
 | Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
 | Slice 4 | `done` (implementado por OpenCode; review Grok hecha por OpenCode a pedido del humano — H1 y P3 aplicados en `0d4d8cf`) |
-| Slice 5 | `review` (implementado por OpenCode en `72f5e61`; review hecha por OpenCode a pedido del humano — P0 ×2 y P2 ×2 aplicados, ver Notas) |
+| Slice 5 | `done` (implementado por OpenCode en `72f5e61`; review hecha por OpenCode a pedido del humano — P0 ×2 y P2 ×2 aplicados, ver Notas) |
 
 ---
 
@@ -59,7 +59,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **done** | §14 | commits `a8a7e95`, `17838c0` y `21a0258` (fix H1) |
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | opencode | **done** | §7–8 | commit `35adb76`; review Grok por OpenCode `0d4d8cf` |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | opencode | **review** | §7, §9 | dependía de 4; asignado a OpenCode |
-| 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
+| 6 | Chat LLM (`grok-4.5`) + fallback templated | opencode | **review** | §11 | depende de 5; asignado a OpenCode |
 | 7 | Huddle in-app + standup demo que **muta** el tablero | grok | pending | §10, §17.5 | si el demo no mueve cartas, v1 no está |
 | 8 | Mobile ~390: tabs Tablero / Gantt / Maie | opencode | pending | §14, §17.7 | después de que exista el panel |
 
@@ -275,5 +275,26 @@ Anotado sin fix (depende del humano o slice 6): P1 confirm "No" debería pedir a
 
 Aceptación re-verificada: `npm test` **202/202** (antes 196; +1 MaieContext negativo, +1 InquiryThread chips, +1 proposalEngine determinismo, +3 MaieContext.thread integración) · `npm run build` OK · dev server 200.
 Slice 5 queda en `review` para cierre del humano (o `done` si lo da por cerrado).
+
+### Slice 6 implementado por OpenCode (2026-09-08) — notas para Grok
+
+Decisión humana previa al build: **slice 6 → opencode** (mismo precedente que slices 4 y 5). Implementa §11 completo (LLM `grok-4.5` + fallback templated) sobre la mecánica del slice 5.
+
+- **`src/services/maieChat.js`** (nuevo):
+  - `buildBoardContext({project, inquiry, now})` — contexto acotado (~1600 chars) para el prompt: proyecto, modo/staleDays, miembros `id=nombre`, carta en cuestión (columna, responsable, fechas, bloqueada, descripción truncada), hitos próximos ≤ ventana y —solo kind overlap— cartas con fechas visibles. No escanea el tablero (§11).
+  - `templatedMaieReply({project, inquiry, now})` — respuestas socráticas rioplatenses por kind (`thin`/`unassigned`/`stale`/`missing-date`/`overlap` + default), mencionan la carta `title||name`, 1–3 frases, sin emoji, son preguntas no órdenes.
+  - `sanitizeActions` / `actionsToProposals` — whitelist de 7 tipos (§11) y validación de ids reales (tasks/members/buckets); lo inválido se descarta. Devuelven propuestas con la misma forma que `proposalEngine` (`{id, inquiryId, action, label, payload, needsInput, status, comment}`).
+  - `requestMaieChat(...)` — **nunca lanza**. Sin server mode → fallback templated sin fetch; server → POST `apiBase()/api/maie/chat` con `{kind, boardContext, userText, mode, threadTail}`, 2 intentos máx (§11 cap), timeout 15s; fallo/reintento → fallback templated.
+- **`server/src/routes/maie.js`** (nuevo, montado en `index.js`): POST `/api/maie/chat` con `requireAuth`; sin `XAI_API_KEY` → 503 `no-key`; modelo `process.env.XAI_MODEL || 'grok-4.5'`, `max_tokens: 400`, `response_format json_object`, temperature 0.6; 502 en upstream/parse/shape. **La clave vive server-side** (`.env.example` nuevo: `XAI_API_KEY`, `XAI_MODEL`). Deploy sin la clave no rompe: el cliente degrada a templated.
+- **`applyEngine.js`**: soporte `create-card` — `canApply` valida bucket existente + título; `apply` crea la tarea nueva (shape de §12, `name`, timestamps `now`, comentario de Maie) y logea con `cardId` = carta creada. `create-card` **nunca se auto-aplica** en modo auto (§9 no crear cartas solas):
+- **`MaieContext.jsx`**: `sendThreadMessage` persiste la firma del usuario (sync, mutator #1) y **luego** pide la respuesta (`requestMaieChat`, `maieReplying` expuesto); el reply aterriza en un mutator #2 que appendea la burbuja de Maie, traduce las acciones a propuestas (dedupe por `action|payload`), y en modo auto aplica con `canApply`/`apply` `source:'auto'` saltando `create-card`, con `dedupeLog`. `projectRef` = documento más fresco para el cierre async.
+- **`InquiryThread.jsx`**: indicador "Maie está pensando…" mientras `maieReplying`.
+- **Fallback no-LLM**: en local/offline o en prod sin clave, Maie responde con `templatedMaieReply` (sin acciones) — el hilo sigue demostrable en el demo §17 sin gastar la API.
+- Tests: `npm test` **215/215** (antes 202; +10 maieChat, +2 applyEngine create-card, +1 MaieContext send+reply, +1 MaieContext.thread reply, +2 InquiryThread indicador) · `npm run build` OK.
+- **Backlog de feedback**: prod `/api/feedback` exige sesión y no se pudo triagear net; la única entrada previa (Cristian, "No hacer nada") fue triageada en slice 5. Sin entradas nuevas accionables.
+
+**Requiere acción del operador** (no se commitean secrets): setear la clave para habilitar grok en prod → `fly secrets set XAI_API_KEY=...` (y `fly secrets set XAI_MODEL=grok-4.5` si se quiere overridar el default). Sin esto, prod sigue servicial templated sin errores.
+
+_(Grok escribe aquí tras un review del diff del slice 6.)_
 
 ---

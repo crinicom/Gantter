@@ -1,8 +1,8 @@
-// Hilo de una pregunta de Maie (§7 Click → chat, §9 propuestas por modo).
-// Sin LLM en este slice: el envío de mensaje persiste en el hilo y deja la
-// pregunta en "chatting"; la respuesta socrática llega en el slice 6. Las
-// propuestas se generan por catálogo (§8) y se aplican en modo confirmar
-// (Sí/No) o auto (aplicar + registro).
+// Hilo de una pregunta de Maie (§7 Click → chat, §8 catálogo, §9 propuestas
+// por modo, §11 LLM + fallback templated). Enviar mensaje persiste en el hilo,
+// deja la pregunta en "chatting" y pide la respuesta a Maie; mientras espera la
+// llamada se muestra "Maie está pensando…". Las propuestas (catálogo o del LLM)
+// se aplican en modo confirmar (Sí/No) o auto (aplicar + registro).
 
 import React, { useEffect, useRef, useState } from 'react';
 import { useMaie } from '../../context/MaieContext';
@@ -83,7 +83,7 @@ function bubbleTone(role) {
 }
 
 export default function InquiryThread({ inquiryId, onClose }) {
-  const { inquiries, applyMode, sendThreadMessage, snoozeInquiry } = useMaie();
+  const { inquiries, applyMode, sendThreadMessage, snoozeInquiry, maieReplying } = useMaie();
   const { user } = useAuth();
   const activeUser = user || ACTIVE_USER;
   const [draft, setDraft] = useState('');
@@ -148,6 +148,13 @@ export default function InquiryThread({ inquiryId, onClose }) {
             </div>
           </div>
         ))}
+        {maieReplying && (
+          <div className="flex justify-start">
+            <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm text-muted">
+              Maie está pensando…
+            </div>
+          </div>
+        )}
         <div ref={bottomRef} />
       </div>
 

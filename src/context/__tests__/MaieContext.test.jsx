@@ -1,14 +1,19 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MaieProvider, MaieContext } from '../MaieContext';
 import * as useProjectModule from '../../hooks/useProject';
 import * as useAuthModule from '../../hooks/useAuth';
 import * as inquiryEngine from '../../services/inquiryEngine';
+import * as maieChatModule from '../../services/maieChat';
 
 vi.mock('../../hooks/useProject');
 vi.mock('../../hooks/useAuth');
 vi.mock('../../services/inquiryEngine');
+vi.mock('../../services/maieChat', async (importActual) => {
+  const actual = await importActual();
+  return { ...actual, requestMaieChat: vi.fn() };
+});
 
 const snoozedInquiry = {
   id: 'q_snoozed',
@@ -229,6 +234,10 @@ describe('MaieContext acciones del hilo', () => {
       inquiries: [actionInquiry()],
       logEntries: [],
     });
+    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({
+      reply: 'Vamos a verlo.',
+      actions: [],
+    });
   });
 
   it('en modo confirm el rescan NO aplica propuestas (Maie no muta sola)', () => {
@@ -241,22 +250,42 @@ describe('MaieContext acciones del hilo', () => {
     expect(mutateProject).not.toHaveBeenCalled();
   });
 
-  it('sendThreadMessage persiste el mensaje y deja la pregunta en chatting', () => {
-    const { mutateProject } = mockSetup();
+  it('sendThreadMessage persiste el mensaje, deja chatting y la respuesta de Maie aterriza en el hilo', async () => {
+    let doc = mockProjectFrom(actionProject());
+    const mutateProject = vi.fn((mutator) => {
+      doc = mutator(doc);
+      return doc;
+    });
+    vi.mocked(useProjectModule.useProject).mockReturnValue({
+      project: actionProject(),
+      mutateProject,
+      setSettings: vi.fn(),
+    });
     render(
       <MaieProvider>
         <Harness />
       </MaieProvider>,
     );
+
     fireEvent.click(screen.getByRole('button', { name: 'send' }));
-    const next = runLastMutator(mutateProject);
-    expect(next.inquiries[0].thread).toHaveLength(1);
-    expect(next.inquiries[0].thread[0]).toMatchObject({
+    expect(mutateProject.mock.calls[0][0]).toBeTypeOf('function');
+
+    await waitFor(() => expect(mutateProject).toHaveBeenCalledTimes(2));
+    expect(doc.inquiries[0].thread).toHaveLength(2);
+    expect(doc.inquiries[0].thread[0]).toMatchObject({
       role: 'user',
       author: 'Lucía Ríos',
       text: 'Hola Maie',
     });
-    expect(next.inquiries[0].status).toBe('chatting');
+    expect(doc.inquiries[0].thread[1]).toMatchObject({
+      role: 'maie',
+      author: 'Maie',
+      text: 'Vamos a verlo.',
+    });
+    expect(doc.inquiries[0].status).toBe('chatting');
+    expect(maieChatModule.requestMaieChat).toHaveBeenCalledWith(
+      expect.objectContaining({ userText: 'Hola Maie', inquiry: expect.objectContaining({ kind: 'unassigned' }) }),
+    );
   });
 
   it('applyProposal aplica la acción, comenta la carta y registra el log source confirm', () => {

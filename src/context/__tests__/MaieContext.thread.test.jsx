@@ -5,14 +5,19 @@
 // del provider debe sincronizar el contexto de Maie.
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MaieProvider, MaieContext } from '../MaieContext';
 import * as useProjectModule from '../../hooks/useProject';
 import * as useAuthModule from '../../hooks/useAuth';
+import * as maieChatModule from '../../services/maieChat';
 
 vi.mock('../../hooks/useProject');
 vi.mock('../../hooks/useAuth');
+vi.mock('../../services/maieChat', async (importActual) => {
+  const actual = await importActual();
+  return { ...actual, requestMaieChat: vi.fn() };
+});
 
 function task() {
   return {
@@ -136,18 +141,27 @@ function Probe() {
 describe('MaieContext hilo (integración con el engine real)', () => {
   beforeEach(() => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
+    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({
+      reply: 'Vamos a verlo.',
+      actions: [],
+    });
   });
 
-it('el mensaje enviado aparece en el hilo vía el provider real', async () => {
+it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta de Maie también', async () => {
     const { holder, commit } = mount();
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
 
     fireEvent.click(screen.getByRole('button', { name: 'send' }));
-    const mutator = holder.mutateProject.mock.calls.at(-1)[0];
-    commit(mutator);
+    commit(holder.mutateProject.mock.calls.at(-1)[0]);
 
     await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maie'));
     expect(screen.getByTestId('open-count')).toHaveTextContent('1');
+
+    // La respuesta de Maie llega en un segundo mutateProject (§11): commitearlo
+    // muestra la burbuja en el hilo sin pisar el mensaje del usuario.
+    await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(2));
+    commit(holder.mutateProject.mock.calls.at(-1)[0]);
+    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maie|Vamos a verlo.'));
   });
 
   it('descartar refleja el estado en el contexto y no muta la carta', async () => {

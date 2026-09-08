@@ -108,6 +108,25 @@ describe('canApply', () => {
       ),
     ).toBe(false);
   });
+
+  it('create-card exige bucket existente y título no vacío', () => {
+    const p = project();
+    const ok = pendingProposal({
+      action: 'create-card',
+      payload: { bucketId: 'b_backlog', title: 'Setup CI' },
+    });
+    const sinBucket = pendingProposal({
+      action: 'create-card',
+      payload: { bucketId: 'b_ausente', title: 'Setup CI' },
+    });
+    const sinTitulo = pendingProposal({
+      action: 'create-card',
+      payload: { bucketId: 'b_backlog', title: '   ' },
+    });
+    expect(canApply(p, ok)).toBe(true);
+    expect(canApply(p, sinBucket)).toBe(false);
+    expect(canApply(p, sinTitulo)).toBe(false);
+  });
 });
 
 describe('apply', () => {
@@ -144,6 +163,29 @@ describe('apply', () => {
       payload: { taskId: 't1', blocked: true },
     }), { source: 'auto' });
     expect(blocked.project.tasks[0].blocked).toBe(true);
+  });
+
+  it('create-card crea la tarea nueva en la columna, con comentario de Maie y log apuntando a la carta creada', () => {
+    const p = project();
+    const now = new Date('2026-09-08T10:00:00Z');
+    const proposal = pendingProposal({
+      id: 'p_new',
+      action: 'create-card',
+      label: 'Crear «Setup CI» en «Backlog»',
+      payload: { title: 'Setup CI', bucketId: 'b_backlog' },
+    });
+    const out = apply(p, proposal, { source: 'confirm', now });
+    expect(out.project.tasks).toHaveLength(1);
+    const created = out.project.tasks[0];
+    expect(created.name).toBe('Setup CI');
+    expect(created.bucketId).toBe('b_backlog');
+    expect(created.status).toBe('todo');
+    expect(created.progress).toBe(0);
+    expect(created.assignedUsers).toEqual([]);
+    expect(created.createdAt).toBe(now.toISOString());
+    expect(out.task?.id).toBe(created.id);
+    expect(created.comments[0]).toMatchObject({ author: 'Maie', text: proposal.comment });
+    expect(out.project.actionLog[0]).toMatchObject({ cardId: created.id });
   });
 });
 

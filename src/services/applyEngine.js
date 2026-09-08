@@ -20,6 +20,15 @@ function workingSinceDays(task, now) {
 
 export function canApply(project, proposal, { now = new Date() } = {}) {
   if (!proposal || proposal.needsInput || proposal.status !== 'pending') return false;
+
+  // create-card no toca una carta existente: valida columna y título, nada más.
+  if (proposal.action === 'create-card') {
+    const bucketExists = (project?.buckets || []).some(
+      (b) => b.id === proposal.payload?.bucketId,
+    );
+    return bucketExists && Boolean(proposal.payload?.title?.trim());
+  }
+
   const task = (project?.tasks || []).find((t) => t.id === proposal.payload?.taskId);
   if (!task || task.status === TASK_STATUS.COMPLETED) return false;
 
@@ -54,6 +63,39 @@ export function canApply(project, proposal, { now = new Date() } = {}) {
 }
 
 function patchTask(project, proposal, { now, source }) {
+  // create-card: no patcha una carta existente; crea una nueva en la columna.
+  if (proposal.action === 'create-card') {
+    const at = now.toISOString();
+    const newCard = {
+      id: uuidv4(),
+      name: (proposal.payload?.title || '').trim(),
+      description: proposal.payload?.description || '',
+      assignedUsers: [],
+      startDate: proposal.payload?.startDate || null,
+      endDate: proposal.payload?.endDate || null,
+      status: TASK_STATUS.TODO,
+      progress: 0,
+      blocked: false,
+      blockedReason: '',
+      milestone: false,
+      comments: [],
+      precedents: [],
+      dependents: [],
+      bucketId: proposal.payload?.bucketId,
+      createdAt: at,
+      updatedAt: at,
+      lastActivityAt: at,
+    };
+    const comment = {
+      id: uuidv4(),
+      author: 'Maie',
+      text: proposal.comment || proposal.label || '',
+      createdAt: at,
+    };
+    if (comment.text) newCard.comments.push(comment);
+    return { project: { ...project, tasks: [...(project?.tasks || []), newCard] }, card: newCard };
+  }
+
   const tasks = (project?.tasks || []).map((t) => {
     if (t.id !== proposal.payload?.taskId) return t;
     let next = t;
@@ -108,22 +150,26 @@ function patchTask(project, proposal, { now, source }) {
       comments: comment.text ? [...(t.comments || []), comment] : t.comments || [],
     };
   });
-  return { ...project, tasks };
+  return { project: { ...project, tasks }, card: null };
 }
 
 // Devuelve el proyecto nuevo + la entrada de actionLog de la aplicación.
 // `source` es 'auto' (modo auto) o 'confirm' (Sí en confirmar).
 export function apply(project, proposal, { source = 'confirm', now = new Date() } = {}) {
-  const nextProject = patchTask(project, proposal, { now, source });
+  const out = patchTask(project, proposal, { now, source });
+  const nextProject = out.project;
   const at = now.toISOString();
-  const task = (nextProject?.tasks || []).find((t) => t.id === proposal.payload?.taskId);
+  const created = out.card || null;
+  const cardId = created ? created.id : proposal.payload?.taskId || null;
+  const task =
+    created || (nextProject?.tasks || []).find((t) => t.id === proposal.payload?.taskId) || null;
   const summary = proposal.comment || proposal.label;
   const logEntry = {
     id: uuidv4(),
     at,
     source,
     summary,
-    cardId: proposal.payload?.taskId || null,
+    cardId,
   };
   return {
     project: { ...nextProject, actionLog: [...(nextProject.actionLog || []), logEntry] },

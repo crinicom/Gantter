@@ -7,13 +7,14 @@
 // `mutateProject`; su lógica vive acá y en services/inquiryEngine|proposalEngine|
 // applyEngine.
 
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useProject } from '../hooks/useProject';
 import { useAuth } from '../hooks/useAuth';
 import { scanInquiries } from '../services/inquiryEngine';
 import { autoEligible } from '../services/proposalEngine';
 import { canApply, apply as applyAction, selectAutoActions } from '../services/applyEngine';
+import { requestMaieChat, actionsToProposals } from '../services/maieChat';
 import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIE_DEFAULTS } from '../constants/maie';
 import { ACTIVE_USER } from '../constants/project';
 
@@ -64,6 +65,12 @@ export function MaieProvider({ children }) {
   const [inquiries, setInquiries] = useState([]);
   const [actionLog, setActionLog] = useState([]);
   const [lastScanAt, setLastScanAt] = useState(null);
+  const [maieReplying, setMaieReplying] = useState(false);
+
+  // El documento es la fuente de verdad; para el flujo async de chat
+  // necesitamos el proyecto más fresco aunque la promesa tarde (§11).
+  const projectRef = useRef(project);
+  projectRef.current = project;
 
   // Reset / rescan por proyecto. El documento es la fuente de verdad (§12): el
   // escaneo parte de `project.inquiries` persistido, no de un espejo local, para
@@ -136,10 +143,71 @@ export function MaieProvider({ children }) {
 
   const activeUser = user || ACTIVE_USER;
 
+  // Pide la respuesta de Maie (§11): LLM con fallback templated, nunca lanza.
+  // Las acciones del LLM se validan (ids reales) y llegan como propuestas; en
+  // modo auto se aplican solas, con excepción de create-card (§9) que siempre
+  // queda en confirmar. Todo dentro de un mismo mutateProject.
+  const deliverMaieReply = async (inquiryId, userText) => {
+    const base = projectRef.current;
+    if (!base) return;
+    const inq = (base.inquiries || []).find((i) => i.id === inquiryId);
+    if (!inq) return;
+    setMaieReplying(true);
+    try {
+      const res = await requestMaieChat({ project: base, inquiry: inq, userText });
+      const tick = new Date().toISOString();
+      mutateProject((prev) => {
+        const current = (prev.inquiries || []).find((i) => i.id === inquiryId);
+        if (!current) return prev;
+        const bubble = { id: uuidv4(), role: 'maie', author: 'Maie', text: res.reply, at: tick };
+        const fresh = actionsToProposals({ project: prev, inquiry: current, actions: res.actions });
+        const key = (p) => `${p.action}|${JSON.stringify(p.payload || {})}`;
+        const existing = new Set((current.proposals || []).map(key));
+        const added = fresh.filter((p) => !existing.has(key(p)));
+
+        const isAuto = (prev?.settings?.applyMode ?? 'confirm') === 'auto';
+        const applied = new Set();
+        const logTail = [];
+        let acc = prev;
+        if (isAuto) {
+          for (const p of added) {
+            if (p.action === 'create-card') continue;
+            if (!canApply(acc, p)) continue;
+            const { project: np, logEntry } = applyAction(acc, p, { source: 'auto' });
+            acc = np;
+            logTail.push(logEntry);
+            applied.add(p.id);
+          }
+        }
+
+        const proposals = [
+          ...(current.proposals || []),
+          ...added.map((p) =>
+            applied.has(p.id) ? { ...p, status: PROPOSAL_STATUS.APPLIED, updatedAt: tick } : p,
+          ),
+        ];
+        const nextInquiry = {
+          ...current,
+          status: INQUIRY_STATUS.CHATTING,
+          thread: [...(current.thread || []), bubble],
+          proposals,
+          updatedAt: tick,
+        };
+        return {
+          ...acc,
+          inquiries: (acc.inquiries || []).map((i) => (i.id === inquiryId ? nextInquiry : i)),
+          actionLog: logTail.length ? dedupeLog(acc.actionLog || [], logTail) : acc.actionLog,
+        };
+      });
+    } finally {
+      setMaieReplying(false);
+    }
+  };
+
   const sendThreadMessage = React.useCallback(
     (inquiryId, text) => {
       const message = (text || '').trim();
-      if (!message) return;
+      if (!message || !inquiryId) return;
       const at = new Date().toISOString();
       const entry = {
         id: uuidv4(),
@@ -157,6 +225,7 @@ export function MaieProvider({ children }) {
             : inq,
         ),
       }));
+      void deliverMaieReply(inquiryId, message);
     },
     [activeUser, mutateProject],
   );
@@ -240,6 +309,7 @@ export function MaieProvider({ children }) {
       applyMode,
       staleDays,
       lastScanAt,
+      maieReplying,
       setApplyMode: (mode) => setSettings({ applyMode: mode }),
       sendThreadMessage,
       applyProposal,
@@ -252,6 +322,7 @@ export function MaieProvider({ children }) {
       applyMode,
       staleDays,
       lastScanAt,
+      maieReplying,
       setSettings,
       sendThreadMessage,
       applyProposal,

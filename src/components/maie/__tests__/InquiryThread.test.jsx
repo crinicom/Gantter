@@ -44,6 +44,7 @@ function baseValue(overrides = {}) {
       },
     ],
     applyMode: 'confirm',
+    maieReplying: false,
     sendThreadMessage: vi.fn(),
     applyProposal: vi.fn(),
     dismissProposal: vi.fn(),
@@ -68,6 +69,12 @@ describe('InquiryThread', () => {
     expect(screen.getByText('Sin responsable en una columna de trabajo.')).toBeInTheDocument();
     expect(screen.getByText('Lo toma Ana mañana.')).toBeInTheDocument();
     expect(screen.getByText('Lucía Ríos')).toBeInTheDocument();
+    expect(screen.queryByText('Maie está pensando…')).not.toBeInTheDocument();
+  });
+
+  it('mientras Maie responde muestra el indicador de escritura', () => {
+    renderThread({ maieReplying: true });
+    expect(screen.getByText('Maie está pensando…')).toBeInTheDocument();
   });
 
   it('envia mensajes firmados por el usuario activo y limpia el texto', () => {
