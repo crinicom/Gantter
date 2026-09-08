@@ -107,7 +107,8 @@ export default function InquiryThread({ inquiryId, onClose }) {
     setDraft('');
   };
 
-  const pending = (inquiry.proposals || []).filter((p) => p.status === PROPOSAL_STATUS.PENDING);
+  const proposals = inquiry.proposals || [];
+  const pendingCount = proposals.filter((p) => p.status === PROPOSAL_STATUS.PENDING).length;
   const resolvedCondition = inquiry.status === INQUIRY_STATUS.RESOLVED;
 
   return (
@@ -150,13 +151,13 @@ export default function InquiryThread({ inquiryId, onClose }) {
         <div ref={bottomRef} />
       </div>
 
-      {(pending.length > 0 || resolvedCondition) && (
+      {(proposals.length > 0 || resolvedCondition) && (
         <div className="space-y-2 border-t border-gray-200 px-4 py-3">
           <p className="text-xs font-medium uppercase tracking-wide text-muted">Propuestas</p>
-          {pending.map((p) => (
+          {proposals.map((p) => (
             <ProposalRow key={p.id} inquiry={inquiry} proposal={p} applyMode={applyMode} />
           ))}
-          {pending.length === 0 && resolvedCondition && (
+          {pendingCount === 0 && resolvedCondition && (
             <p className="text-sm text-forest-700">Esta pregunta ya se resolvió sola.</p>
           )}
         </div>

@@ -128,4 +128,22 @@ describe('InquiryThread', () => {
     expect(screen.getByText('Esta pregunta ya se resolvió sola.')).toBeInTheDocument();
     expect(screen.queryByPlaceholderText(/Responder como/)).not.toBeInTheDocument();
   });
+
+  it('refleja propuestas aplicadas y descartadas como chips, no solo las pendientes', () => {
+    renderThread({
+      inquiries: [
+        {
+          ...baseValue().inquiries[0],
+          proposals: [
+            pendingProposal({ id: 'p1', status: 'applied' }),
+            pendingProposal({ id: 'p2', label: 'Mover a «Backlog»', status: 'dismissed' }),
+            pendingProposal({ id: 'p3', label: 'Asignar «Auth magic link» a Martín Vega' }),
+          ],
+        },
+      ],
+    });
+    expect(screen.getByText(/Aplicada:/)).toBeInTheDocument();
+    expect(screen.getByText(/Descartada:/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Sí' })).toBeInTheDocument();
+  });
 });

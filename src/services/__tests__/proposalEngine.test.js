@@ -125,6 +125,26 @@ describe('defaultProposalsFor', () => {
     expect(ps[0].payload.memberId).toBe('m_lucia');
     expect(ps[0].payload.taskId).toBe(anchor.id === a.id ? b.id : a.id);
   });
+
+  it('determinístico: mismo tablero produce el mismo set de acciones y labels', () => {
+    const now = new Date();
+    const t1 = task({ id: 't_d1' });
+    const t2 = task({ id: 't_d2', title: 'Carta sola', name: 'Carta sola', lastActivityAt: day(-20) });
+    const t3 = task({ id: 't_d3', title: 'Sin dueño', name: 'Sin dueño' });
+    const p = project({ tasks: [t1, t2, t3] });
+    const shape = (ps) => ps.map((x) => `${x.action}|${Number(x.needsInput)}|${x.label}`);
+    const cases = [
+      { kind: 'thin', cardId: t1.id },
+      { kind: 'stale', cardId: t2.id },
+      { kind: 'unassigned', cardId: t3.id },
+    ];
+    for (const c of cases) {
+      const a = defaultProposalsFor(p, { id: 'q', ...c }, { now });
+      const b = defaultProposalsFor(p, { id: 'q', ...c }, { now });
+      expect(shape(a)).toEqual(shape(b));
+      if (a.length > 0) expect(a[0].id).not.toBe(b[0].id);
+    }
+  });
 });
 
 describe('autoEligible', () => {

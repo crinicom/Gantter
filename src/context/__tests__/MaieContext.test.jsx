@@ -231,6 +231,16 @@ describe('MaieContext acciones del hilo', () => {
     });
   });
 
+  it('en modo confirm el rescan NO aplica propuestas (Maie no muta sola)', () => {
+    const { mutateProject } = mockSetup();
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    expect(mutateProject).not.toHaveBeenCalled();
+  });
+
   it('sendThreadMessage persiste el mensaje y deja la pregunta en chatting', () => {
     const { mutateProject } = mockSetup();
     render(

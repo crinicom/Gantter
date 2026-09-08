@@ -7,7 +7,7 @@
 // `mutateProject`; su lógica vive acá y en services/inquiryEngine|proposalEngine|
 // applyEngine.
 
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { useProject } from '../hooks/useProject';
 import { useAuth } from '../hooks/useAuth';
@@ -65,48 +65,29 @@ export function MaieProvider({ children }) {
   const [actionLog, setActionLog] = useState([]);
   const [lastScanAt, setLastScanAt] = useState(null);
 
-  const inquiriesRef = useRef(inquiries);
-  const logRef = useRef(actionLog);
-  inquiriesRef.current = inquiries;
-  logRef.current = actionLog;
-
-  const projectIdRef = useRef(null);
-
-  // Reset / hidratación por proyecto: inquiries + actionLog viven en el doc.
+  // Reset / rescan por proyecto. El documento es la fuente de verdad (§12): el
+  // escaneo parte de `project.inquiries` persistido, no de un espejo local, para
+  // que mensajes del hilo y estados de propuestas decididos por el usuario nunca
+  // queden invisibles ni sean pisados por el rescan. Escribe solo si cambió
+  // (anti-loop). El modo auto (§9) está gateado por `applyMode`: en "confirmar"
+  // Maie no muta el tablero sola.
   useEffect(() => {
     if (!project) {
-      projectIdRef.current = null;
       setInquiries([]);
       setActionLog([]);
+      setLastScanAt(null);
       return;
     }
 
-    if (project.id !== projectIdRef.current) {
-      projectIdRef.current = project.id;
-      const hydrateInquiries = project.inquiries || [];
-      const hydrateLog = project.actionLog || [];
-      setInquiries(hydrateInquiries);
-      setActionLog(hydrateLog);
-      inquiriesRef.current = hydrateInquiries;
-      logRef.current = hydrateLog;
-    }
-
-    const result = scanInquiries(project, { existingInquiries: inquiriesRef.current });
-    const autoActions = selectAutoActions(project, result.inquiries, {
-      canAutoApply: autoEligible,
-    });
+    const docInquiries = project.inquiries || [];
+    const docLog = project.actionLog || [];
+    const result = scanInquiries(project, { existingInquiries: docInquiries });
+    const isAuto = (project?.settings?.applyMode ?? 'confirm') === 'auto';
+    const autoActions = isAuto
+      ? selectAutoActions(project, result.inquiries, { canAutoApply: autoEligible })
+      : [];
     const tick = new Date().toISOString();
 
-    if (
-      sameSet(result.inquiries, inquiriesRef.current) &&
-      result.logEntries.length === 0 &&
-      autoActions.length === 0
-    ) {
-      setLastScanAt(tick);
-      return;
-    }
-
-    // Modo auto: aplica las propuestas "obvias" vigentes y deja registro.
     let acc = project;
     const applied = [];
     const logTail = [];
@@ -118,31 +99,36 @@ export function MaieProvider({ children }) {
       applied.push({ inquiryId: inquiry.id, proposalId: proposal.id });
     }
 
-    const nextLog = dedupeLog(logRef.current, dedupeLog(result.logEntries, logTail));
-    const nextInquiries = result.inquiries.map((inq) => {
-      const hit = applied.find((x) => x.inquiryId === inq.id);
-      if (!hit) return inq;
-      return {
-        ...inq,
-        proposals: (inq.proposals || []).map((p) =>
-          p.id === hit.proposalId ? { ...p, status: PROPOSAL_STATUS.APPLIED } : p,
-        ),
-        updatedAt: tick,
-      };
-    });
+    const nextLog = dedupeLog(docLog, dedupeLog(result.logEntries, logTail));
+    const nextInquiries =
+      applied.length === 0
+        ? result.inquiries
+        : result.inquiries.map((inq) => {
+            const hit = applied.find((x) => x.inquiryId === inq.id);
+            if (!hit) return inq;
+            return {
+              ...inq,
+              proposals: (inq.proposals || []).map((p) =>
+                p.id === hit.proposalId ? { ...p, status: PROPOSAL_STATUS.APPLIED } : p,
+              ),
+              updatedAt: tick,
+            };
+          });
 
-    const composed = {
-      ...acc,
-      inquiries: nextInquiries,
-      actionLog: nextLog,
-    };
-
-    inquiriesRef.current = nextInquiries;
-    logRef.current = nextLog;
     setInquiries(nextInquiries);
     setActionLog(nextLog);
     setLastScanAt(tick);
-    mutateProject(() => composed, { debounce: 0 });
+
+    const changed =
+      applied.length > 0 ||
+      nextLog.length !== docLog.length ||
+      !sameSet(nextInquiries, docInquiries);
+
+    if (!changed) return;
+    mutateProject(
+      () => ({ ...acc, inquiries: nextInquiries, actionLog: nextLog }),
+      { debounce: 0 },
+    );
   }, [project, mutateProject]);
 
   const applyMode = project?.settings?.applyMode ?? 'confirm';

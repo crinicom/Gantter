@@ -43,6 +43,7 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
 | Slice 4 | `done` (implementado por OpenCode; review Grok hecha por OpenCode a pedido del humano — H1 y P3 aplicados en `0d4d8cf`) |
+| Slice 5 | `review` (implementado por OpenCode en `72f5e61`; review hecha por OpenCode a pedido del humano — P0 ×2 y P2 ×2 aplicados, ver Notas) |
 
 ---
 
@@ -257,5 +258,22 @@ Decisión humana previa al build (vía `§19` en el chat): **slice 5 → opencod
 - Tests: `npm test` **196/196** (antes 165; +7 proposalEngine, +9 applyEngine, +5 MaieContext, +7 InquiryThread, +2 MaiePanel, +1 serverBackend) · `npm run build` OK · dev server responde 200. Nuevos: `proposalEngine.test.js`, `applyEngine.test.js`, `InquiryThread.test.jsx`. `MaiePanel.test.jsx` cubre click pregunta → hilo → aprobar.
 
 _(Grok escribe aquí tras un review del diff del slice 5.)_
+
+### Review del slice 5 (2026-09-08) — hecha por OpenCode a pedido del humano; fixes aplicados
+
+Review del diff contra `bot_requirements.md` §7 y §9. Punch list con fixes:
+
+1. **P0 — modo confirm violaba §9**: el rescan despachaba propuestas elegibles **sin gate de `applyMode`** (auto-dispatch corría en confirm). Fix en `MaieContext.jsx`: el efecto solo auto-aplica cuando `applyMode === 'auto'`; en confirm, el rescan deja todo pendiente. Test negativo nuevo: "en modo confirm el rescan NO aplica" (`MaieContext.test.jsx`).
+2. **P0 — `existingInquiries` era un espejo stale** (`inquiriesRef.current`) que perdía la fuente de verdad: mensajes del hilo no aparecían, descartar no tenía feedback en la UI y aplicar podía revertirse a pendiente en el siguiente scan. Fix: el efecto lee **`project.inquiries` / `project.actionLog`** (el documento es la fuente), siempre `setInquiries`/`setActionLog`, y escribe solo si cambió (aplicadas > 0, log distinto o set estable distinto) → anti-loop intacto.
+3. **P2 — código muerto de chips**: `InquiryThread.jsx` solo renderizaba propuestas `pending` y dejaba inaccesibles las `applied`/`dismissed`. Ahora renderiza todas las propuestas y muestra el chip de cada estado. Test nuevo en `InquiryThread.test.jsx`.
+4. **P2 — `ctx.hasNearMilestone` inexistente** en `KIND_RESOLVE_TEXTS.MISSING_DATE`: `inquiryEngine.js` calculaba los hitos próximos después de montar `ctx`. Movido antes; `ctx.hasNearMilestone` es positivo cuando hay hito próximo (el texto de resolución ahora dice "ya no pisa un hito próximo" solo si realmente no lo hace).
+5. **P3 — `staleDays` hardcodeado 15** en `applyEngine.canApply`: ahora usa `MAIE_DEFAULTS.staleDays` de `constants/maie.js`.
+6. **Tests de integración nuevos** (`MaieContext.thread.test.jsx`, 3): con el scanner y `useAuth` reales vía provider — enviar mensaje lo muestra en el hilo y conserva `openCount 1`; descartar se refleja `dismissed` sin mutar la carta; aprobar aplica, marca `applied` y el rescan siguiente **no** lo revierte. Prueban los P0 1–2 contra el circuito completo.
+7. **Determinismo**: test nuevo en `proposalEngine.test.js` (mismo input → mismas propuestas, sin dependencia del clock unhyped).
+
+Anotado sin fix (depende del humano o slice 6): P1 confirm "No" debería pedir a Maie "¿qué habría que hacer entonces?" (deferido a slice 6 junto al reply templated); `autoEligible` `unassigned → assign` provisional a mínimo-carga hasta que §9 defina el match 1:1 de nombre (solo hay un seed con 2+ cargados, impacto nulo hoy); `dedupeLog` por `(summary|cardId)` puede descartar entradas legítimas repetidas; payload de overlap repite la carta en `cardIds`; 409 por LWW del más nuevo es tradeoff documentado.
+
+Aceptación re-verificada: `npm test` **202/202** (antes 196; +1 MaieContext negativo, +1 InquiryThread chips, +1 proposalEngine determinismo, +3 MaieContext.thread integración) · `npm run build` OK · dev server 200.
+Slice 5 queda en `review` para cierre del humano (o `done` si lo da por cerrado).
 
 ---

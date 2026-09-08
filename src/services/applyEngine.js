@@ -6,9 +6,10 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { TASK_STATUS } from '../constants/project';
+import { MAIE_DEFAULTS } from '../constants/maie';
 
 function staleDaysOf(project) {
-  return project?.settings?.staleDays ?? 15;
+  return project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
 }
 
 function workingSinceDays(task, now) {

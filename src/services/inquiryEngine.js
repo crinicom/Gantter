@@ -104,6 +104,13 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
   const milestoneWindowDays =
     settings.milestoneWindowDays ?? MAIE_DEFAULTS.milestoneWindowDays;
 
+  // Hitos próximos (no finalizados): marcan la ventana de missing-date.
+  const milestoneCandidates = tasks
+    .filter((t) => t.milestone && !isCompleted(t) && t.endDate)
+    .map((t) => ({ task: t, days: daysUntil(now, t.endDate) }));
+  const nearMilestones = milestoneCandidates
+    .filter((m) => m.days !== null && m.days >= 0 && m.days <= milestoneWindowDays);
+
   const ctx = {
     hasFullDates: (t) => Boolean(t && t.startDate && t.endDate),
     descLen: (t) => ((t && t.description) || '').trim().length,
@@ -114,17 +121,11 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
     },
     staleDays,
     minDescriptionChars,
+    hasNearMilestone: nearMilestones.length > 0,
   };
 
   const workingTask = (t) =>
     !isCompleted(t) && !t.milestone && isWorkingColumn(columnTitleOf(t, buckets));
-
-  // Hitos próximos (no finalizados): marcan la ventana de missing-date.
-  const milestoneCandidates = tasks
-    .filter((t) => t.milestone && !isCompleted(t) && t.endDate)
-    .map((t) => ({ task: t, days: daysUntil(now, t.endDate) }));
-  const nearMilestones = milestoneCandidates
-    .filter((m) => m.days !== null && m.days >= 0 && m.days <= milestoneWindowDays);
 
   // --- Genera candidatos por kind -------------------------------------------
   const candidates = [];
