@@ -225,7 +225,8 @@ Decisión humana previa al build: **el slice 4 lo implementa OpenCode** (aunque 
 - **Plumbing de datos**: `ProjectContext` ahora expone `mutateProject` y `setSettings` (puerta de datos para Maie, commitToStore sigue privado). `mergeProjects` (collab) conserva los **campos de documento** `ownerId/teamName/summary/image/coverSeed/inquiries/actionLog/huddle/settings` por LWW del doc más reciente (no se pierde estado de Maie en un merge realtime).
 - **Seed relativo**: `src/utils/seedAnchoring.js` `reanchorSeedDates` corre el calendario del template (go-live → hoy+7, timestamps y date-only incluidos, comentarios y miembros también); se aplica en `loadSeedProjects` (único loader: primer run, reset demo y mode server comparten). `DB/sample_data.json` no se tocó.
 - Tests: `npm test` **140/140** · `npm run build` OK. Nuevos: `inquiryEngine.test.js` (6), `seedAnchoring.test.js` (5), `MaiePanel.test.jsx` (4); extensión `collab.test.js` (campos doc) y `seed.test.js` (ancla ≈ hoy+7, gaps preservados, reset determinista).
+- **Despliegue (OpenCode, 2026-09-07)**: `git push github main` (`d74553f..84e7d05`) disparó el workflow "Deploy to Fly.io" (run #9 → **success**). App viva en `https://gantter.fly.dev` sirviendo el build de `84e7d05` (assets `index-ItpN-OpR.js` + fuentes 400–700; `/api/health` → `{"ok":true}`). Deploy continuo activo: cada push a `main` depliega.
 
-_(Grok escribe aquí tras un review del diff del slice 4.)_
+_(Grok escribe aquí tras un review del diff del slice 4. La app live permite probar el panel sin build local.)_
 
 ---
