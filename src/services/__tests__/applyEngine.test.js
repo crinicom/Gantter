@@ -1,0 +1,175 @@
+import { describe, it, expect } from 'vitest';
+import { canApply, apply, selectAutoActions, applyEngine } from '../applyEngine';
+
+const DAY = 86400000;
+const day = (offset) => new Date(Date.now() + offset * DAY).toISOString();
+const date = (offset) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10);
+
+const members = [
+  { id: 'm_lucia', name: 'Lucía Ríos' },
+  { id: 'm_martin', name: 'Martín Vega' },
+];
+
+const buckets = [
+  { id: 'b_backlog', name: 'Backlog' },
+  { id: 'b_listo', name: 'Listo' },
+  { id: 'b_curso', name: 'En curso' },
+];
+
+function task(overrides = {}) {
+  return {
+    id: 't_' + Math.random().toString(36).slice(2, 8),
+    title: 'Carta',
+    name: 'Carta',
+    description: '',
+    assignedUsers: [],
+    startDate: null,
+    endDate: null,
+    status: 'todo',
+    blocked: false,
+    milestone: false,
+    comments: [],
+    bucketId: 'b_listo',
+    createdAt: day(-30),
+    updatedAt: day(-30),
+    lastActivityAt: day(-30),
+    ...overrides,
+  };
+}
+
+function project(overrides = {}) {
+  return {
+    id: 'proj_1',
+    members,
+    buckets,
+    tasks: [],
+    actionLog: [],
+    settings: { staleDays: 15 },
+    ...overrides,
+  };
+}
+
+const pendingProposal = (overrides = {}) => ({
+  id: 'p1',
+  action: 'assign',
+  label: 'Asignar la carta',
+  payload: { taskId: 't1', memberId: 'm_lucia' },
+  needsInput: false,
+  status: 'pending',
+  comment: 'Sin dueño, quedó asignada a Lucía.',
+  ...overrides,
+});
+
+describe('canApply', () => {
+  it('permite asignar cuando el miembro existe y todavía no está en la carta', () => {
+    const p = project({ tasks: [task({ id: 't1' })] });
+    expect(canApply(p, pendingProposal())).toBe(true);
+  });
+
+  it('rechaza asignar si ya está asignado o el miembro no existe', () => {
+    const p = project({ tasks: [task({ id: 't1', assignedUsers: [members[0]] })] });
+    expect(canApply(p, pendingProposal())).toBe(false);
+    expect(
+      canApply(p, pendingProposal({ payload: { taskId: 't1', memberId: 'm_ausente' } })),
+    ).toBe(false);
+  });
+
+  it('rechaza propuestas vencidas o needsInput', () => {
+    const p = project({
+      tasks: [task({ id: 't1', status: 'completed' })],
+    });
+    expect(canApply(p, pendingProposal())).toBe(false);
+    expect(canApply(p, pendingProposal({ needsInput: true }))).toBe(false);
+  });
+
+  it('move solo aplica a cartas realmente estancadas', () => {
+    const stale = task({ id: 't1', lastActivityAt: day(-20) });
+    const fresh = task({ id: 't2', lastActivityAt: day(-1) });
+    const p = project({ tasks: [stale, fresh] });
+    const move = (taskId) =>
+      pendingProposal({ action: 'move', payload: { taskId, bucketId: 'b_backlog' } });
+    expect(canApply(p, move('t1'))).toBe(true);
+    expect(canApply(p, move('t2'))).toBe(false);
+  });
+
+  it('set-dates valida el rango y que no haya fechas', () => {
+    const p = project({ tasks: [task({ id: 't1' })] });
+    expect(
+      canApply(
+        p,
+        pendingProposal({ action: 'set-dates', payload: { taskId: 't1', startDate: date(0), endDate: date(5) } }),
+      ),
+    ).toBe(true);
+    const withDates = project({ tasks: [task({ id: 't1', startDate: date(0), endDate: date(5) })] });
+    expect(
+      canApply(
+        withDates,
+        pendingProposal({ action: 'set-dates', payload: { taskId: 't1', startDate: date(0), endDate: date(5) } }),
+      ),
+    ).toBe(false);
+  });
+});
+
+describe('apply', () => {
+  it('asigna el miembro, comenta la carta en voz de Maie y registra el log', () => {
+    const p = project({ tasks: [task({ id: 't1' })] });
+    const proposal = pendingProposal();
+    const out = apply(p, proposal, { source: 'confirm', now: new Date('2026-09-08T10:00:00Z') });
+    const appliedTask = out.project.tasks.find((t) => t.id === 't1');
+    expect(appliedTask.assignedUsers.map((u) => u.id)).toEqual(['m_lucia']);
+    expect(appliedTask.comments).toHaveLength(1);
+    expect(appliedTask.comments[0]).toMatchObject({ author: 'Maie', text: proposal.comment });
+    expect(out.project.actionLog).toHaveLength(1);
+    expect(out.project.actionLog[0]).toMatchObject({
+      source: 'confirm',
+      cardId: 't1',
+      summary: proposal.comment,
+    });
+  });
+
+  it('set-dates y set-blocked mutan la carta y dejan log source auto', () => {
+    const p = project({ tasks: [task({ id: 't1' })] });
+    const prop = pendingProposal({
+      action: 'set-dates',
+      payload: { taskId: 't1', startDate: date(0), endDate: date(5) },
+    });
+    const out = apply(p, prop, { source: 'auto', now: new Date('2026-09-08T10:00:00Z') });
+    const t = out.project.tasks[0];
+    expect(t.startDate).toBe(date(0));
+    expect(t.endDate).toBe(date(5));
+    expect(out.project.actionLog[0].source).toBe('auto');
+
+    const blocked = apply(out.project, pendingProposal({
+      action: 'set-blocked',
+      payload: { taskId: 't1', blocked: true },
+    }), { source: 'auto' });
+    expect(blocked.project.tasks[0].blocked).toBe(true);
+  });
+});
+
+describe('selectAutoActions', () => {
+  it('selecciona solo propuestas pendientes aplicables y según autoEligible', () => {
+    const t = task({ id: 't1', lastActivityAt: day(-20) });
+    const p = project({ tasks: [t] });
+    const proposals = [
+      pendingProposal({ id: 'c1' }),
+      pendingProposal({ id: 'c2', action: 'move', payload: { taskId: 't1', bucketId: 'b_backlog' } }),
+      pendingProposal({ id: 'c3', action: 'set-blocked', payload: { taskId: 't1' } }),
+      pendingProposal({ id: 'c4', needsInput: true }),
+    ];
+    const inqs = [
+      { id: 'q1', kind: 'unassigned', status: 'open', proposals },
+    ];
+    const autoEligible = (proposal) => proposal.action !== 'move';
+
+    const selected = selectAutoActions(p, inqs, { canAutoApply: autoEligible });
+    // move c2 y needsInput c4 quedan fuera
+    expect(selected.map((s) => s.proposal.id).sort()).toEqual(['c1', 'c3']);
+  });
+
+  it('exporta applyEngine con la API pública', () => {
+    expect(applyEngine.canApply).toBe(canApply);
+    expect(applyEngine.apply).toBe(apply);
+    expect(applyEngine.selectAutoActions).toBe(selectAutoActions);
+  });
+});

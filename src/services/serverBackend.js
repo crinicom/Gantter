@@ -1,5 +1,5 @@
 import { apiBase } from '../config/appConfig';
-import { mergeProjects, sameProjectAs } from '../utils/collab';
+import { mergeProjects } from '../utils/collab';
 
 const URL = (p) => `${apiBase()}/api${p}`;
 
@@ -33,8 +33,10 @@ async function saveProject(project, { expectedVersion } = {}) {
       headers: { 'If-Match': String(base) },
     });
     if (status === 409 && data.remote) {
+      // Merge entidad por entidad. Si el remoto no aporta nada nuevo (el server
+      // quedó detrás del store optimista), igual se reintenta sobre su version
+      // como base: el cliente es más nuevo y gana (LWW), sanando el desync.
       const { project: merged } = mergeProjects(current, data.remote);
-      if (sameProjectAs(merged, current)) return false;
       current = merged;
       base = data.remote.version;
       attempt += 1;

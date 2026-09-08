@@ -34,15 +34,15 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 
 | Campo | Valor |
 |---|---|
-| Fecha | 2026-09-07 |
+| Fecha | 2026-09-08 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 4 — Panel Maie + scanner determinístico (implementado por OpenCode, review de Grok pendiente) |
+| Slice en curso | 5 — Click → hilo, auto/confirmar, propuestas, log (asignado a OpenCode por el humano, mismo precedente que slice 4) |
 | Owner | **opencode** |
 | Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
-| Slice 4 | `review` (implementado por OpenCode, pendiente review de Grok) |
+| Slice 4 | `done` (implementado por OpenCode; review Grok hecha por OpenCode a pedido del humano — H1 y P3 aplicados en `0d4d8cf`) |
 
 ---
 
@@ -56,8 +56,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 1 | Documento v1 + seed (Portal sucio + App móvil limpia) + reset demo | opencode | **done** | §12–13, §15.1/9/10 | commit `f20e3ad` + revisión `7aa8ef2` |
 | 2 | Board/Gantt: multi-asignado, blocked, sin fechas, overlap, hito, WIP no bloquea | opencode | **done** | §5–6 | implementado, fixes Grok |
 | 3 | Tokens visuales (papel/bosque, Fraunces+Figtree, cero emoji) | opencode | **done** | §14 | commits `a8a7e95`, `17838c0` y `21a0258` (fix H1) |
-| 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | opencode | **review** | §7–8 | commit `35adb76` (implementado; review Grok pendiente) |
-| 5 | Click → hilo, auto/confirmar, propuestas, log | grok | pending | §7, §9 | depende de 4 |
+| 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | opencode | **done** | §7–8 | commit `35adb76`; review Grok por OpenCode `0d4d8cf` |
+| 5 | Click → hilo, auto/confirmar, propuestas, log | opencode | **review** | §7, §9 | dependía de 4; asignado a OpenCode |
 | 6 | Chat LLM (`grok-4.5`) + fallback templated | grok | pending | §11 | depende de 5 |
 | 7 | Huddle in-app + standup demo que **muta** el tablero | grok | pending | §10, §17.5 | si el demo no mueve cartas, v1 no está |
 | 8 | Mobile ~390: tabs Tablero / Gantt / Maie | opencode | pending | §14, §17.7 | después de que exista el panel |
@@ -242,5 +242,20 @@ Fuera de tabla de slices (pedido directo del humano): fix de persistencia, featu
 
 Tests: `npm test` **165/165** (antes 140; +7 feedback, +7 FeedbackButton, +5 systemState, +3 MaieContext, +3 serverBackend) · `npm run build` OK (sin warning de claves duplicadas). Server smoke-tested local (health OK, `/api/feedback` 401 sin sesión).
 - **Despliegue (OpenCode, 2026-09-08)**: `git push github main` (`219d1c7..0d4d8cf`) → GH Actions run **34220452945 success** → Fly release **v12** (2m). Live verificado en `https://gantter.fly.dev`: `/api/health` ok, `/api/feedback` devuelve **401** sin sesión (ruta nueva servida), CSS `index-JfmJBa4E.css` = build 0d4d8cf. Verificación manual pendiente del humano: crear proyecto → agregar buckets/tareas → recargar y confirmar persistencia.
+
+### Slice 5 implementado por OpenCode (2026-09-08) — notas para Grok
+
+Decisión humana previa al build (vía `§19` en el chat): **slice 5 → opencode** (mismo precedente que slice 4); el **reply templated de Maie pasa al slice 6** (slice 5 es solo mecánica del hilo + propuestas desde catálogo §8); **hardening 409-identidad incluido** en este pase.
+
+- **Triage del backlog de feedback**: 1 sola entrada (`type: "comentario"`, autor Cristian N. Menajovsky, pantalla `board · hola mundo!`, 2026-09-08 11:29) que dice textualmente **"No hacer nada"** → sin acción. Su snapshot reveló `sync.status: "error"` en un proyecto con `version 63`; observación anotada (verificar próximo ciclo), no bug confirmado.
+- **Hardening 409 (Parte 0)**: `serverBackend.saveProject` ya no hace bail con `sameProjectAs` en un 409 idéntico; si el merge da `current` (server detrás del store optimista = desync), reintenta con `base = data.remote.version` y body `current` (LWW gana el más nuevo) → sana el desync y desaparece el error de sync sin causa en la barra. Se quitó la rutina `sameProjectAs`.
+- **`proposalEngine.js`** (+ `PROPOSAL_STATUS` en `constants/maie.js`): `defaultProposalsFor(project, base, { now })` genera 1–3 propuestas determinísticas por kind al **crear** la inquiry (no se recalculan en cada scan): `unassigned` → asignar al miembro con menos carga (empate por nombre); `stale` → mover a Backlog + marcar bloqueada; `missing-date` → fechar hoy→endDate del hito próximo; `overlap` → reasignar la barra de menor endDate al miembro menos cargado; `thin` → `needsInput` (se completa en chat). `autoEligible(kind)` limita el **modo auto** §9 a `unassigned→assign`, `missing-date→set-dates`, `stale→set-blocked` (no move/overlap/thin, no needsInput).
+- **`applyEngine.js`**: `canApply` (guarda aplicables-stale/fechas), `apply` → retorna `{ project, logEntry, task }` sin mutar, comentario en la carta `author: 'Maie'` + texto `proposal.comment`, log `{ id, at, source: 'auto'|'confirm', summary, cardId }`; `selectAutoActions` elige pendientes elegibles en un scan.
+- **`MaieContext.jsx`**: `sendThreadMessage(inquiryId, text)` persiste `thread[]` y pasa la inquiry a `chatting` (firma del usuario activo via `useAuth` || `ACTIVE_USER`); `applyProposal(inquiryId, proposalId, source='confirm')` aplica y resuelve la inquiry; `dismissProposal` descarta SIN aplicar; `snoozeInquiry` → `snoozed` + `snoozedUntil` = próximo miércoles 10:00 local (sintético hasta slice 7); auto-dispatch: el rescan aplica propuestas elegibles pendientes con comentario + log `source:'auto'` (una sola `mutateProject` compuesta).
+- **`InquiryThread.jsx`** (nuevo) + `MaiePanel.jsx`: las preguntas de la pestaña Preguntas ahora son **clickeables** (button) y abren el hilo en overlay con una sola mutación por paso (volver cierra sin mutar). Hilo: evidencia + bubbles de hilo + sección Propuestas por modo (confirmar → Sí/No; auto → botón único "Aplicar"; `needsInput` → sin botones, se completa en chat; aplicada/descartada → chip) + input "Responder como {usuario}" + snooze. En modo auto, el botón del hilo llama `applyProposal(id, proposalId, 'auto')` (misma semántica que el auto-dispatch). Registro muestra badges de fuente (Auto/Confirmada/Manual).
+- **P2 heredado del slice 4 (anotado para slice 6)**: evidencia congelada en preguntas persistentes y branch muerto `ctx.hasNearMilestone` en `KIND_RESOLVE_TEXTS.MISSING_DATE`.
+- Tests: `npm test` **196/196** (antes 165; +7 proposalEngine, +9 applyEngine, +5 MaieContext, +7 InquiryThread, +2 MaiePanel, +1 serverBackend) · `npm run build` OK · dev server responde 200. Nuevos: `proposalEngine.test.js`, `applyEngine.test.js`, `InquiryThread.test.jsx`. `MaiePanel.test.jsx` cubre click pregunta → hilo → aprobar.
+
+_(Grok escribe aquí tras un review del diff del slice 5.)_
 
 ---

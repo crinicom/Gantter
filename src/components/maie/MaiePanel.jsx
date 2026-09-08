@@ -8,6 +8,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import MaieMark from './MaieMark';
 import ApplyModeToggle from './ApplyModeToggle';
+import InquiryThread from './InquiryThread';
 import { useMaie } from '../../context/MaieContext';
 import {
   INQUIRY_KIND_META,
@@ -40,7 +41,7 @@ function KindBadge({ kind }) {
   );
 }
 
-function QuestionsTab() {
+function QuestionsTab({ onOpen }) {
   const { inquiries } = useMaie();
   const open = inquiries.filter(
     (i) => i.status === INQUIRY_STATUS.OPEN || i.status === INQUIRY_STATUS.CHATTING,
@@ -57,16 +58,21 @@ function QuestionsTab() {
 
   const rows = (items) =>
     items.map((inq) => (
-      <article key={inq.id} className="border-b border-gray-100 px-4 py-3">
-        <div className="mb-1 flex items-center gap-2">
+      <button
+        key={inq.id}
+        type="button"
+        onClick={() => onOpen(inq.id)}
+        className="block w-full border-b border-gray-100 px-4 py-3 text-left hover:bg-surface"
+      >
+        <span className="mb-1 flex items-center gap-2">
           <KindBadge kind={inq.kind} />
           {inq.status === INQUIRY_STATUS.CHATTING && (
             <span className="text-[11px] text-forest-600">En diálogo</span>
           )}
-        </div>
-        <p className="text-sm text-ink">{inq.question}</p>
-        <p className="mt-1 text-xs text-muted">{inq.evidence}</p>
-      </article>
+        </span>
+        <span className="block text-sm text-ink">{inq.question}</span>
+        <span className="mt-1 block text-xs text-muted">{inq.evidence}</span>
+      </button>
     ));
 
   return (
@@ -95,6 +101,12 @@ function HuddleTab() {
   );
 }
 
+const SOURCE_BADGES = {
+  auto: { label: 'Auto', tone: 'bg-forest-100 text-forest-700' },
+  confirm: { label: 'Confirmada', tone: 'bg-rust/15 text-rust' },
+  manual: { label: 'Manual', tone: 'bg-gray-100 text-gray-600' },
+};
+
 function LogTab() {
   const { actionLog } = useMaie();
   if (actionLog.length === 0) {
@@ -103,15 +115,23 @@ function LogTab() {
   return (
     <div className="px-4 py-3">
       <ul className="space-y-3">
-        {actionLog.map((entry) => (
-          <li key={entry.id} className="flex items-start gap-2.5 text-sm">
-            <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-forest-600" aria-hidden="true" />
-            <div>
-              <p className="text-ink">{entry.summary}</p>
-              <p className="text-xs text-muted">{timeAgo(entry.at)}</p>
-            </div>
-          </li>
-        ))}
+        {actionLog.map((entry) => {
+          const badge = SOURCE_BADGES[entry.source] || SOURCE_BADGES.manual;
+          return (
+            <li key={entry.id} className="flex items-start gap-2.5 text-sm">
+              <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-forest-600" aria-hidden="true" />
+              <div>
+                <p className="text-ink">{entry.summary}</p>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <span className={`inline-flex rounded px-1.5 py-0.5 text-[11px] font-medium ${badge.tone}`}>
+                    {badge.label}
+                  </span>
+                  <span className="text-xs text-muted">{timeAgo(entry.at)}</span>
+                </div>
+              </div>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -120,10 +140,11 @@ function LogTab() {
 export default function MaiePanel() {
   const { openCount, applyMode, setApplyMode } = useMaie();
   const [tab, setTab] = useState(TABS[0].id);
+  const [chatInquiryId, setChatInquiryId] = useState(null);
 
   return (
     <aside
-      className="hidden w-[360px] shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-surface lg:flex"
+      className="relative hidden w-[360px] shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-surface lg:flex"
       aria-label="Panel de Maie"
     >
       <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
@@ -161,10 +182,14 @@ export default function MaiePanel() {
       </nav>
 
       <div className="flex-1 overflow-y-auto bg-paper/40">
-        {tab === 'questions' && <QuestionsTab />}
+        {tab === 'questions' && <QuestionsTab onOpen={setChatInquiryId} />}
         {tab === 'huddle' && <HuddleTab />}
         {tab === 'log' && <LogTab />}
       </div>
+
+      {chatInquiryId && (
+        <InquiryThread inquiryId={chatInquiryId} onClose={() => setChatInquiryId(null)} />
+      )}
     </aside>
   );
 }

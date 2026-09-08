@@ -96,7 +96,25 @@ describe('ServerBackend', () => {
     expect(sentHeaders).toEqual(['3', '2']);
   });
 
-  it('devuelve false tras 409 con merge identico', async () => {
+  it('409 con merge identico (server detras) se sana reintentando y acierta', async () => {
+    let calls = 0;
+    mockFetch(async (_url, opts) => {
+      calls += 1;
+      if (calls === 1) {
+        return {
+          status: 409,
+          ok: false,
+          json: async () => ({ remote: { id: 'p1', version: 2, name: 'X' } }),
+        };
+      }
+      return { status: 200, ok: true, json: async () => ({ id: 'p1', version: 3 }) };
+    });
+    const ok = await ServerBackend.saveProject({ id: 'p1', version: 2, name: 'X' });
+    expect(ok).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it('false tras agotar reintentos con 409 persistente', async () => {
     mockFetch(async () => ({
       status: 409,
       ok: false,

@@ -23,6 +23,7 @@ import {
   MAIE_DEFAULTS,
   WORKING_COLUMNS,
 } from '../constants/maie';
+import { defaultProposalsFor } from './proposalEngine';
 
 function normColumnTitle(title) {
   return String(title || '')
@@ -248,8 +249,9 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
   });
 
   wanted.forEach((c) => {
-    inquiries.push({
-      id: uuidv4(),
+    const id = uuidv4();
+    const base = {
+      id,
       projectId: project?.id || null,
       cardId: c.cardId,
       kind: c.kind,
@@ -257,9 +259,12 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
       evidence: c.evidence,
       status: INQUIRY_STATUS.OPEN,
       thread: [],
-      proposals: [],
       createdAt: tick,
       updatedAt: tick,
+    };
+    inquiries.push({
+      ...base,
+      proposals: defaultProposalsFor(project, base, { now }),
     });
   });
 

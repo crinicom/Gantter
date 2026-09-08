@@ -4,6 +4,10 @@ import MaiePanel from '../MaiePanel';
 import { MaieContext } from '../../../context/MaieContext';
 import { INQUIRY_STATUS } from '../../../constants/maie';
 
+vi.mock('../../../hooks/useAuth', () => ({
+  useAuth: () => ({ user: null }),
+}));
+
 const baseValue = {
   inquiries: [
     {
@@ -13,6 +17,8 @@ const baseValue = {
       status: INQUIRY_STATUS.OPEN,
       question: 'Martín tiene 2 barras que se pisan. ¿Cuál es la prioridad real de esta semana?',
       evidence: '2 barras de Martín Vega que se pisan.',
+      thread: [],
+      proposals: [],
     },
     {
       id: 'q_stale',
@@ -21,6 +27,17 @@ const baseValue = {
       status: INQUIRY_STATUS.OPEN,
       question: 'Lleva 18 días sin movimiento. ¿Sigue siendo trabajo activo?',
       evidence: 'Última actividad hace 18 días.',
+      thread: [],
+      proposals: [
+        {
+          id: 'p_stale',
+          action: 'move',
+          label: 'Mover a «Backlog»',
+          payload: { taskId: 't2', bucketId: 'b_backlog' },
+          needsInput: false,
+          status: 'pending',
+        },
+      ],
     },
     {
       id: 'q_parqueada',
@@ -29,6 +46,8 @@ const baseValue = {
       status: INQUIRY_STATUS.SNOOZED,
       question: 'Recién abierta, esta carta no cuenta qué conlleva.',
       evidence: 'Descripción corta (0 car.).',
+      thread: [],
+      proposals: [],
     },
   ],
   openCount: 2,
@@ -39,6 +58,10 @@ const baseValue = {
   staleDays: 15,
   lastScanAt: null,
   setApplyMode: vi.fn(),
+  sendThreadMessage: vi.fn(),
+  applyProposal: vi.fn(),
+  dismissProposal: vi.fn(),
+  snoozeInquiry: vi.fn(),
 };
 
 function renderPanel(valueOverrides = {}) {
@@ -77,5 +100,21 @@ describe('MaiePanel', () => {
     renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Registro' }));
     expect(screen.getByText('«QA staging release» cargó sus fechas')).toBeInTheDocument();
+  });
+
+  it('click en una pregunta abre su hilo con las propuestas y al aprobar aplica', () => {
+    const applyProposal = vi.fn();
+    renderPanel({ applyProposal });
+    fireEvent.click(screen.getByRole('button', { name: /Lleva 18 días sin movimiento/ }));
+    expect(screen.getByRole('button', { name: /Volver a las preguntas/ })).toBeInTheDocument();
+    expect(screen.getByText('Mover a «Backlog»')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Sí' }));
+    expect(applyProposal).toHaveBeenCalledWith('q_stale', 'p_stale', 'confirm');
+  });
+
+  it('el registro muestra la fuente de cada entrada', () => {
+    renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Registro' }));
+    expect(screen.getByText('Auto')).toBeInTheDocument();
   });
 });

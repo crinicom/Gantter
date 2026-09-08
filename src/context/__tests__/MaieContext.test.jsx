@@ -1,11 +1,13 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MaieProvider, MaieContext } from '../MaieContext';
 import * as useProjectModule from '../../hooks/useProject';
+import * as useAuthModule from '../../hooks/useAuth';
 import * as inquiryEngine from '../../services/inquiryEngine';
 
 vi.mock('../../hooks/useProject');
+vi.mock('../../hooks/useAuth');
 vi.mock('../../services/inquiryEngine');
 
 const snoozedInquiry = {
@@ -57,6 +59,7 @@ describe('MaieProvider hydration', () => {
       inquiries: [snoozedInquiry],
       logEntries: [],
     });
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
   });
 
   function setupProject(project) {
@@ -112,3 +115,203 @@ describe('MaieProvider hydration', () => {
     expect(screen.getByTestId('log-count')).toHaveTextContent('0');
   });
 });
+
+// Fixture con una tarea sin dueño y su inquiry/propuesta pending.
+function task(tid = 't1') {
+  return {
+    id: tid,
+    title: 'Auth magic link',
+    name: 'Auth magic link',
+    description: '',
+    assignedUsers: [],
+    startDate: null,
+    endDate: null,
+    status: 'todo',
+    blocked: false,
+    comments: [],
+    bucketId: 'b_listo',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    lastActivityAt: new Date().toISOString(),
+  };
+}
+
+function actionInquiry() {
+  return {
+    id: 'q_a',
+    cardId: 't1',
+    kind: 'unassigned',
+    status: 'open',
+    question: '¿De quién es el siguiente movimiento?',
+    evidence: 'Sin responsable.',
+    thread: [],
+    proposals: [
+      {
+        id: 'p_a1',
+        action: 'assign',
+        label: 'Asignar la carta a Lucía',
+        payload: { taskId: 't1', memberId: 'm_lucia' },
+        needsInput: false,
+        status: 'pending',
+        comment: 'Sin dueño, quedó asignada a Lucía.',
+      },
+    ],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function actionProject() {
+  return {
+    id: 'proj_a',
+    version: 2,
+    members: [
+      { id: 'm_lucia', name: 'Lucía Ríos' },
+      { id: 'm_martin', name: 'Martín Vega' },
+    ],
+    buckets: [
+      { id: 'b_backlog', name: 'Backlog' },
+      { id: 'b_listo', name: 'Listo' },
+    ],
+    tasks: [task()],
+    actionLog: [],
+    inquiries: [actionInquiry()],
+    settings: { applyMode: 'confirm' },
+  };
+}
+
+function Harness({ project }) {
+  const ctx = React.useContext(MaieContext);
+  if (!ctx) return null;
+  return (
+    <div>
+      <span data-testid="harness-ids">{ctx.inquiries.map((i) => i.id).join(',')}</span>
+      <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maie')}>
+        send
+      </button>
+      <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'confirm')}>
+        aprobar
+      </button>
+      <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'auto')}>
+        aplicar-auto
+      </button>
+      <button type="button" onClick={() => ctx.dismissProposal('q_a', 'p_a1')}>
+        descartar
+      </button>
+      <button type="button" onClick={() => ctx.snoozeInquiry('q_a')}>
+        snooze
+      </button>
+    </div>
+  );
+}
+
+function mockSetup() {
+  const mutateProject = vi.fn((mutator) => mutator);
+  vi.mocked(useProjectModule.useProject).mockReturnValue({
+    project: actionProject(),
+    mutateProject,
+    setSettings: vi.fn(),
+  });
+  return { mutateProject };
+}
+
+// Ejecuta el mutador capturado por mutateProject sobre un doc fresco y limpio.
+function runLastMutator(mutateProject) {
+  const calls = mutateProject.mock.calls;
+  const mutator = calls[calls.length - 1][0];
+  return mutator(mockProjectFrom(actionProject()));
+}
+
+describe('MaieContext acciones del hilo', () => {
+  beforeEach(() => {
+    vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
+    vi.mocked(inquiryEngine.scanInquiries).mockReturnValue({
+      inquiries: [actionInquiry()],
+      logEntries: [],
+    });
+  });
+
+  it('sendThreadMessage persiste el mensaje y deja la pregunta en chatting', () => {
+    const { mutateProject } = mockSetup();
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'send' }));
+    const next = runLastMutator(mutateProject);
+    expect(next.inquiries[0].thread).toHaveLength(1);
+    expect(next.inquiries[0].thread[0]).toMatchObject({
+      role: 'user',
+      author: 'Lucía Ríos',
+      text: 'Hola Maie',
+    });
+    expect(next.inquiries[0].status).toBe('chatting');
+  });
+
+  it('applyProposal aplica la acción, comenta la carta y registra el log source confirm', () => {
+    const { mutateProject } = mockSetup();
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'aprobar' }));
+    const next = runLastMutator(mutateProject);
+    expect(next.tasks[0].assignedUsers.map((u) => u.id)).toEqual(['m_lucia']);
+    expect(next.tasks[0].comments[0]).toMatchObject({ author: 'Maie' });
+    expect(next.inquiries[0].proposals[0].status).toBe('applied');
+    expect(next.actionLog[0]).toMatchObject({ source: 'confirm', cardId: 't1' });
+  });
+
+  it('dismissProposal marca descartada sin mutar tareas', () => {
+    const { mutateProject } = mockSetup();
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'descartar' }));
+    const next = runLastMutator(mutateProject);
+    expect(next.inquiries[0].proposals[0].status).toBe('dismissed');
+    expect(next.tasks[0].assignedUsers).toEqual([]);
+  });
+
+  it('snoozeInquiry aparca hasta el próximo standup', () => {
+    const { mutateProject } = mockSetup();
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'snooze' }));
+    const next = runLastMutator(mutateProject);
+    expect(next.inquiries[0].status).toBe('snoozed');
+    expect(next.inquiries[0].snoozedUntil).toBeDefined();
+  });
+
+  it('en modo auto el rescan aplica las propuestas obvias y deja log source auto', () => {
+    const projectWithAuto = { ...actionProject(), settings: { applyMode: 'auto' } };
+    const mutateProject = vi.fn((mutator) => mutator);
+    vi.mocked(useProjectModule.useProject).mockReturnValue({
+      project: projectWithAuto,
+      mutateProject,
+      setSettings: vi.fn(),
+    });
+    // El effect detecta la propuesta pending aplicable y aplica + log.
+    render(
+      <MaieProvider>
+        <Harness />
+      </MaieProvider>,
+    );
+    const mutator = mutateProject.mock.calls[0][0];
+    const next = mutator(mockProjectFrom(projectWithAuto));
+    expect(next.tasks[0].assignedUsers.map((u) => u.id)).toEqual(['m_lucia']);
+    expect(next.inquiries[0].proposals[0].status).toBe('applied');
+    expect(next.actionLog[0]).toMatchObject({ source: 'auto', cardId: 't1' });
+  });
+});
+
+function mockProjectFrom(project) {
+  return JSON.parse(JSON.stringify(project));
+}

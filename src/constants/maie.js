@@ -16,6 +16,13 @@ export const INQUIRY_STATUS = {
   SNOOZED: 'snoozed',
 };
 
+// Estados de una propuesta de acción (§12 ProposedAction).
+export const PROPOSAL_STATUS = {
+  PENDING: 'pending',
+  APPLIED: 'applied',
+  DISMISSED: 'dismissed',
+};
+
 export const MAIE_ROLE = 'Facilitadora';
 
 // Etiquetas cortas para los badges de kind (§14: rust para stale/overlap, bosque para ok).
