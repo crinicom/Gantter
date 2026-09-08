@@ -22,19 +22,21 @@ async function request(path, { method = 'GET', body, headers, signal } = {}) {
 }
 
 // Guarda con CAS: reintenta una vez tras el merge del cliente si hay 409.
-async function saveProject(project) {
+async function saveProject(project, { expectedVersion } = {}) {
   let attempt = 0;
   let current = project;
+  let base = expectedVersion ?? (project.version || 0);
   while (attempt < 2) {
     const { status, data } = await request(`/projects/${current.id}`, {
       method: 'PUT',
       body: current,
-      headers: { 'If-Match': String(current.version || 0) },
+      headers: { 'If-Match': String(base) },
     });
     if (status === 409 && data.remote) {
       const { project: merged } = mergeProjects(current, data.remote);
       if (sameProjectAs(merged, current)) return false;
       current = merged;
+      base = data.remote.version;
       attempt += 1;
       continue;
     }

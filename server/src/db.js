@@ -47,9 +47,16 @@ db.exec(`
     created_at TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS feedback (
+    id TEXT PRIMARY KEY,
+    document TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+
   CREATE INDEX IF NOT EXISTS idx_projects_owner ON projects(owner_id);
   CREATE INDEX IF NOT EXISTS idx_members_user ON project_members(user_id);
   CREATE INDEX IF NOT EXISTS idx_invites_project ON invites(project_id);
+  CREATE INDEX IF NOT EXISTS idx_feedback_created ON feedback(created_at);
 `);
 
 export function getDb() {

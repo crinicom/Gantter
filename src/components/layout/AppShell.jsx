@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useProject } from '../../hooks/useProject';
 import Navbar from './Navbar';
 import TabsSwitcher, { VIEWS } from './TabsSwitcher';
@@ -11,6 +11,10 @@ import MaiePanel from '../maie/MaiePanel';
 export default function AppShell() {
   const { project, isLoading } = useProject();
   const [activeView, setActiveView] = useState(VIEWS.BOARD);
+
+  useEffect(() => {
+    document.documentElement.dataset.activeView = activeView;
+  }, [activeView]);
 
   if (isLoading) {
     return (

@@ -23,8 +23,9 @@ Lo marcado **v2** en `bot_requirements.md` no se construye. No inventar features
 ## Antes de codear
 
 1. Leer `HANDOFF.md` (slice en curso, owner, archivos prohibidos).
-2. Leer el § de `bot_requirements.md` que cita ese slice.
-3. Si tu owner no coincide con el slice `in-progress`, no implementes: actualizá notas o pará.
+2. Revisar el backlog de feedback (errores y mejoras): `GET /api/feedback` en prod o `feedbackService.listFeedback()` en dev. Triagear entradas nuevas dentro del alcance del slice.
+3. Leer el § de `bot_requirements.md` que cita ese slice.
+4. Si tu owner no coincide con el slice `in-progress`, no implementes: actualizá notas o pará.
 
 ## Reglas
 

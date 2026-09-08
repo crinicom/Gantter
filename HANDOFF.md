@@ -9,11 +9,12 @@ Producto: `bot_requirements.md`. No inventar features fuera de ese archivo. Lo m
 ## Cómo trabajar
 
 1. Leer este archivo y `bot_requirements.md` antes de tocar código.
-2. Implementar **solo** el slice `in-progress` cuyo `owner` seas vos.
-3. No tocar archivos en **No tocar** de ese slice, ni slices de otro owner.
-4. Al terminar: `npm test` y `npm run build` verdes, actualizar este archivo (`status: review`, notas), **parar**. No arrancar el slice siguiente.
-5. Grok revisa el diff contra el § citado de `bot_requirements.md`. Si pasa, escribe el próximo slice aquí. Si no, deja punch list en **Notas**.
-6. **Commits y deploys: solo OpenCode.** Grok no commitea ni pushea.
+2. Revisar el backlog de feedback (`GET /api/feedback` en prod, `feedbackService.listFeedback()` en dev) y triagear lo nuevo dentro del slice.
+3. Implementar **solo** el slice `in-progress` cuyo `owner` seas vos.
+4. No tocar archivos en **No tocar** de ese slice, ni slices de otro owner.
+5. Al terminar: `npm test` y `npm run build` verdes, actualizar este archivo (`status: review`, notas), **parar**. No arrancar el slice siguiente.
+6. Grok revisa el diff contra el § citado de `bot_requirements.md`. Si pasa, escribe el próximo slice aquí. Si no, deja punch list en **Notas**.
+7. **Commits y deploys: solo OpenCode.** Grok no commitea ni pushea.
 
 Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectContext.jsx` / `AppShell.jsx` / `projectStorage.js`.
 
@@ -228,5 +229,17 @@ Decisión humana previa al build: **el slice 4 lo implementa OpenCode** (aunque 
 - **Despliegue (OpenCode, 2026-09-07)**: `git push github main` (`d74553f..84e7d05`) disparó el workflow "Deploy to Fly.io" (run #9 → **success**). App viva en `https://gantter.fly.dev` sirviendo el build de `84e7d05` (assets `index-ItpN-OpR.js` + fuentes 400–700; `/api/health` → `{"ok":true}`). Deploy continuo activo: cada push a `main` depliega.
 
 _(Grok escribe aquí tras un review del diff del slice 4. La app live permite probar el panel sin build local.)_
+
+### Persistencia entre deploys + feedback + hidratación Maie (OpenCode, 2026-09-08)
+
+Fuera de tabla de slices (pedido directo del humano): fix de persistencia, feature de feedback y un fix pendiente de la review del slice 4.
+
+1. **Root cause del bug de persistencia entre deploys (CAS)**: `ProjectContext.commitToStore` bumpaba `version` **antes** de `persist`, y `ServerBackend.saveProject` mandaba ese version ya incrementado como `If-Match`. El servidor comparaba contra su versión almacenada (más vieja) → **409 en el 100% de los saves** → solo persistían creación y reset (no buckets/tareas). Fix: `commitToStore`/`persistRemote` pasan `expectedVersion: prev.version` (base, sin bump); `ServerBackend.saveProject` usa `expectedVersion` como `If-Match` y ante 409 reintenta con `data.remote.version` (self-healing). `persist` ya no esconde el fallo: si `saveProject` devuelve `false` → `syncStatus ERROR`.
+2. **Fix H1 de la review del slice 4 (hidratación Maie)**: `MaieContext` ahora hidrata `inquiries`/`actionLog` desde el documento persistido al abrir un proyecto (ref por `projectId`), conserva ids/snooze/Registro en vez de regenerar todo en cada reload; resetea limpio al cambiar de proyecto.
+3. **Feedback** (backlog "errores y mejoras"): botón flotante abajo-izquierda en todas las pantallas (incl. login) con overlay (tipo Error/Sugerencia/Comentario + mensaje). Persistencia: server → `POST/GET /api/feedback` (tabla `feedback` en SQLite) con cola offline `gantter.feedback.pending.v1` que se flushea al iniciar sesión; offline → `gantter.feedback.v1`. Cada entrada guarda `author`, `screen` y un snapshot de `systemState` (modo/backend/proyecto/conteos/sync/viewport/userAgent/hash). Nueva ruta `server/src/routes/feedback.js`.
+4. **P3 de la review corregido**: claves duplicadas `mutateProject`/`setSettings` en el `value` de `ProjectContext` eliminadas.
+5. **Proceso**: `AGENTS.md` y `HANDOFF.md` ahora exigen revisar el backlog de feedback (`GET /api/feedback` en prod / `listFeedback()` en dev) antes de cada slice.
+
+Tests: `npm test` **165/165** (antes 140; +7 feedback, +7 FeedbackButton, +5 systemState, +3 MaieContext, +3 serverBackend) · `npm run build` OK (sin warning de claves duplicadas). Server smoke-tested local (health OK, `/api/feedback` 401 sin sesión).
 
 ---

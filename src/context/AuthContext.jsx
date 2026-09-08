@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthService } from '../services/authService';
+import { feedbackService } from '../services/feedbackService';
 
 export const AuthContext = createContext(null);
 
@@ -30,6 +31,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const authedUser = await AuthService.login();
       setUser(authedUser);
+      void feedbackService.flushPending();
       return authedUser;
     } finally {
       setIsLoggingIn(false);

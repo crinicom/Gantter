@@ -30,11 +30,24 @@ export function MaieProvider({ children }) {
   inquiriesRef.current = inquiries;
   logRef.current = actionLog;
 
+  const projectIdRef = useRef(null);
+
   useEffect(() => {
     if (!project) {
+      projectIdRef.current = null;
       setInquiries([]);
       setActionLog([]);
       return;
+    }
+
+    if (project.id !== projectIdRef.current) {
+      projectIdRef.current = project.id;
+      const hydrateInquiries = project.inquiries || [];
+      const hydrateLog = project.actionLog || [];
+      setInquiries(hydrateInquiries);
+      setActionLog(hydrateLog);
+      inquiriesRef.current = hydrateInquiries;
+      logRef.current = hydrateLog;
     }
 
     const result = scanInquiries(project, { existingInquiries: inquiriesRef.current });

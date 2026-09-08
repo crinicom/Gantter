@@ -52,12 +52,17 @@ export const ProjectProvider = ({ children }) => {
     [store, activeProjectId],
   );
 
-  const persist = useCallback(async (baseProject) => {
+  const persist = useCallback(async (baseProject, { expectedVersion } = {}) => {
     if (!baseProject) return false;
     setSyncStatus(PROJECT_STATUS.SYNCING);
     try {
       const nextProject = { ...baseProject, updatedAt: new Date().toISOString() };
-      const ok = await backendRef.current.saveProject(nextProject);
+      const ok = await backendRef.current.saveProject(nextProject, { expectedVersion });
+      if (!ok) {
+        setError('Conflicto al guardar');
+        setSyncStatus(PROJECT_STATUS.ERROR);
+        return false;
+      }
       setLastSyncAt(new Date());
       setSyncStatus(PROJECT_STATUS.SYNCED);
       RealtimeService.broadcast({
@@ -65,7 +70,7 @@ export const ProjectProvider = ({ children }) => {
         projectId: nextProject.id,
         project: nextProject,
       });
-      return ok;
+      return true;
     } catch (err) {
       setError(err.message || 'Error al guardar');
       setSyncStatus(PROJECT_STATUS.ERROR);
@@ -73,9 +78,12 @@ export const ProjectProvider = ({ children }) => {
     }
   }, []);
 
-  const persistRemote = useCallback(async (nextProject) => {
+  const persistRemote = useCallback(async (nextProject, { expectedVersion } = {}) => {
     try {
-      await backendRef.current.saveProject({ ...nextProject, updatedAt: new Date().toISOString() });
+      await backendRef.current.saveProject(
+        { ...nextProject, updatedAt: new Date().toISOString() },
+        { expectedVersion },
+      );
     } catch (err) {
       setError(err.message || 'Error al guardar');
     }
@@ -108,10 +116,10 @@ export const ProjectProvider = ({ children }) => {
       if (debounce) {
         if (saveTimer.current) clearTimeout(saveTimer.current);
         saveTimer.current = setTimeout(() => {
-          void persist(next);
+          void persist(next, { expectedVersion: prev.version });
         }, SYNC_DEBOUNCE_MS);
       } else {
-        void persist(next);
+        void persist(next, { expectedVersion: prev.version });
       }
       return next;
     },
@@ -192,7 +200,7 @@ export const ProjectProvider = ({ children }) => {
       }
 
       if (!sameProjectAs(merged, remote)) {
-        void persistRemote(merged);
+        void persistRemote(merged, { expectedVersion: remote.version });
       }
     },
     [applyToStore, persistRemote],
@@ -706,8 +714,6 @@ error,
       setSettings,
       reload,
       persist,
-      mutateProject,
-      setSettings,
       openProject,
       closeProject,
       createProject: createNewProject,
