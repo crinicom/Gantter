@@ -1,9 +1,13 @@
 // Chat de Maie (§11 Contrato de IA). Solo se llama cuando el usuario envía un
 // mensaje en el hilo: se arma un contexto acotado del tablero (cartas
-// relevantes, miembros, modo) y se pide un reply estructurado a grok-4.5 vía el
-// relay del server (la clave vive server-side). Si no hay key, falla el call o
-// la app corre sin server: degradar a una respuesta socrática templated por
-// `kind` (§8), sin inventar mutaciones. Nunca lanza: el tablero no crashea.
+// relevantes, miembros, modo) y se pide un reply estructurado a OpenAI
+// (`gpt-4o-mini`, elegido por costo mínimo) vía el relay del server (la clave
+// vive server-side). Si no hay key, falla el call o la app corre sin server:
+// degradar a una respuesta socrática templated por `kind` (§8), sin inventar
+// mutaciones. Nunca lanza: el tablero no crashea.
+// Presupuesto de tokens (costo): contexto ≤1200 chars, mensaje del usuario
+// ≤1000 chars, hilo último 3 turnos y max_tokens 300 del lado server. Respuestas
+// largas o tableros enormes quedan fuera del modelo, no de la UI.
 // Las acciones que vienen del LLM se validan contra ids reales del proyecto
 // (`sanitizeActions`) y se traducen a la misma forma de propuesta que genera
 // proposalEngine.
@@ -24,7 +28,10 @@ export const MAIE_ACTION_TYPES = [
   'create-card',
 ];
 
-const MAX_CONTEXT_CHARS = 1600;
+// Cap de contexto enviado al modelo (costo). La carta en cuestión va primero.
+const MAX_CONTEXT_CHARS = 1200;
+const MAX_USER_TEXT_CHARS = 1000;
+const MAX_THREAD_TURNS = 3;
 
 function truncate(value, max = 160) {
   const s = String(value || '').trim();
@@ -311,8 +318,8 @@ export async function requestMaieChat({
     kind: inquiry.kind,
     mode: project?.settings?.applyMode ?? 'confirm',
     boardContext: buildBoardContext({ project, inquiry, now }),
-    userText: String(userText).trim().slice(0, 2000),
-    threadTail: (inquiry.thread || []).slice(-4).map((m) => `${m.role}: ${m.text}`),
+    userText: String(userText).trim().slice(0, MAX_USER_TEXT_CHARS),
+    threadTail: (inquiry.thread || []).slice(-MAX_THREAD_TURNS).map((m) => `${m.role}: ${m.text}`),
   };
 
   let attempt = 0;

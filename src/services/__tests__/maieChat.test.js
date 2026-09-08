@@ -74,6 +74,23 @@ describe('buildBoardContext', () => {
     expect(ctx).toContain('Hitos próximos');
   });
 
+  it('nunca supera el cap de contexto aunque el tablero sea enorme', () => {
+    const big = project({
+      tasks: Array.from({ length: 60 }, (_, i) => ({
+        ...project().tasks[0],
+        id: `t${i}`,
+        name: `Carta numero ${i} de descripcion larga para inflar el contexto`,
+        milestone: i % 2 === 0,
+      })),
+    });
+    const ctx = maieChatModule.buildBoardContext({
+      project: big,
+      inquiry: inquiry(),
+      now: new Date('2026-09-08T00:00:00Z'),
+    });
+    expect(ctx.length).toBeLessThanOrEqual(1200);
+  });
+
   it('en kind overlap suma las cartas con fechas visibles', () => {
     const ctx = maieChatModule.buildBoardContext({
       project: project(),
@@ -208,5 +225,33 @@ describe('requestMaieChat', () => {
     });
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(res.source).toBe('templated');
+  });
+
+  it('recorta mensaje largo, contexto y hilo al presupuesto de tokens', async () => {
+    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
+    vi.mocked(appConfig.apiBase).mockReturnValue('https://gantter.fly.dev');
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ reply: 'Ok.', actions: [] }),
+    });
+    const inq = inquiry({
+      thread: Array.from({ length: 8 }, (_, i) => ({
+        id: `m${i}`,
+        role: i % 2 ? 'maie' : 'user',
+        author: 'X',
+        text: `mensaje del turno ${i}`,
+      })),
+    });
+    const res = await maieChatModule.requestMaieChat({
+      project: project(),
+      inquiry: inq,
+      userText: 'a'.repeat(3000),
+    });
+    const [, options] = global.fetch.mock.calls[0];
+    const body = JSON.parse(options.body);
+    expect(body.userText).toHaveLength(1000);
+    expect(body.threadTail).toHaveLength(3);
+    expect(body.boardContext.length).toBeLessThanOrEqual(1200);
+    expect(res.source).toBe('llm');
   });
 });

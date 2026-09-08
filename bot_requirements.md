@@ -272,7 +272,7 @@ Si el modo es auto, 1, 2 y 4 se aplican y van al log. Si es confirmar, aparecen 
 - El guion del standup demo y las propuestas asociadas.
 - Aplicar / rechazar acciones, log, mutaciones.
 
-### Qué usa LLM (xAI, `grok-4.5`)
+### Qué usa LLM (OpenAI, `gpt-4o-mini`)
 
 Solo cuando el usuario **envía un mensaje** en el chat de una pregunta (o una línea de huddle que no es el guion demo).
 
@@ -305,7 +305,7 @@ Salida estructurada:
 
 Si no hay API key o falla el call: degradar con una respuesta socrática templated según el `kind` de la pregunta, sin inventar mutaciones. Nunca crashear el tablero.
 
-Cap de tokens bajo (~700–800). Un reintento máximo. El gasto es del dueño de la app: no escanear el tablero con LLM.
+Cap de tokens bajo: `max_tokens` de salida 300, contexto acotado ~1200 chars y mensaje del usuario ≤1000 chars. Un reintento máximo. El gasto es del dueño de la app: no escanear el tablero con LLM.
 
 ---
 

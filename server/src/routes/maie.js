@@ -1,27 +1,27 @@
 // Relay de Maie (§11 Contrato de IA): recibe el contexto acotado del tablero y
-// el mensaje del usuario, llama a grok-4.5 (xAI) con la clave del dueño, y
-// devuelve `{ reply, actions }` estructurado. Si no hay clave, falla el
-// upstream o se rompe el JSON: responde 50x/400 para que el cliente degrade a la
-// respuesta socrática templated. Nunca se llama en page load: solo por mensaje.
+// el mensaje del usuario, llama a OpenAI (`gpt-4o-mini`, el modelo grande más
+// barato) con la clave del dueño, y devuelve `{ reply, actions }` estructurado.
+// Si no hay clave, falla el upstream o se rompe el JSON: responde 50x/400 para
+// que el cliente degrade a la respuesta socrática templated, sin gasto. Nunca
+// se llama en page load: solo por mensaje.
 
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 
-const XAI_URL = 'https://api.x.ai/v1/chat/completions';
-const XAI_MODEL = process.env.XAI_MODEL || 'grok-4.5';
+const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
+const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
-// Intención del system prompt (§11, no es texto sagrado).
+// Intención del system prompt (§11, no es texto sagrado). Corto: cada token de
+// entrada cuesta; el cap del presupuesto está en max_tokens.
 const SYSTEM_PROMPT = [
-  'Sos Maie, facilitadora socrática de Gantter.',
-  'Trabajás sobre un tablero Kanban + Gantt que te pasan como contexto (cartas relevantes, miembros, fechas, modo auto/confirm).',
-  'No das órdenes. Preguntás. 2-4 oraciones, español rioplatense, sin emoji.',
-  'Si el usuario ya dio un dato accionable, devolvé acciones concretas con ids reales de cartas y miembros. Las acciones se aplican solo si el id existe y tiene sentido.',
-  'Si no alcanza, hacés una sola pregunta más. No interrogatorio.',
-  'Hablá del trabajo, no de la persona.',
-  'Respondé SOLO JSON válido con esta forma exacta: {"reply": "string", "actions": [{"type": "assign|move|set-dates|set-description|set-blocked|add-comment|create-card", "payload": {"taskId": "...", "memberId": "...", "bucketId": "...", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD", "text": "...", "title": "..."}}]}.',
-  'Si no hay acción concreta y segura, actions va vacío.',
+  'Sos Maie, facilitadora socrática de Gantter, sobre un tablero Kanban + Gantt (contexto: cartas, miembros, fechas, modo auto/confirm).',
+  'No das órdenes: preguntás. 2-4 oraciones, español rioplatense, sin emoji.',
+  'Si el usuario dio un dato accionable, devolvé acciones concretas con ids reales que existan en el contexto.',
+  'Si no alcanza, una sola pregunta más. No interrogatorio. Hablá del trabajo, no de la persona.',
+  'Respondé SOLO JSON válido: {"reply": "string", "actions": [{"type": "assign|move|set-dates|set-description|set-blocked|add-comment|create-card", "payload": {"taskId":"...","memberId":"...","bucketId":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","text":"...","title":"..."}}]}.',
+  'Sin acción concreta y segura: actions va vacío.',
 ].join(' ');
 
 router.post('/maie/chat', requireAuth, async (req, res) => {
@@ -29,35 +29,35 @@ router.post('/maie/chat', requireAuth, async (req, res) => {
   if (typeof boardContext !== 'string' || typeof userText !== 'string' || !userText.trim()) {
     return res.status(400).json({ error: 'Faltan contexto y mensaje' });
   }
-  if (!process.env.XAI_API_KEY) {
+  if (!process.env.OPENAI_API_KEY) {
     return res.status(503).json({ error: 'no-key', message: 'Maie está sin clave' });
   }
 
   const parts = [
-    `Contexto del tablero:\n${boardContext.slice(0, 3000)}`,
+    `Contexto del tablero:\n${boardContext.slice(0, 1200)}`,
     `Tipo de pregunta: ${kind || 'general'}`,
     `Modo del tablero: ${mode || 'confirm'}`,
   ];
   if (Array.isArray(threadTail) && threadTail.length) {
-    parts.push(`Hilo reciente:\n${threadTail.join('\n')}`);
+    parts.push(`Hilo reciente:\n${threadTail.join('\n').slice(0, 800)}`);
   }
-  parts.push(`Mensaje del usuario:\n${String(userText).slice(0, 2000)}`);
+  parts.push(`Mensaje del usuario:\n${String(userText).slice(0, 1000)}`);
 
   try {
-    const up = await fetch(XAI_URL, {
+    const up = await fetch(OPENAI_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.XAI_API_KEY}`,
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: XAI_MODEL,
+        model: OPENAI_MODEL,
         messages: [
           { role: 'system', content: SYSTEM_PROMPT },
           { role: 'user', content: parts.join('\n\n') },
         ],
-        max_tokens: 400,
-        temperature: 0.6,
+        max_tokens: 300,
+        temperature: 0.4,
         response_format: { type: 'json_object' },
       }),
     });
