@@ -65,38 +65,32 @@ function canonicalJson(value) {
  * Fusiona el documento local con uno remoto (entidad por entidad).
  * @returns {{ project: object, conflicts: Array<{kind,id,name}> }}
  */
-// Campos de estado de Maie y metadatos que no se fusionan entidad por entidad:
-// se conserva la versión más reciente del documento (LWW simple). Evita perder
-// inquiries/actionLog/settings en un merge realtime.
-const DOC_FIELDS = [
-  'ownerId',
-  'teamName',
-  'summary',
-  'image',
-  'coverSeed',
-  'inquiries',
-  'actionLog',
-  'huddle',
-  'settings',
-];
-
+// El merge arranca de la versión completa del documento más reciente (LWW por
+// `updatedAt`) y solo recalculan las listas fusionables (buckets/tasks/members).
+// Así se conservan todos los campos del documento canónico (columns/cards, etc.)
+// y un merge realtime nunca devuelve un documento parcial: si el resultado
+// equivale a la copia remota, los ecos del propio guardado no disparan un
+// nuevo guardado (rompe el loop save-echo).
 export function mergeProjects(local, remote) {
   const conflicts = [];
+  const winner = ts(remote) >= ts(local) ? remote : local;
   const merged = {
-    id: ts(remote) >= ts(local) ? remote.id ?? local.id : local.id ?? remote.id,
-    name: ts(remote) >= ts(local) ? remote.name ?? local.name : local.name ?? remote.name,
-    description:
-      ts(remote) >= ts(local) ? remote.description ?? local.description : local.description ?? remote.description,
-    createdAt: local.createdAt || remote.createdAt,
-    updatedAt: ts(remote) >= ts(local) ? remote.updatedAt || local.updatedAt : local.updatedAt || remote.updatedAt,
-    version: Math.max(local.version || 0, remote.version || 0),
-    buckets: mergeEntities(local.buckets, remote.buckets, 'id', 'bucket', conflicts),
-    tasks: mergeEntities(local.tasks, remote.tasks, 'id', 'task', conflicts),
-    members: mergeEntities(local.members, remote.members, 'id', 'member', conflicts),
+    ...winner,
+    createdAt: local?.createdAt || remote?.createdAt,
+    updatedAt: winner?.updatedAt || local?.updatedAt || remote?.updatedAt,
+    version: Math.max(local?.version || 0, remote?.version || 0),
+    buckets: mergeEntities(local?.buckets, remote?.buckets, 'id', 'bucket', conflicts),
+    tasks: mergeEntities(local?.tasks, remote?.tasks, 'id', 'task', conflicts),
+    members: mergeEntities(local?.members, remote?.members, 'id', 'member', conflicts),
   };
-  DOC_FIELDS.forEach((key) => {
-    merged[key] =
-      ts(remote) >= ts(local) ? (remote[key] ?? local[key]) : (local[key] ?? remote[key]);
-  });
   return { project: merged, conflicts };
+}
+
+// Compara si dos documentos son el mismo salvo por el sello de `updatedAt`.
+// Sirve para ignorar los ecos del propio guardado (el server re-sella el
+// timestamp): si el contenido y la versión son iguales, no hay cambio real.
+export function sameProjectIgnoringTimestamps(projectA, projectB) {
+  const { updatedAt: _ua, ...restA } = projectA || {};
+  const { updatedAt: _ub, ...restB } = projectB || {};
+  return canonicalJson(restA) === canonicalJson(restB);
 }

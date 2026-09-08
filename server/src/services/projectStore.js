@@ -44,6 +44,31 @@ export function getProjectDoc(id) {
   return row ? JSON.parse(row.document) : null;
 }
 
+// Compara dos documentos ignorando el sello de `updatedAt` (claves ordenadas).
+// El propio guardado re-sella el timestamp: si la versión coincide y el resto
+// es idéntico, se trata de un eco duplicado, no de un cambio real.
+function projectBody(value) {
+  const { updatedAt, ...rest } = value || {};
+  return JSON.stringify(sortKeys(rest));
+}
+
+function sortKeys(value) {
+  if (Array.isArray(value)) return value.map(sortKeys);
+  if (value && typeof value === 'object') {
+    return Object.keys(value)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = sortKeys(value[key]);
+        return acc;
+      }, {});
+  }
+  return value;
+}
+
+function sameProjectBody(a, b) {
+  return projectBody(a) === projectBody(b);
+}
+
 // Devuelve el documento actual del proyecto para un usuario (o null).
 export function getVisibleProject(user, id) {
   const doc = getProjectDoc(id);
@@ -97,6 +122,18 @@ export function saveProject(user, id, doc, expectedVersion) {
   const db = getDb();
   const exists = db.prepare('SELECT version FROM projects WHERE id = ?').get(id);
   if (!exists) return { error: 'Proyecto no encontrado', status: 404 };
+
+  // Guardado idempotente: si el documento entrante ya está en la versión
+  // persistida con el mismo contenido (ignorando el timestamp), es un eco del
+  // propio guardado. Devolver el estado actual sin tocar version/updatedAt
+  // corta los loops de guardado que drenan la versión.
+  if ((doc?.version ?? -1) === exists.version) {
+    const row = db.prepare('SELECT document FROM projects WHERE id = ?').get(id);
+    const stored = JSON.parse(row.document);
+    if (sameProjectBody(doc, stored)) {
+      return { doc: stored };
+    }
+  }
 
   if (typeof expectedVersion === 'number' && exists.version !== expectedVersion) {
     const current = db.prepare('SELECT document FROM projects WHERE id = ?').get(id);

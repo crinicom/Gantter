@@ -4,7 +4,7 @@ import { createEmptyTask, canCompleteTask } from '../models/task';
 import { createEmptyBucket } from '../models/bucket';
 import { linkTasks, unlinkTasks } from '../utils/taskHelpers';
 import { clampProgress } from '../utils/progress';
-import { mergeProjects, sameProjectAs } from '../utils/collab';
+import { mergeProjects, sameProjectAs, sameProjectIgnoringTimestamps } from '../utils/collab';
 import { isProjectVisible, visibleProjects } from '../utils/projectAccess';
 import { MEMBER_ROLES } from '../models/member';
 import { TASK_STATUS, PROJECT_STATUS } from '../constants/project';
@@ -187,6 +187,10 @@ export const ProjectProvider = ({ children }) => {
       if (!remote || !remoteId || remoteId !== activeIdRef.current) return;
       const local = storeRef.current[remoteId];
       if (!local || sameProjectAs(remote, local)) return;
+      // Eco del propio guardado: el server re-sella `updatedAt` al persistir, así
+      // que el eco difiere del local solo en el timestamp. No es un cambio real:
+      // adoptarlo provocaría un re-guardado (y un loop de versión) en server mode.
+      if (sameProjectIgnoringTimestamps(remote, local)) return;
 
       const { project: merged, conflicts } = mergeProjects(local, remote);
       if (sameProjectAs(merged, local)) return;

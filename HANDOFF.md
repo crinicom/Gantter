@@ -289,6 +289,8 @@ Decisión humana previa al build: **slice 6 → opencode** (mismo precedente que
 - Tests: `npm test` **217/217** (antes 202; +10 maieChat, +2 applyEngine create-card, +1 MaieContext send+reply, +1 MaieContext.thread reply, +2 InquiryThread indicador, +1 maieChat presupuesto de tokens, +1 maieChat contexto cap) · `npm run build` OK. Proveedor OpenAI `gpt-4o-mini` + recorte de costo implementado (contexto ≤1200 chars, mensaje ≤1000, hilo 3 turnos, `max_tokens 300`, temp 0.4).
 - **Backlog de feedback**: prod `/api/feedback` exige sesión y no se pudo triagear net; la única entrada previa (Cristian, "No hacer nada") fue triageada en slice 5. Sin entradas nuevas accionables.
 
+**Fix prod (2026-09-08, OpenCode, fuera de slice):** el contador de versión subía ~1/s en server mode por un loop save-echo (el server siempre bump+`updatedAt` al guardar y re-emitía por SSE al autor; `mergeProjects` devolvía un doc parcial sin `columns`/`cards`, así `merged ≠ remote` y se re-guardaba, bump+1 por vuelta). Arreglos: `mergeProjects` arranca del ganador LWW completo (no pierde campos); `handleRemote` ignora ecos que solo difieren en `updatedAt`; `saveProject` server idempotente (misma versión + mismo contenido → devuelve el estado sin bump). Tests `collab.test.js` nuevos (221 total).
+
 **Requiere acción del operador** (no se commitean secrets): setear la clave para habilitar OpenAI en prod → `flyctl secrets set OPENAI_API_KEY=sk-...` (modelo default `gpt-4o-mini`; opcional `flyctl secrets set OPENAI_MODEL=gpt-4o-mini` y `flyctl secrets unset XAI_API_KEY XAI_MODEL` para limpiar). Sin esto, prod sigue servicial templated sin errores ni gasto.
 
 _(Grok escribe aquí tras un review del diff del slice 6.)_

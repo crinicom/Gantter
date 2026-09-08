@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextVersion, sameProjectAs, mergeProjects } from '../collab';
+import { nextVersion, sameProjectAs, sameProjectIgnoringTimestamps, mergeProjects } from '../collab';
 
 const entity = (id, name, updatedAt) => ({ id, name, updatedAt });
 
@@ -124,5 +124,55 @@ describe('mergeProjects', () => {
     expect(project.ownerId).toBe('u_lucia');
     expect(project.teamName).toBe('Equipo Río');
     expect(project.summary).toBe('Demo');
+  });
+});
+
+describe('sameProjectIgnoringTimestamps', () => {
+  it('detecta ecos del propio guardado (misma versión/contenido, otro updatedAt)', () => {
+    const project = {
+      ...baseProject,
+      version: 9,
+      columns: [{ id: 'c1' }],
+      cards: [{ id: 'k1' }],
+    };
+    const echo = { ...project, updatedAt: '2026-09-02T18:00:00.000Z' };
+    expect(sameProjectAs(echo, project)).toBe(false);
+    expect(sameProjectIgnoringTimestamps(echo, project)).toBe(true);
+  });
+
+  it('es false cuando el contenido difiere aunque updatedAt sea igual', () => {
+    const a = { ...baseProject, name: 'A', updatedAt: '2026-09-02T18:00:00.000Z' };
+    const b = { ...baseProject, name: 'B', updatedAt: '2026-09-02T18:00:00.000Z' };
+    expect(sameProjectIgnoringTimestamps(a, b)).toBe(false);
+  });
+});
+
+describe('merge (loop save-echo server mode)', () => {
+  it('conserva columns/cards (y demás campos canónicos) del ganador en el merge', () => {
+    const remoteWithExtra = {
+      ...baseProject,
+      version: 3,
+      updatedAt: '2026-09-02T18:00:00.000Z',
+      columns: [{ id: 'c1', name: 'Listo' }],
+      cards: [{ id: 'k1', title: 'Carta' }],
+      settings: { applyMode: 'confirm' },
+    };
+    const local = { ...baseProject, version: 3, updatedAt: '2026-09-02T17:00:00.000Z' };
+    const { project } = mergeProjects(local, remoteWithExtra);
+    expect(project.columns).toEqual([{ id: 'c1', name: 'Listo' }]);
+    expect(project.cards).toEqual([{ id: 'k1', title: 'Carta' }]);
+  });
+
+  it('el merge de un eco queda idéntico al remoto (no dispara persistRemote)', () => {
+    const echo = {
+      ...baseProject,
+      version: 3,
+      updatedAt: '2026-09-02T18:00:00.000Z',
+      columns: [{ id: 'c1' }],
+      cards: [{ id: 'k1' }],
+    };
+    const local = { ...baseProject, version: 3, updatedAt: '2026-09-02T17:00:00.000Z' };
+    const { project } = mergeProjects(local, echo);
+    expect(sameProjectAs(project, echo)).toBe(true);
   });
 });
