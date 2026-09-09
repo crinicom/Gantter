@@ -1,0 +1,2 @@
+# Respuesta templated (sin LLM) para cartas sin fechas (§8 kind `missing-date`). {title} = carta, {milestone} = frase calculada del hito.
+«{title}» no tiene fechas y {milestone}. ¿Qué se puede comprometer esta semana?

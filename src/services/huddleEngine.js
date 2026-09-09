@@ -12,6 +12,15 @@ import { requestMaieChat, actionsToProposals, MAIE_ACTION_TYPES } from './maieCh
 import { apply as applyAction } from './applyEngine';
 import { PROPOSAL_STATUS } from '../constants/maie';
 import { TASK_STATUS } from '../constants/project';
+import { renderPrompt, sectionText } from '../utils/renderPrompt';
+import welcomeMd from '@maie/huddle/welcome.md?raw';
+import replyMd from '@maie/huddle/reply.md?raw';
+import demoMd from '@maie/huddle/demo.md?raw';
+import recapMd from '@maie/huddle/recap.md?raw';
+
+// Fallback por si un ritual no tiene sección en welcome.md (nunca crashear).
+const WELCOME_DEFAULT =
+  'Hoy es el standup de la semana. Reproduzco la ronda del equipo seed y, si algo pide decisión, queda listo para aprobar. Atenti a las cartas que se iluminan.';
 
 // Velocidad del autoplay del standup demo (§17.5).
 export const DEMO_STEP_MS = 2200;
@@ -62,17 +71,8 @@ function nearestMilestone(project, now) {
 }
 
 export function welcomeFor(ritual) {
-  const texts = {
-    standup:
-      'Hoy es el standup de la semana. Reproduzco la ronda del equipo seed y, si algo pide decisión, queda listo para aprobar. Atenti a las cartas que se iluminan.',
-    refinement:
-      'Arrancamos el refinamiento. Pasame qué carta hay que pulir y voy leyendo el tablero con vos.',
-    planning:
-      'Arrancamos el planning. ¿Qué entra esta iteración? Nombrame las cartas y vamos acordando fechas y dueños.',
-    blockers:
-      'Arrancamos con los bloqueos. Tirá las cartas trabadas y vemos qué se destraba primero.',
-  };
-  return texts[ritual] || texts.standup;
+  const byRitual = sectionText(welcomeMd, ritual) || sectionText(welcomeMd, 'standup');
+  return byRitual || WELCOME_DEFAULT;
 }
 
 function makeLine({ role, speaker, text, cardIds = [], at, id }) {
@@ -93,20 +93,25 @@ function dedupe(list) {
 // Pasos del guion de standup (§10, orden y acciones del equipo seed). Cada paso
 // es un descriptor; la propuesta/acción se resuelve contra el tablero vivo en
 // `applyDemoStep`. `question` evita aplicar: Maie pregunta y la carta se ilumina.
+// El copy de cada paso vive en `maie/huddle/demo.md` (config a nivel app); acá
+// quedan los ids, speakers, acciones y el cálculo de {vars} contra el tablero.
 export function buildStandupSteps(project, now) {
   const webhook = findCard(project, 'card_webhook', 'Webhook de pagos');
   const magicLink = findCard(project, 'card_magic_link', 'Auth magic link');
   const onboarding = findCard(project, 'card_onboarding', 'Rediseñar onboarding');
   const qaStaging = findCard(project, 'card_qa_staging', 'QA staging release');
   const milestone = nearestMilestone(project, now);
+  const webhookName = webhook?.name || 'Webhook de pagos';
+  const magicLinkName = magicLink?.name || 'Auth magic link';
+  const onboardingName = onboarding?.name || 'Rediseñar onboarding';
+  const qaStagingName = qaStaging?.name || 'QA staging release';
 
   return [
     {
       id: 'webhook-blocker',
       speakerId: 'u_diego',
       cardId: webhook?.id || null,
-      text:
-        '«Webhook de pagos» sigue esperando los certificados del proveedor. Lo dejo marcado como bloqueado así no se pierde de vista.',
+      text: renderPrompt(sectionText(demoMd, 'webhook-blocker'), { webhook: webhookName }),
       action:
         webhook && !webhook.blocked && !isCompleted(webhook)
           ? { type: 'set-blocked', payload: { taskId: webhook.id, blocked: true, blockedReason: 'Certificados pendientes del proveedor de pagos.' } }
@@ -116,8 +121,7 @@ export function buildStandupSteps(project, now) {
       id: 'magic-link-owner',
       speakerId: 'u_martin',
       cardId: magicLink?.id || null,
-      text:
-        '«Auth magic link» lleva días en Listo sin dueño y el viernes hay release. Me lo quedo.',
+      text: renderPrompt(sectionText(demoMd, 'magic-link-owner'), { magicLink: magicLinkName }),
       action:
         magicLink &&
         !isCompleted(magicLink) &&
@@ -129,9 +133,8 @@ export function buildStandupSteps(project, now) {
       id: 'onboarding-stale',
       speakerId: 'u_sofia',
       cardId: onboarding?.id || null,
-      text:
-        '«Rediseñar onboarding» está quieta desde agosto; no tengo certeza de que siga en el plan.',
-      question: `¿«${onboarding?.name || 'Rediseñar onboarding'}» sigue en el plan o se archiva como recuerdo?`,
+      text: renderPrompt(sectionText(demoMd, 'onboarding-stale'), { onboarding: onboardingName }),
+      question: renderPrompt(sectionText(demoMd, 'onboarding-stale-pregunta'), { onboarding: onboardingName }),
       action: null,
     },
     {
@@ -139,8 +142,13 @@ export function buildStandupSteps(project, now) {
       speakerId: 'u_ana',
       cardId: qaStaging?.id || null,
       text: milestone
-        ? `«QA staging release» no tiene fechas y el hito «${milestone.task.name}» está a ${milestone.days} día${milestone.days === 1 ? '' : 's'}. Lo dejo de hoy al go-live.`
-        : '«QA staging release» no tiene fechas y el hito está cerca. ¿Lo fechamos?',
+        ? renderPrompt(sectionText(demoMd, 'qa-staging-dates-con-hito'), {
+            qa: qaStagingName,
+            milestone: milestone.task.name,
+            milestoneDays: milestone.days,
+            milestonePlural: milestone.days === 1 ? '' : 's',
+          })
+        : renderPrompt(sectionText(demoMd, 'qa-staging-dates-sin-hito'), { qa: qaStagingName }),
       action:
         qaStaging &&
         !isCompleted(qaStaging) &&
@@ -349,7 +357,8 @@ export function applyDemoStep({ project, session, now = new Date() } = {}) {
 }
 
 // Recap al cerrar/terminar: decisiones aplicadas, propuestas sin confirmar y
-// cartas mencionadas sin tocar (§10 "¿Qué queda sin dueño?").
+// cartas mencionadas sin tocar (§10 "¿Qué queda sin dueño?"). Las frases
+// numéricas son cálculo (plurales); el cierre vive en `maie/huddle/recap.md`.
 export function recapText(session) {
   const pendingCount = (session.pending || []).filter((p) => p.status === PROPOSAL_STATUS.PENDING).length;
   const applied = session.demo?.appliedCount || 0;
@@ -365,7 +374,7 @@ export function recapText(session) {
   if (mentionedUntouched.length > 0) {
     parts.push(`Cartas mencionadas y sin tocar: ${mentionedUntouched.length}.`);
   }
-  parts.push('¿Qué queda sin dueño para el próximo paso?');
+  parts.push(renderPrompt(sectionText(recapMd, 'final'), {}));
   return parts.join(' ');
 }
 
@@ -415,7 +424,9 @@ export async function interpretHuddleLine({ project, session, userText, now = ne
 }
 
 // Fallback socrático sin LLM: si la línea menciona una carta del tablero la
-// reconoce (sigue el hilo); si no, la pregunta genérica de siempre.
+// reconoce (sigue el hilo); si no, la pregunta genérica de siempre. El copy
+// vive en `maie/huddle/reply.md`; la lista de gaps (sin dueño/sin fechas/
+// bloqueada) se usa también en tests y matching, por eso queda en código.
 export function templatedHuddleReply(userText, { project } = {}) {
   const text = String(userText || '').trim();
   const short = text.slice(0, 60);
@@ -429,9 +440,9 @@ export function templatedHuddleReply(userText, { project } = {}) {
     if (!mentioned.startDate || !mentioned.endDate) gaps.push('sin fechas');
     if (mentioned.blocked) gaps.push('bloqueada');
     const detail = gaps.length ? ` la noto ${gaps.join(', ')}` : '';
-    return `«${mentioned.name}» es la carta${detail}. ¿La tomamos en esta ronda o la dejamos para el siguiente paso?`;
+    return renderPrompt(sectionText(replyMd, 'contextual'), { card: mentioned.name, gaps: detail });
   }
-  return `Anoto «${short || 'la línea'}» en la ronda. ¿Qué carta del tablero tendría que tomar esa línea?`;
+  return renderPrompt(sectionText(replyMd, 'generica'), { line: short || 'la línea' });
 }
 
 export const huddleEngine = {

@@ -6,6 +6,8 @@
 // se llama en page load: solo por mensaje.
 
 import { Router } from 'express';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -13,17 +15,46 @@ const router = Router();
 const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
-// Intención del system prompt (§11, no es texto sagrado). Corto: cada token de
-// entrada cuesta; el cap del presupuesto está en max_tokens.
-const SYSTEM_PROMPT = [
+// Intención del system prompt (§11, no es texto sagrado). La persona se lee de
+// `maie/system/persona.md` (config a nivel app, editable sin tocar código);
+// el contrato JSON de salida es estructural (el parsing depende de su forma
+// exacta) y queda fijo acá. Corto: cada token de entrada cuesta; el cap del
+// presupuesto está en max_tokens.
+const DEFAULT_PERSONA_PROMPT = [
   'Sos Maie, facilitadora socrática de Gantter, sobre un tablero Kanban + Gantt (contexto: cartas, miembros, fechas, modo auto/confirm).',
   'No das órdenes: preguntás. 2-4 oraciones, español rioplatense, sin emoji.',
   'Si el usuario dio un dato accionable, devolvé acciones concretas con ids reales que existan en el contexto.',
   'Si no alcanza, una sola pregunta más. No interrogatorio. Hablá del trabajo, no de la persona.',
   'Si el tipo de pregunta es "huddle", seguí la conversación del "Hilo reciente" y contestá dentro de ese contexto: no reinicies la misma pregunta que ya respondió.',
+].join(' ');
+
+const SYS_CONTRACT = [
   'Respondé SOLO JSON válido: {"reply": "string", "actions": [{"type": "assign|move|set-dates|set-description|set-blocked|add-comment|create-card", "payload": {"taskId":"...","memberId":"...","bucketId":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","text":"...","title":"..."}}]}.',
   'Sin acción concreta y segura: actions va vacío.',
 ].join(' ');
+
+// Ruta de los prompts de Maie. Default: `maie/` del repo (en Docker se copia a
+// /app/maie); se puede overridear con MAIE_PROMPTS_DIR si algún día viven en un
+// volumen. Las líneas con `#` son comentarios que no llegan al modelo.
+const DEFAULT_PROMPTS_DIR = fileURLToPath(new URL('../../../maie', import.meta.url));
+
+function personaPromptText() {
+  const dir = process.env.MAIE_PROMPTS_DIR || DEFAULT_PROMPTS_DIR;
+  try {
+    return readFileSync(`${dir}/system/persona.md`, 'utf8')
+      .split(/\r?\n/)
+      .filter((line) => !/^\s*#/.test(line))
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .join(' ');
+  } catch {
+    return DEFAULT_PERSONA_PROMPT;
+  }
+}
+
+function systemPrompt() {
+  return `${personaPromptText()} ${SYS_CONTRACT}`;
+}
 
 router.post('/maie/chat', requireAuth, async (req, res) => {
   const { kind, mode, boardContext, userText, threadTail } = req.body || {};
@@ -54,7 +85,7 @@ router.post('/maie/chat', requireAuth, async (req, res) => {
       body: JSON.stringify({
         model: OPENAI_MODEL,
         messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'system', content: systemPrompt() },
           { role: 'user', content: parts.join('\n\n') },
         ],
         max_tokens: 300,

@@ -314,4 +314,6 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 **OPENAI_API_KEY**: ya seteada en Fly (`flyctl secrets list` → Deployed); el relay LLM está habilitado en prod. Sin clave, prod degrada a templated sin error.
 
+- **Prompts de Maie → `maie/` (markdown configurable, OpenCode, 2026-09-09)**: la voz de Maie salió del código a `maie/` (sistema/`persona.md`, `templates/*.md` por kind, `huddle/{welcome,reply,demo,recap}.md`). Config a **nivel app** (un solo set global; por proyecto no, aún). Consumo: cliente por `?raw` + alias `@maie` (Vite; HMR en dev) con `src/utils/renderPrompt.js` (`#` = comentarios que no llegan al prompt, `{vars}`, secciones `##`); server lee `persona.md` por `fs` con env `MAIE_PROMPTS_DIR` y default hardcodeado de respaldo; el contrato JSON de salida y `max_tokens`/`temperature` quedan fijos en `server/src/routes/maie.js`. Dockerfile copia `maie/` al runtime. Sigue en código (lógica, no copy): selección por `kind`, cálculo de vars, ids/speakers/acciones del guion, plurales y vocabulario de gaps. Suite **266/266** (37 archivos; +4 renderPrompt, +7 maiePrompts) y build OK (`index-WjI2zK8_.js`).
+
 ---

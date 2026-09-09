@@ -1,0 +1,2 @@
+# Respuesta templated (sin LLM) para cartas estancadas (§8 kind `stale`). {title} = carta, {since} = "N días" o "varios días".
+«{title}» lleva {since} sin moverse. ¿Sigue siendo parte del plan o quedó como recuerdo?

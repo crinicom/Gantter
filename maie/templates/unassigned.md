@@ -1,0 +1,2 @@
+# Respuesta templated (sin LLM) para cartas sin dueño (§8 kind `unassigned`). {title} = carta, {column} = columna.
+«{title}» sigue en «{column}» sin dueño. ¿Te quedás vos con el siguiente movimiento, o preferís dejarlo anotado?

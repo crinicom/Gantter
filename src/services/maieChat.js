@@ -16,6 +16,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { INQUIRY_KINDS, MAIE_DEFAULTS } from '../constants/maie';
 import { isServerMode, apiBase } from '../config/appConfig';
 import { TASK_STATUS } from '../constants/project';
+import { renderPrompt } from '../utils/renderPrompt';
 
 // Tipos de acción que el hilo acepta (whitelist de §11, sin create-card en auto).
 export const MAIE_ACTION_TYPES = [
@@ -118,6 +119,23 @@ export function buildBoardContext({ project, inquiry, now = new Date() } = {}) {
 
 // Respuestas socráticas templated por kind (§11 fallback, §8 tono). Son
 // preguntas, no órdenes; español rioplatense; sin emoji; mencionan la carta.
+// El copy vive en `maie/templates/*.md` (config a nivel app); acá solo queda
+// la selección por kind y el cálculo de los {vars}.
+import thinTemplate from '@maie/templates/thin.md?raw';
+import unassignedTemplate from '@maie/templates/unassigned.md?raw';
+import staleTemplate from '@maie/templates/stale.md?raw';
+import missingDateTemplate from '@maie/templates/missing-date.md?raw';
+import overlapTemplate from '@maie/templates/overlap.md?raw';
+import genericTemplate from '@maie/templates/generic.md?raw';
+
+const KIND_TEMPLATES = {
+  [INQUIRY_KINDS.THIN]: thinTemplate,
+  [INQUIRY_KINDS.UNASSIGNED]: unassignedTemplate,
+  [INQUIRY_KINDS.STALE]: staleTemplate,
+  [INQUIRY_KINDS.MISSING_DATE]: missingDateTemplate,
+  [INQUIRY_KINDS.OVERLAP]: overlapTemplate,
+};
+
 export function templatedMaieReply({ project, inquiry, now = new Date() } = {}) {
   const tasks = project?.tasks || [];
   const buckets = project?.buckets || [];
@@ -126,18 +144,18 @@ export function templatedMaieReply({ project, inquiry, now = new Date() } = {}) 
   const kind = inquiry?.kind;
 
   if (kind === INQUIRY_KINDS.THIN) {
-    return `Si alguien toma «${title}» sin leer una descripción, lo primero que no sabría es qué implica. ¿Le dedicás dos líneas para anotar el alcance?`;
+    return renderPrompt(KIND_TEMPLATES[INQUIRY_KINDS.THIN], { title });
   }
 
   if (kind === INQUIRY_KINDS.UNASSIGNED) {
     const column = columnNameOf(card, buckets) || 'la columna';
-    return `«${title}» sigue en «${column}» sin dueño. ¿Te quedás vos con el siguiente movimiento, o preferís dejarlo anotado?`;
+    return renderPrompt(KIND_TEMPLATES[INQUIRY_KINDS.UNASSIGNED], { title, column });
   }
 
   const since = card ? Math.max(0, -daysUntil(now, card.lastActivityAt || card.updatedAt || card.createdAt)) : null;
   if (kind === INQUIRY_KINDS.STALE) {
     const when = since === null ? 'varios días' : `${since} días`;
-    return `«${title}» lleva ${when} sin moverse. ¿Sigue siendo parte del plan o quedó como recuerdo?`;
+    return renderPrompt(KIND_TEMPLATES[INQUIRY_KINDS.STALE], { title, since: when });
   }
 
   if (kind === INQUIRY_KINDS.MISSING_DATE) {
@@ -148,14 +166,14 @@ export function templatedMaieReply({ project, inquiry, now = new Date() } = {}) 
       .filter((m) => m.days !== null && m.days >= 0 && m.days <= windowDays)
       .sort((a, b) => a.days - b.days)[0];
     const hito = milestone ? `«${cardTitleOf(milestone.task)}» está a ${milestone.days} días` : 'hay un hito cerca';
-    return `«${title}» no tiene fechas y ${hito}. ¿Qué se puede comprometer esta semana?`;
+    return renderPrompt(KIND_TEMPLATES[INQUIRY_KINDS.MISSING_DATE], { title, milestone: hito });
   }
 
   if (kind === INQUIRY_KINDS.OVERLAP) {
-    return `«${title}» aparece en barras que se pisan esta semana. ¿Cuál es la prioridad real y quién la sostiene?`;
+    return renderPrompt(KIND_TEMPLATES[INQUIRY_KINDS.OVERLAP], { title });
   }
 
-  return `Buen momento para mirarlo. ¿Qué es lo primero que habría que destrabar en «${title}»?`;
+  return renderPrompt(genericTemplate, { title });
 }
 
 // Valida acciones del LLM contra ids reales del proyecto y descarta lo que no

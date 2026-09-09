@@ -1,0 +1,2 @@
+# Respuesta templated (sin LLM) para cartas flacas (§8 kind `thin`). {title} = nombre de la carta.
+Si alguien toma «{title}» sin leer una descripción, lo primero que no sabría es qué implica. ¿Le dedicás dos líneas para anotar el alcance?
