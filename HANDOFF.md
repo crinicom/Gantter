@@ -308,6 +308,8 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 **Nota para Grok**: verificar contra §10/§17.5 el guion del demo (orden y quién habla) y que el demo aplique con `applyMode:'auto'` igual que el auto-dispatch del slice 5. El fallback templated del huddle usa `Maie` y pregunta qué carta toma la línea (§11).
 
+- **Despliegue (OpenCode, 2026-09-09)**: `git push github main` (`9712771..f6c7c3a`) → Fly release **v22** (complete). Live verificado en `https://gantter.fly.dev`: `/api/health` ok; assets CSS `index-Cssp0Zid.css` + JS `index-Db2H991F.js` = build local `npm run build`. El mirror `origin` (Gitea 192.168.0.50) estuvo caído al momento del deploy; queda pendiente re-push a `origin` cuando vuelva.
+
 **Requiere acción del operador (pendiente desde slice 6)**: `flyctl secrets set OPENAI_API_KEY=sk-...` para habilitar el LLM en prod; sin clave, prod responde templated sin error ni gasto.
 
 ---
