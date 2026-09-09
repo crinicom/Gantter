@@ -11,12 +11,16 @@ import { ACTIVE_USER } from '../../constants/project';
 import { INQUIRY_KIND_META, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maie';
 import MaieMark from './MaieMark';
 
+// P1 de la review del slice 5/6: rechazar una propuesta no corta la charla.
+// Maie sigue la pregunta ("la pregunta sigue", §17.4) para entender qué hacer.
+const DECLINE_FOLLOW_UP = 'No por ahora. ¿Qué habría que hacer entonces?';
+
 function kindTone(kind) {
   return INQUIRY_KIND_META[kind]?.tone || 'muted';
 }
 
 function ProposalRow({ inquiry, proposal, applyMode }) {
-  const { applyProposal, dismissProposal } = useMaie();
+  const { applyProposal, dismissProposal, sendThreadMessage } = useMaie();
   const st = proposal.status;
 
   if (st === PROPOSAL_STATUS.APPLIED) {
@@ -65,7 +69,10 @@ function ProposalRow({ inquiry, proposal, applyMode }) {
           </button>
           <button
             type="button"
-            onClick={() => dismissProposal(inquiry.id, proposal.id)}
+            onClick={() => {
+              dismissProposal(inquiry.id, proposal.id);
+              sendThreadMessage(inquiry.id, DECLINE_FOLLOW_UP);
+            }}
             className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-ink hover:bg-gray-100"
           >
             No

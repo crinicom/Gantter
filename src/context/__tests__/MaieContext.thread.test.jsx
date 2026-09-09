@@ -59,7 +59,7 @@ function project() {
         cardId: 't1',
         kind: 'unassigned',
         status: 'open',
-        question: '¿De quién es el siguiente movimiento?',
+        question: 'Esta carta está en «Listo» sin dueño. ¿De quién sería el siguiente movimiento?',
         evidence: 'Sin responsable en una columna de trabajo.',
         thread: [],
         proposals: [
@@ -131,6 +131,15 @@ function Probe() {
       <button type="button" onClick={() => ctx.dismissProposal('q_a', 'p_a1')}>
         descartar
       </button>
+      <button
+        type="button"
+        onClick={() => {
+          ctx.dismissProposal('q_a', 'p_a1');
+          ctx.sendThreadMessage('q_a', 'No por ahora. ¿Qué habría que hacer entonces?');
+        }}
+      >
+        no-followup
+      </button>
       <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'confirm')}>
         aprobar
       </button>
@@ -173,6 +182,28 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
 
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('dismissed'));
     expect(screen.getByTestId('assignees')).toHaveTextContent('');
+  });
+
+  it('P1: descartar con "No" deja la negativa como burbuja y Maie responde el follow-up', async () => {
+    const { holder, commit } = mount();
+    await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
+
+    fireEvent.click(screen.getByRole('button', { name: 'no-followup' }));
+    // mutaciones 1 y 2 (sincrónicas): dismiss + burbuja del usuario.
+    await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(2));
+    commit(holder.mutateProject.mock.calls[0][0]);
+    commit(holder.mutateProject.mock.calls[1][0]);
+    await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('dismissed'));
+    await waitFor(() =>
+      expect(screen.getByTestId('thread')).toHaveTextContent(
+        'No por ahora. ¿Qué habría que hacer entonces?',
+      ),
+    );
+
+    // mutación 3 (async, §11): la respuesta de Maie aterriza después de la burbuja.
+    await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(3));
+    commit(holder.mutateProject.mock.calls.at(-1)[0]);
+    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Vamos a verlo.'));
   });
 
   it('aprobar aplica, marca applied y el rescan siguiente no lo revierte', async () => {

@@ -245,8 +245,18 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
       });
       return;
     }
+    const fresh = wanted.get(k);
     wanted.delete(k);
-    inquiries.push(inq);
+    // Evidencia viva (P2 de la review del slice 4/5): una pregunta persistente
+    // conserva id, hilo, propuestas, status y snooze, pero la pregunta y la
+    // evidencia se refrescan del candidato fresco (días de stale, columna,
+    // hito próximo, conteo de solapadas). Si nada cambió, se reutiliza el
+    // objeto (anti-loop de `sameSet` intacto).
+    if (inq.question === fresh.question && inq.evidence === fresh.evidence) {
+      inquiries.push(inq);
+      return;
+    }
+    inquiries.push({ ...inq, question: fresh.question, evidence: fresh.evidence, updatedAt: tick });
   });
 
   wanted.forEach((c) => {

@@ -318,4 +318,11 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **Workflow de iteración en dev (OpenCode, 2026-09-09)**: por decisión del humano, se itera en DEV con **push a Gitea por cambio** y **deploy a Fly solo al cierre del slice** (git github/fly quietos entre medio). Feedback del humano → el agente lo triage en cada planning via `feedback/inbox.jsonl` + `feedback/triage.md` (ver `feedback/README.md`); `scripts/pull-prod-feedback.mjs` baja los de prod read-only (SELECT en `/data/data.sqlite`), sin deployar. En este commit se instrumentó el pipeline (middleware dev `POST /dev/feedback` en `vite.config.js`, `pushToDevInbox` en `feedbackService.js` modo local fire-and-forget, triage/README, AGENTS.md y .gitignore `.claude/`).
 
+### Punch list de Maie (5/6) implementado por OpenCode (2026-09-09) — notas para Grok
+
+- **P1 — "No" a una propuesta sigue la conversación (§9/§17.4)**: el botón **No** de `InquiryThread` ya no corta la charla: llama `dismissProposal` (marca descartada) y encola `sendThreadMessage` con *"No por ahora. ¿Qué habría que hacer entonces?"* → la pregunta pasa a `chatting`, la burbuja queda visible y Maie responde (LLM con key o fallback templated sin) sin re-proponer lo descartado; si el reply trae acciones alternativas, en modo confirmar quedan como propuestas nuevas pendientes (Sí/No).
+- **P2 — Evidencia viva (§8, heredado del slice 4)**: `scanInquiries` ya no congela `question`/`evidence` de una inquiry persistente: en el merge del rescan las refresca del candidato fresco (días de stale, columna actual, hito próximo, conteo de solapadas) conservando id, hilo, propuestas, status y snooze; si nada cambió se reutiliza el objeto (`sameSet` estable → anti-loop intacto, para stale a lo sumo ~1 escritura/día).
+- **Triage 2026-09-09**: `pull-prod-feedback` sin entradas nuevas; el comentario de Login (`d4e880c5…`) quedó **`backlog rework`** por decisión humana (no entra a slice 8).
+- Tests: `npm test` **266/266** (+3 `inquiryEngine` P2, +1 `MaieContext.thread` integración P1) · `npm run build` OK.
+
 ---

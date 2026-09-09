@@ -219,4 +219,48 @@ describe('scanInquiries', () => {
     expect(stale.status).toBe(INQUIRY_STATUS.SNOOZED);
     expect(logEntries).toHaveLength(0);
   });
+
+  it('P2: un inquiry persistente refresca evidencia y pregunta sin perder hilo ni propuestas', () => {
+    const first = scanInquiries(portalProject());
+    const staleFirst = first.inquiries.find((i) => i.kind === 'stale');
+    const later = new Date(Date.now() + 3 * DAY);
+
+    const { inquiries } = scanInquiries(portalProject(), {
+      existingInquiries: first.inquiries,
+      now: later,
+    });
+    const stale = inquiries.find((i) => i.kind === 'stale');
+
+    expect(stale.id).toBe(staleFirst.id);
+    expect(stale.evidence).toBe('Última actividad hace 21 días.');
+    expect(stale.question).toContain('Lleva 21 días');
+    expect(stale.proposals.map((p) => p.id)).toEqual(staleFirst.proposals.map((p) => p.id));
+    expect(stale.thread).toEqual(staleFirst.thread);
+    expect(stale.updatedAt).not.toBe(staleFirst.updatedAt);
+  });
+
+  it('P2: rescannear con el mismo estado no toca updatedAt (sin churn)', () => {
+    const first = scanInquiries(portalProject());
+    const again = scanInquiries(portalProject(), { existingInquiries: first.inquiries });
+    expect(again.logEntries).toHaveLength(0);
+    const firstById = new Map(first.inquiries.map((i) => [i.id, i]));
+    for (const inq of again.inquiries) {
+      expect(inq.updatedAt).toBe(firstById.get(inq.id).updatedAt);
+    }
+  });
+
+  it('P2: la pregunta unassigned refleja la columna actual al moverse la carta', () => {
+    const first = scanInquiries(portalProject());
+    const unFirst = first.inquiries.find((i) => i.kind === 'unassigned');
+    const moved = portalProject();
+    moved.tasks.find((t) => t.id === 't_auth').bucketId = 'b_curso';
+
+    const { inquiries } = scanInquiries(moved, { existingInquiries: first.inquiries });
+    const un = inquiries.find((i) => i.kind === 'unassigned');
+
+    expect(un.id).toBe(unFirst.id);
+    expect(unFirst.question).toContain('«Listo»');
+    expect(un.question).toContain('«En curso»');
+    expect(un.evidence).toBe('Sin responsable en una columna de trabajo.');
+  });
 });

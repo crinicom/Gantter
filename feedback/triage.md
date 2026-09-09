@@ -7,7 +7,10 @@ Ritual de cada planning: leer `feedback/inbox.jsonl`, marcar las entradas **nuev
 ## Nuevas (pendientes de decidir)
 
 - **1e5c71aa…** (2026-09-08, prod) — formulario de ingreso de comentarios; dice "No hacer nada". → descartado (prueba).
-- **d4e880c5…** (2026-09-09, prod) — pantalla Login: botón "Iniciar Sesión" pero el sistema ya no pide usuario + leyenda "Modo offline…"; propone reemplazar esa pantalla con los últimos cambios. → propuesta: `backlog rework` (UI de Login en v1 es deliberada: no hay auth real; ver bot_requirements §15). Decidir con el humano.
+
+## Decididas este planning
+
+- **d4e880c5…** (2026-09-09, prod) — pantalla Login: botón "Iniciar Sesión" sin sentido + leyenda "Modo offline…"; proponía reemplazar la pantalla por "los últimos cambios". Decisión humana (2026-09-09): **no entra a slice 8**; la UI de Login en v1 es deliberada (§15, sin auth real). → backlog rework, sin agenda.
 
 ## Estado del triage
 
@@ -16,7 +19,7 @@ Referencias: `IN` = línea de `feedback/inbox.jsonl` (id) · `DEST` = destino ·
 | IN | Fecha | Fuente | Resumen | DEST | EST |
 |---|---|---|---|---|---|
 | 1e5c71aa-22e1-4ff2-9656-a7b060fe8357 | 2026-09-08 | prod | Prueba del formulario; "No hacer nada" | — | descartado |
-| d4e880c5-e839-44e1-86bd-e1a5236ca2b1 | 2026-09-09 | prod | Login: botón sin sentido + sugerir mostrar últimos cambios | backlog rework | nuevo |
+| d4e880c5-e839-44e1-86bd-e1a5236ca2b1 | 2026-09-09 | prod | Login: botón sin sentido + sugerir mostrar últimos cambios | backlog rework | backlog |
 
 ## Estatus
 
