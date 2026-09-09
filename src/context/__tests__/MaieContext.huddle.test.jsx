@@ -159,6 +159,9 @@ function Probe() {
       <button type="button" onClick={() => ctx.toggleDemo()}>
         toggle
       </button>
+      <button type="button" onClick={() => ctx.replayDemo()}>
+        replay
+      </button>
       <button type="button" onClick={() => ctx.stopHuddle()}>
         stop
       </button>
@@ -245,5 +248,36 @@ describe('MaieContext huddle (integración con el engine real)', () => {
     const transcript = (holder.project.huddle.transcript || []).map((l) => l.text).join('|');
     expect(transcript).toContain('Fecho el QA');
     expect(transcript).toContain('Anotado, lo fechamos de hoy');
+  });
+
+  it('replay crea sesión nueva con transcript limpio y retoma el playback', async () => {
+    const { holder, commitAll } = mount();
+    await commitAll();
+    fireEvent.click(screen.getByRole('button', { name: 'start' }));
+    await commitAll();
+
+    let guard = 0;
+    while (guard < 10 && holder.project.huddle?.demo?.status !== 'done') {
+      await act(async () => {
+        vi.advanceTimersByTime(2300);
+      });
+      await commitAll();
+      guard += 1;
+    }
+    expect(holder.project.huddle.demo.status).toBe('done');
+
+    fireEvent.click(screen.getByRole('button', { name: 'replay' }));
+    await commitAll();
+
+    expect(holder.project.huddle.demo.status).toBe('playing');
+    expect(holder.project.huddle.demo.cursor).toBe(0);
+    expect(holder.project.huddle.transcript).toHaveLength(1);
+    expect(holder.project.huddle.transcript[0].role).toBe('maie');
+
+    await act(async () => {
+      vi.advanceTimersByTime(2300);
+    });
+    await commitAll();
+    expect(holder.project.huddle.demo.cursor).toBe(1);
   });
 });

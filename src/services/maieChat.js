@@ -319,7 +319,9 @@ export async function requestMaieChat({
     mode: project?.settings?.applyMode ?? 'confirm',
     boardContext: buildBoardContext({ project, inquiry, now }),
     userText: String(userText).trim().slice(0, MAX_USER_TEXT_CHARS),
-    threadTail: (inquiry.thread || []).slice(-MAX_THREAD_TURNS).map((m) => `${m.role}: ${m.text}`),
+    threadTail: (inquiry.thread || [])
+      .slice(-MAX_THREAD_TURNS)
+      .map((m) => (typeof m === 'string' ? m : `${m.role || 'maie'}: ${m.text || ''}`)),
   };
 
   let attempt = 0;

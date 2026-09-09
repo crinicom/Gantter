@@ -1,17 +1,24 @@
 // Huddle (§10) y standup demo (§17.5): motor puro determinístico. No requiere
 // React: sesión por proyecto, playback auto/confirm y recap al cerrar.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   buildStandupSteps,
   createHuddleSession,
   applyDemoStep,
   stopSession,
   recapText,
+  interpretHuddleLine,
   templatedHuddleReply,
   DEMO_STATUS,
 } from '../huddleEngine';
+import * as maieChatModule from '../maieChat';
 import { PROPOSAL_STATUS } from '../../constants/maie';
+
+vi.mock('../maieChat', async (importActual) => {
+  const actual = await importActual();
+  return { ...actual, requestMaieChat: vi.fn() };
+});
 
 const NOW = new Date('2026-09-09T10:00:00.000Z');
 const GO_LIVE = '2026-09-12';
@@ -251,5 +258,49 @@ describe('templatedHuddleReply', () => {
     const reply = templatedHuddleReply('hay que fechar el QA');
     expect(reply).toContain('¿Qué carta del tablero tendría que tomar');
     expect(reply).toContain('QA');
+  });
+
+  it('reconoce la carta mencionada y pregunta sobre ella en vez de repetir la muletilla', () => {
+    const reply = templatedHuddleReply('La carta QA staging release necesita fechas', { project: makeProject() });
+    expect(reply).toContain('QA staging release');
+    expect(reply).not.toContain('¿Qué carta del tablero tendría que tomar');
+  });
+});
+
+describe('interpretHuddleLine', () => {
+  let project;
+  let session;
+
+  beforeEach(() => {
+    project = makeProject();
+    session = createHuddleSession({ project, ritual: 'standup', mode: 'confirm', now: NOW, userId: HOST });
+    vi.mocked(maieChatModule.requestMaieChat).mockReset();
+  });
+
+  it('pasa el historial a requestMaieChat como entradas { role, text }', async () => {
+    const withThread = {
+      ...session,
+      transcript: [
+        ...session.transcript,
+        { role: 'user', speaker: 'Lucía Ríos', text: 'Fecho el QA', cardIds: [], at: NOW.toISOString() },
+        { role: 'maie', speaker: 'Maie', text: '¿De qué carta hablamos?', cardIds: [], at: NOW.toISOString() },
+      ],
+    };
+    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({ reply: 'Ok.', actions: [], source: 'llm' });
+    await interpretHuddleLine({ project, session: withThread, userText: 'QA staging release', now: NOW });
+
+    const call = vi.mocked(maieChatModule.requestMaieChat).mock.calls[0][0];
+    expect(call.inquiry.thread.every((t) => typeof t === 'object' && typeof t.role === 'string' && typeof t.text === 'string')).toBe(true);
+    expect(call.inquiry.thread.map((t) => t.role)).toEqual(expect.arrayContaining(['user', 'maie']));
+    const userLine = call.inquiry.thread.find((t) => t.role === 'user');
+    expect(userLine.text).toContain('Fecho el QA');
+    expect(call.inquiry.thread.some((t) => t.role === 'maie' && t.text.includes('¿De qué carta'))).toBe(true);
+  });
+
+  it('con source templated aplica el fallback contextual que reconoce la carta', async () => {
+    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({ reply: 'x', actions: [], source: 'templated' });
+    const out = await interpretHuddleLine({ project, session, userText: 'La carta QA staging release necesita fechas', now: NOW });
+    expect(out.reply).toContain('QA staging release');
+    expect(out.reply).not.toContain('¿Qué carta del tablero');
   });
 });

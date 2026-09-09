@@ -396,21 +396,41 @@ export async function interpretHuddleLine({ project, session, userText, now = ne
   if (!text || !project) {
     return { reply: '', proposals: [] };
   }
+  // El historial se pasa como entradas { role, text } (requestMaieChat las
+  // formatea), para que el modelo reciba el hilo real y no "undefined: …".
   const threadTail = (session?.transcript || [])
     .filter((m) => m.role === 'user' || m.role === 'member' || m.role === 'maie')
     .slice(-6)
-    .map((m) => `${m.role === 'maie' ? 'maie' : m.speaker}: ${m.text}`);
+    .map((m) => ({
+      role: m.role === 'user' || m.role === 'member' ? 'user' : 'maie',
+      text: m.role === 'maie' ? m.text : `${m.speaker}: ${m.text}`,
+    }));
   const inquiry = { id: null, kind: 'huddle', cardId: null, thread: threadTail };
   const res = await requestMaieChat({ project, inquiry, userText: text, now });
   const proposals = actionsToProposals({ project, inquiry, actions: res.actions });
   if (res.source === 'llm') {
     return { reply: res.reply, proposals };
   }
-  return { reply: templatedHuddleReply(text), proposals: [] };
+  return { reply: templatedHuddleReply(text, { project, session }), proposals: [] };
 }
 
-export function templatedHuddleReply(userText) {
-  const short = String(userText || '').trim().slice(0, 60);
+// Fallback socrático sin LLM: si la línea menciona una carta del tablero la
+// reconoce (sigue el hilo); si no, la pregunta genérica de siempre.
+export function templatedHuddleReply(userText, { project } = {}) {
+  const text = String(userText || '').trim();
+  const short = text.slice(0, 60);
+  const mentioned = (project?.tasks || []).find((t) => {
+    const name = String(t.name || '').trim().toLowerCase();
+    return name && text.toLowerCase().includes(name);
+  });
+  if (mentioned) {
+    const gaps = [];
+    if (!(mentioned.assignedUsers || []).length) gaps.push('sin dueño');
+    if (!mentioned.startDate || !mentioned.endDate) gaps.push('sin fechas');
+    if (mentioned.blocked) gaps.push('bloqueada');
+    const detail = gaps.length ? ` la noto ${gaps.join(', ')}` : '';
+    return `«${mentioned.name}» es la carta${detail}. ¿La tomamos en esta ronda o la dejamos para el siguiente paso?`;
+  }
   return `Anoto «${short || 'la línea'}» en la ronda. ¿Qué carta del tablero tendría que tomar esa línea?`;
 }
 

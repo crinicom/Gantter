@@ -26,6 +26,7 @@ function baseValue(overrides = {}) {
     startHuddle: vi.fn(),
     stopHuddle: vi.fn(),
     toggleDemo: vi.fn(),
+    replayDemo: vi.fn(),
     sendHuddleLine: vi.fn(),
     resolveHuddleProposal: vi.fn(),
     ...overrides,
@@ -100,5 +101,18 @@ describe('HuddleSessionBar', () => {
     );
     expect(screen.queryByRole('button', { name: /Pausar/ })).not.toBeInTheDocument();
     expect(screen.getByText(/Sesión cerrada/)).toBeInTheDocument();
+  });
+
+  it('con el demo terminado ofrece Reproducir de nuevo', () => {
+    const replayDemo = vi.fn();
+    renderBar({
+      huddle: session({ demo: { steps: [], cursor: 4, status: 'done', appliedCount: 3 } }),
+      demoStatus: 'done',
+      replayDemo,
+    });
+    expect(screen.queryByRole('button', { name: /Pausar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Reanudar/ })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Reproducir de nuevo/ }));
+    expect(replayDemo).toHaveBeenCalled();
   });
 });

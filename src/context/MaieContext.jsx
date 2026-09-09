@@ -221,6 +221,25 @@ export function MaieProvider({ children }) {
     }, { debounce: 0 });
   }, [mutateProject]);
 
+  // Reproduce el demo de nuevo desde cero: sesión nueva con transcript limpio y
+  // guion reconstruido contra el tablero vivo (las cartas ya aplicadas quedan
+  // inertes por la precondición de cada paso). Sin el guard de `startHuddle`.
+  const replayDemo = React.useCallback(() => {
+    const at = new Date();
+    mutateProject((prev) => {
+      const s = prev.huddle;
+      if (!s?.demo || s.endedAt) return prev;
+      const session = createHuddleSession({
+        project: prev,
+        ritual: s.ritual || 'standup',
+        mode: prev.settings?.applyMode || 'confirm',
+        now: at,
+        userId: activeUser?.id || ACTIVE_USER.id,
+      });
+      return { ...prev, huddle: session };
+    }, { debounce: 0 });
+  }, [mutateProject, activeUser]);
+
   const resolveHuddleProposal = React.useCallback(
     (proposalId, accepted) => {
       const at = new Date();
@@ -521,6 +540,7 @@ export function MaieProvider({ children }) {
       startHuddle,
       stopHuddle,
       toggleDemo,
+      replayDemo,
       sendHuddleLine,
       resolveHuddleProposal,
     }),
@@ -541,6 +561,7 @@ export function MaieProvider({ children }) {
       startHuddle,
       stopHuddle,
       toggleDemo,
+      replayDemo,
       sendHuddleLine,
       resolveHuddleProposal,
     ],

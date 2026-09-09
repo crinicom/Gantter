@@ -3,7 +3,7 @@
 // cerrar. Persistente entre vistas (Kanban/Gantt).
 
 import React, { useEffect, useState } from 'react';
-import { Radio, Pause, Play, X, MessagesSquare } from 'lucide-react';
+import { Radio, Pause, Play, X, MessagesSquare, RotateCcw } from 'lucide-react';
 import { useMaie } from '../../context/MaieContext';
 import { HUDDLE_RITUALS, MAIE_ROLE } from '../../constants/maie';
 import RitualPicker from './RitualPicker';
@@ -21,7 +21,7 @@ function elapsed(startedAt, now) {
 }
 
 export default function HuddleSessionBar() {
-  const { huddle, demoStatus, startHuddle, stopHuddle, toggleDemo } = useMaie();
+  const { huddle, demoStatus, startHuddle, stopHuddle, toggleDemo, replayDemo } = useMaie();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -62,6 +62,16 @@ export default function HuddleSessionBar() {
           <span className="inline-flex items-center gap-1 text-xs text-muted">
             <Radio size={12} /> {MAIE_ROLE} en línea
           </span>
+          {isDemo && !closed && huddle.demo.status === 'done' && (
+            <button
+              type="button"
+              onClick={replayDemo}
+              title="Reproducir el standup de nuevo desde cero"
+              className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium text-forest-700 hover:bg-forest-50"
+            >
+              <RotateCcw size={12} /> Reproducir de nuevo
+            </button>
+          )}
           {isDemo && !closed && huddle.demo.status !== 'done' && (
             <button
               type="button"

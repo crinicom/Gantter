@@ -254,4 +254,34 @@ describe('requestMaieChat', () => {
     expect(body.boardContext.length).toBeLessThanOrEqual(1200);
     expect(res.source).toBe('llm');
   });
+
+  it('normaliza el hilo: convive objetos y strings pasados por el huddle', async () => {
+    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
+    vi.mocked(appConfig.apiBase).mockReturnValue('https://gantter.fly.dev');
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ reply: 'Ok.', actions: [] }),
+    });
+    const inq = inquiry({
+      thread: [
+        { role: 'maie', text: '¿Qué carta?' },
+        'usuario: Me refiero al webhook',
+        { role: 'user', text: 'Fecho el QA' },
+        { role: 'maie', text: 'Listo' },
+      ],
+    });
+    const res = await maieChatModule.requestMaieChat({
+      project: project(),
+      inquiry: inq,
+      userText: 'Sí.',
+    });
+    const [, options] = global.fetch.mock.calls[0];
+    const body = JSON.parse(options.body);
+    expect(body.threadTail).toEqual([
+      'usuario: Me refiero al webhook',
+      'user: Fecho el QA',
+      'maie: Listo',
+    ]);
+    expect(res.source).toBe('llm');
+  });
 });
