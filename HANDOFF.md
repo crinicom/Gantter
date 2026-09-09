@@ -9,7 +9,7 @@ Producto: `bot_requirements.md`. No inventar features fuera de ese archivo. Lo m
 ## Cómo trabajar
 
 1. Leer este archivo y `bot_requirements.md` antes de tocar código.
-2. Revisar el backlog de feedback (`GET /api/feedback` en prod, `feedbackService.listFeedback()` en dev) y triagear lo nuevo dentro del slice.
+2. Revisar el backlog de feedback (ritual de planning): leer `feedback/inbox.jsonl`, opcional `node scripts/pull-prod-feedback.mjs`, marcar lo nuevo en `feedback/triage.md` con propuesta `slice-<n>` / `backlog`.
 3. Implementar **solo** el slice `in-progress` cuyo `owner` seas vos.
 4. No tocar archivos en **No tocar** de ese slice, ni slices de otro owner.
 5. Al terminar: `npm test` y `npm run build` verdes, actualizar este archivo (`status: review`, notas), **parar**. No arrancar el slice siguiente.
@@ -315,5 +315,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 **OPENAI_API_KEY**: ya seteada en Fly (`flyctl secrets list` → Deployed); el relay LLM está habilitado en prod. Sin clave, prod degrada a templated sin error.
 
 - **Prompts de Maie → `maie/` (markdown configurable, OpenCode, 2026-09-09)**: la voz de Maie salió del código a `maie/` (sistema/`persona.md`, `templates/*.md` por kind, `huddle/{welcome,reply,demo,recap}.md`). Config a **nivel app** (un solo set global; por proyecto no, aún). Consumo: cliente por `?raw` + alias `@maie` (Vite; HMR en dev) con `src/utils/renderPrompt.js` (`#` = comentarios que no llegan al prompt, `{vars}`, secciones `##`); server lee `persona.md` por `fs` con env `MAIE_PROMPTS_DIR` y default hardcodeado de respaldo; el contrato JSON de salida y `max_tokens`/`temperature` quedan fijos en `server/src/routes/maie.js`. Dockerfile copia `maie/` al runtime. Sigue en código (lógica, no copy): selección por `kind`, cálculo de vars, ids/speakers/acciones del guion, plurales y vocabulario de gaps. Suite **266/266** (37 archivos; +4 renderPrompt, +7 maiePrompts) y build OK (`index-WjI2zK8_.js`).
+
+- **Workflow de iteración en dev (OpenCode, 2026-09-09)**: por decisión del humano, se itera en DEV con **push a Gitea por cambio** y **deploy a Fly solo al cierre del slice** (git github/fly quietos entre medio). Feedback del humano → el agente lo triage en cada planning via `feedback/inbox.jsonl` + `feedback/triage.md` (ver `feedback/README.md`); `scripts/pull-prod-feedback.mjs` baja los de prod read-only (SELECT en `/data/data.sqlite`), sin deployar. En este commit se instrumentó el pipeline (middleware dev `POST /dev/feedback` en `vite.config.js`, `pushToDevInbox` en `feedbackService.js` modo local fire-and-forget, triage/README, AGENTS.md y .gitignore `.claude/`).
 
 ---

@@ -16,6 +16,23 @@ function writeJSON(key, list) {
   localStorage.setItem(key, JSON.stringify(list));
 }
 
+// Refleja la entrada en `feedback/inbox.jsonl` via el middleware del dev server
+// (`POST /dev/feedback`), la fuente que el agente lee en cada planning. Se envía
+// en cualquier modo: en dev (server u offline) el middleware responde; si no hay
+// dev server o da 404 (prod/build), falla a silencio.
+async function pushToDevInbox(entry) {
+  try {
+    const res = await fetch('/dev/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(entry),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const feedbackService = {
   async submitFeedback({ type, message, screen, systemState, user }) {
     const entry = {
@@ -27,6 +44,10 @@ export const feedbackService = {
       systemState,
       author: user ? { id: user.id, name: user.name, email: user.email } : null,
     };
+
+    // El dev server (`.env` con VITE_APP_MODE) corre en modo server; sea cual sea
+    // el modo, el comentario tambien va al inbox del agente (fire-and-forget).
+    void pushToDevInbox(entry);
 
     if (!isServerMode()) {
       const list = readJSON(LOCAL_KEY);

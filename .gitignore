@@ -28,6 +28,7 @@ npm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+.claude/
 
 # Vitest / Jest
 *.test-results/

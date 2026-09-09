@@ -1,105 +1,66 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+// feedbackService: el comentario va al inbox del agente (`POST /dev/feedback`,
+// middleware del dev server) en cualquier modo; a eso se le suma el flujo del
+// modo (local: localStorage; server: `/api/feedback` con queue de respaldo).
+// El entorno de tests trae VITE_APP_MODE del `.env`, por eso acá se mockea el
+// modo para ser determinista.
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
+
+const modeMock = vi.hoisted(() => ({ server: false }));
+
+vi.mock('../../config/appConfig', () => ({
+  isServerMode: () => modeMock.server,
+  apiBase: () => '',
+}));
+
 import { feedbackService } from '../feedbackService';
-import * as appConfig from '../../config/appConfig';
 
-beforeEach(() => {
-  localStorage.clear();
-  vi.spyOn(appConfig, 'isServerMode').mockReturnValue(false);
-  vi.spyOn(appConfig, 'apiBase').mockReturnValue('');
-});
+describe('feedbackService · inbox del agente', () => {
+  beforeEach(() => {
+    modeMock.server = false;
+    localStorage.clear();
+  });
 
-afterEach(() => {
-  vi.restoreAllMocks();
-  delete global.fetch;
-});
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-describe('feedbackService', () => {
-  const base = {
-    type: 'error',
-    message: 'Test',
-    screen: 'board · App',
-    systemState: { backend: 'local' },
-    user: { id: 'u1', name: 'Lucía', email: 'l@test' },
-  };
-
-  it('offline: guarda en localStorage y listFeedback lo retorna', async () => {
-    const res = await feedbackService.submitFeedback(base);
+  it('modo local: guarda en localStorage y avisa al inbox de dev', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await feedbackService.submitFeedback({
+      type: 'sugerencia',
+      message: 'Probar el huddle en auto',
+      screen: 'huddle',
+    });
     expect(res).toEqual({ ok: true, local: true });
-    const list = await feedbackService.listFeedback();
-    expect(list).toHaveLength(1);
-    expect(list[0].message).toBe('Test');
-    expect(list[0].type).toBe('error');
-    expect(list[0].screen).toBe('board · App');
-    expect(list[0]).toHaveProperty('id');
-    expect(list[0]).toHaveProperty('at');
-    expect(list[0].author).toEqual({ id: 'u1', name: 'Lucía', email: 'l@test' });
-  });
-
-  it('offline: mantiene orden LIFO', async () => {
-    await feedbackService.submitFeedback({ ...base, message: 'A' });
-    await feedbackService.submitFeedback({ ...base, message: 'B' });
-    const list = await feedbackService.listFeedback();
-    expect(list.map((e) => e.message)).toEqual(['B', 'A']);
-  });
-
-  it('server mode: envía POST /api/feedback', async () => {
-    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
-    vi.mocked(appConfig.apiBase).mockReturnValue('http://test');    global.fetch = vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) }));
-
-    const res = await feedbackService.submitFeedback(base);
-    expect(res).toEqual({ ok: true });
-    expect(fetch).toHaveBeenCalledWith(
-      'http://test/api/feedback',
-      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/dev/feedback',
+      expect.objectContaining({ method: 'POST' }),
     );
+    const saved = JSON.parse(localStorage.getItem('gantter.feedback.v1'));
+    expect(saved[0].message).toBe('Probar el huddle en auto');
   });
 
-  it('server mode: encola en localStorage ante error de red', async () => {
-    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
-    vi.mocked(appConfig.apiBase).mockReturnValue('http://test');
-    global.fetch = vi.fn(async () => { throw new Error('network'); });
+  it('no rompe si el inbox de dev no responde', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')));
+    await expect(
+      feedbackService.submitFeedback({ type: 'comentario', message: 'x' }),
+    ).resolves.toEqual({ ok: true, local: true });
+  });
 
-    const res = await feedbackService.submitFeedback(base);
+  it('modo server: avisa al inbox igual aunque el push a la API falle', async () => {
+    modeMock.server = true;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true }) // dev inbox
+      .mockResolvedValueOnce({ ok: false }); // /api/feedback
+    vi.stubGlobal('fetch', fetchMock);
+    const res = await feedbackService.submitFeedback({
+      type: 'comentario',
+      message: 'comentario en modo server',
+    });
     expect(res).toEqual({ ok: false, queued: true });
-    const pending = JSON.parse(localStorage.getItem('gantter.feedback.pending.v1'));
-    expect(pending).toHaveLength(1);
-    expect(pending[0].message).toBe('Test');
-  });
-
-  it('server mode: encola ante 401', async () => {
-    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
-    vi.mocked(appConfig.apiBase).mockReturnValue('http://test');
-    global.fetch = vi.fn(async () => ({ ok: false, status: 401, json: async () => ({}) }));
-
-    const res = await feedbackService.submitFeedback(base);
-    expect(res).toEqual({ ok: false, queued: true });
-    expect(JSON.parse(localStorage.getItem('gantter.feedback.pending.v1'))).toHaveLength(1);
-  });
-
-  it('flushPending: envía los pendientes y limpia la cola', async () => {
-    localStorage.setItem(
-      'gantter.feedback.pending.v1',
-      JSON.stringify([{ ...base, id: 'queued1', at: new Date().toISOString() }]),
-    );
-    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
-    vi.mocked(appConfig.apiBase).mockReturnValue('http://test');
-    global.fetch = vi.fn(async () => ({ ok: true, status: 201, json: async () => ({}) }));
-
-    await feedbackService.flushPending();
-    expect(fetch).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(localStorage.getItem('gantter.feedback.pending.v1'))).toEqual([]);
-  });
-
-  it('flushPending: conserva los que fallan', async () => {
-    localStorage.setItem(
-      'gantter.feedback.pending.v1',
-      JSON.stringify([{ ...base, id: 'queued1', at: new Date().toISOString() }]),
-    );
-    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
-    vi.mocked(appConfig.apiBase).mockReturnValue('http://test');
-    global.fetch = vi.fn(async () => { throw new Error('net'); });
-
-    await feedbackService.flushPending();
-    expect(JSON.parse(localStorage.getItem('gantter.feedback.pending.v1'))).toHaveLength(1);
+    expect(fetchMock.mock.calls[0][0]).toBe('/dev/feedback');
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/feedback');
   });
 });

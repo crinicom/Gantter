@@ -23,7 +23,7 @@ Lo marcado **v2** en `bot_requirements.md` no se construye. No inventar features
 ## Antes de codear
 
 1. Leer `HANDOFF.md` (slice en curso, owner, archivos prohibidos).
-2. Revisar el backlog de feedback (errores y mejoras): `GET /api/feedback` en prod o `feedbackService.listFeedback()` en dev. Triagear entradas nuevas dentro del alcance del slice.
+2. Revisar el backlog de feedback (ritual de planning): leer `feedback/inbox.jsonl`; opcionalmente bajar prod con `node scripts/pull-prod-feedback.mjs` (READ-only, no deploya); marcar lo nuevo en `feedback/triage.md` con propuesta `slice-<n>` / `backlog`. Sin comentarios nuevos del humano en el chat, el triage va por inbox.
 3. Leer el § de `bot_requirements.md` que cita ese slice.
 4. Si tu owner no coincide con el slice `in-progress`, no implementes: actualizá notas o pará.
 
@@ -35,7 +35,7 @@ Lo marcado **v2** en `bot_requirements.md` no se construye. No inventar features
 4. **Persistencia:** todo dato durable pasa por `services/*`. Nunca `localStorage` desde un componente. v1 es store local; no agregues DB ni auth “por si acaso”.
 5. **Código:** JSX + Tailwind, comentarios solo si aportan contexto. UI en **español**. Ids internos en inglés (`thin`, `stale`, `applyMode`). Cero emoji. Maie no se llama “Asistente IA”.
 6. **Seguridad:** no commitear secretos. API keys en `.env` (ignorado).
-7. **Commits y deploys: solo OpenCode.** Grok no commitea ni pushea. Mensajes concisos en español. OpenCode commitea cuando el slice está listo o el humano lo pide; no mezclar dos slices en un commit si se puede evitar.
+7. **Commits, push y deploys:** OpenCode commitea (mensajes concisos en español, un slice por commit si se puede evitar); al terminar cada cambio avisa **“push”** y el humano pushea a Gitea (`origin`). Fly NO se deploya hasta el cierre del slice (`flyctl deploy` + `pull-prod-feedback`). Grok no commitea ni pushea.
 8. **Tests:** al cambiar lógica pura (`utils/`, `models/`, `services/`) añadir o actualizar tests en `src/**/__tests__/`.
 9. **v1 no incluye:** auth real, billing, invitaciones, bot de Zoom/Meet, voz de Maie, facilitador de portafolio, flechas de dependencias Gantt, multiplayer entre navegadores, escanear el tablero con LLM.
 
