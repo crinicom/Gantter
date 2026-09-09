@@ -15,10 +15,28 @@ import { scanInquiries } from '../services/inquiryEngine';
 import { autoEligible } from '../services/proposalEngine';
 import { canApply, apply as applyAction, selectAutoActions } from '../services/applyEngine';
 import { requestMaieChat, actionsToProposals } from '../services/maieChat';
+import {
+  createHuddleSession,
+  applyDemoStep,
+  stopSession,
+  addLine as huddleLine,
+  interpretHuddleLine,
+  DEMO_STEP_MS,
+  DEMO_STATUS,
+} from '../services/huddleEngine';
 import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIE_DEFAULTS } from '../constants/maie';
 import { ACTIVE_USER } from '../constants/project';
 
 const MaieContext = createContext(null);
+
+// Set vacío estable para consumidores sin provider (TaskCard/GanttBar
+// resaltan cartas mencionadas en el huddle §10, pero nunca crashean).
+const EMPTY_HIGHLIGHTS = new Set();
+
+export function useHuddleHighlights() {
+  const ctx = useContext(MaieContext);
+  return ctx?.highlightedTaskIds || EMPTY_HIGHLIGHTS;
+}
 
 // Campos que definen un inquiry a efectos de estabilidad del set.
 const STABLE_FIELDS = ['id', 'kind', 'cardId', 'status', 'question', 'evidence', 'resolvedNote'];
@@ -34,6 +52,10 @@ function sameSet(a, b) {
     a.length === b.length &&
     a.every((inq, i) => stableOf(inq) === stableOf(b[i]))
   );
+}
+
+function dedupe(list) {
+  return Array.from(new Set(list || []));
 }
 
 // Concatena entradas de log deduplicando por (summary, cardId).
@@ -142,6 +164,184 @@ export function MaieProvider({ children }) {
   const staleDays = project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
 
   const activeUser = user || ACTIVE_USER;
+
+  // Huddle (§10/§17.5): la sesión vive en `project.huddle` (§12/§18, una por
+  // proyecto). El playback del standup avanza con un timer que se re-arma solo
+  // cuando avanza el cursor o cambia el estado del demo; el rescan del tablero
+  // reacciona a cada mutación que aplica el guion.
+  const huddle = project?.huddle || null;
+  const demoStatus = huddle?.demo?.status || null;
+
+  useEffect(() => {
+    const session = projectRef.current?.huddle;
+    if (!session || session.endedAt || session.demo?.status !== DEMO_STATUS.PLAYING) {
+      return undefined;
+    }
+    const timer = setTimeout(() => {
+      const base = projectRef.current;
+      const s = base?.huddle;
+      if (!s || s.demo?.status !== DEMO_STATUS.PLAYING) return;
+      const out = applyDemoStep({ project: base, session: s, now: new Date() });
+      mutateProject(() => out.project, { debounce: 0 });
+    }, DEMO_STEP_MS);
+    return () => clearTimeout(timer);
+  }, [project?.id, demoStatus, huddle?.demo?.cursor, mutateProject]);
+
+  const startHuddle = React.useCallback(
+    ({ ritual, mode } = {}) => {
+      const at = new Date();
+      mutateProject((prev) => {
+        if (prev.huddle && !prev.huddle.endedAt) return prev;
+        const session = createHuddleSession({
+          project: prev,
+          ritual: ritual || 'standup',
+          mode: mode || prev.settings?.applyMode || 'confirm',
+          now: at,
+          userId: activeUser?.id || ACTIVE_USER.id,
+        });
+        return { ...prev, huddle: session };
+      }, { debounce: 0 });
+    },
+    [mutateProject, activeUser],
+  );
+
+  const stopHuddle = React.useCallback(() => {
+    mutateProject((prev) => {
+      if (!prev.huddle) return prev;
+      return { ...prev, huddle: stopSession({ session: prev.huddle, now: new Date() }) };
+    }, { debounce: 0 });
+  }, [mutateProject]);
+
+  const toggleDemo = React.useCallback(() => {
+    mutateProject((prev) => {
+      const s = prev.huddle;
+      if (!s?.demo || s.endedAt || s.demo.status === DEMO_STATUS.DONE) return prev;
+      const status = s.demo.status === DEMO_STATUS.PLAYING ? DEMO_STATUS.PAUSED : DEMO_STATUS.PLAYING;
+      return { ...prev, huddle: { ...s, demo: { ...s.demo, status } } };
+    }, { debounce: 0 });
+  }, [mutateProject]);
+
+  const resolveHuddleProposal = React.useCallback(
+    (proposalId, accepted) => {
+      const at = new Date();
+      mutateProject((prev) => {
+        const s = prev.huddle;
+        if (!s) return prev;
+        const item = (s.pending || []).find((p) => p.id === proposalId);
+        if (!item || item.status !== PROPOSAL_STATUS.PENDING) return prev;
+
+        if (!accepted) {
+          const pending = (s.pending || []).map((p) =>
+            p.id === proposalId ? { ...p, status: PROPOSAL_STATUS.DISMISSED, dismissedAt: at.toISOString() } : p,
+          );
+          return {
+            ...prev,
+            huddle: huddleLine({ ...s, pending }, {
+              role: 'maie',
+              speaker: 'Maie',
+              text: 'Lo dejo así; no aplico por ahora.',
+              at: at.toISOString(),
+            }),
+          };
+        }
+
+        const proposal = {
+          action: item.action,
+          payload: item.payload,
+          label: item.label,
+          comment: item.comment,
+          needsInput: false,
+          status: PROPOSAL_STATUS.PENDING,
+        };
+        const { project: np } = applyAction(prev, proposal, { source: 'confirm', now: at });
+        const cardId = item.cardId || item.payload?.taskId || null;
+        let next = {
+          ...s,
+          pending: (s.pending || []).map((p) =>
+            p.id === proposalId ? { ...p, status: PROPOSAL_STATUS.APPLIED, appliedAt: at.toISOString() } : p,
+          ),
+          touchedIds: dedupe([...(s.touchedIds || []), cardId]),
+          highlights: dedupe([...(s.highlights || []), cardId]),
+        };
+        next = huddleLine(next, {
+          role: 'maie',
+          speaker: 'Maie',
+          text: `Aplicado: ${item.label}.`,
+          cardIds: cardId ? [cardId] : [],
+          at: at.toISOString(),
+        });
+        return { ...np, huddle: next };
+      }, { debounce: 0 });
+    },
+    [mutateProject],
+  );
+
+  const sendHuddleLine = React.useCallback(
+    async (text) => {
+      const message = (text || '').trim();
+      if (!message) return;
+      const at = new Date();
+      const userLine = {
+        id: uuidv4(),
+        role: 'user',
+        speaker: activeUser?.name || ACTIVE_USER.name,
+        text: message,
+        cardIds: [],
+        at: at.toISOString(),
+      };
+      mutateProject((prev) => {
+        if (!prev.huddle) return prev;
+        return { ...prev, huddle: huddleLine(prev.huddle, userLine) };
+      }, { debounce: 0 });
+      setMaieReplying(true);
+      try {
+        const base = projectRef.current;
+        if (!base?.huddle) return;
+        const { reply, proposals } = await interpretHuddleLine({
+          project: base,
+          session: base.huddle,
+          userText: message,
+          now: at,
+        });
+        const maieLine = {
+          id: uuidv4(),
+          role: 'maie',
+          speaker: 'Maie',
+          text: reply,
+          cardIds: dedupe((proposals || []).map((p) => p.payload?.taskId).filter(Boolean)),
+          at: new Date().toISOString(),
+        };
+        mutateProject((prev) => {
+          const s = prev.huddle;
+          if (!s) return prev;
+          let acc = prev;
+          let next = huddleLine(s, maieLine);
+          const applied = [];
+          const isAuto = (prev.settings?.applyMode ?? 'confirm') === 'auto';
+          if (isAuto) {
+            for (const p of proposals || []) {
+              if (p.action === 'create-card' || !canApply(acc, p)) continue;
+              const { project: np } = applyAction(acc, p, { source: 'auto', now: new Date() });
+              acc = np;
+              applied.push(p.id);
+              const cardId = p.payload?.taskId || null;
+              if (cardId) {
+                next = { ...next, touchedIds: dedupe([...(next.touchedIds || []), cardId]) };
+              }
+            }
+          }
+          const added = (proposals || []).map((p) =>
+            applied.includes(p.id) ? { ...p, status: PROPOSAL_STATUS.APPLIED, appliedAt: at.toISOString() } : p,
+          );
+          if (added.length) next = { ...next, pending: [...(next.pending || []), ...added] };
+          return { ...acc, huddle: next };
+        }, { debounce: 0 });
+      } finally {
+        setMaieReplying(false);
+      }
+    },
+    [activeUser, mutateProject],
+  );
 
   // Pide la respuesta de Maie (§11): LLM con fallback templated, nunca lanza.
   // Las acciones del LLM se validan (ids reales) y llegan como propuestas; en
@@ -310,11 +510,19 @@ export function MaieProvider({ children }) {
       staleDays,
       lastScanAt,
       maieReplying,
+      huddle,
+      demoStatus,
+      highlightedTaskIds: new Set(huddle?.highlights || []),
       setApplyMode: (mode) => setSettings({ applyMode: mode }),
       sendThreadMessage,
       applyProposal,
       dismissProposal,
       snoozeInquiry,
+      startHuddle,
+      stopHuddle,
+      toggleDemo,
+      sendHuddleLine,
+      resolveHuddleProposal,
     }),
     [
       inquiries,
@@ -323,11 +531,18 @@ export function MaieProvider({ children }) {
       staleDays,
       lastScanAt,
       maieReplying,
+      huddle,
+      demoStatus,
       setSettings,
       sendThreadMessage,
       applyProposal,
       dismissProposal,
       snoozeInquiry,
+      startHuddle,
+      stopHuddle,
+      toggleDemo,
+      sendHuddleLine,
+      resolveHuddleProposal,
     ],
   );
 

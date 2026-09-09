@@ -9,6 +9,7 @@ import { formatISODate } from '../../utils/dateUtils';
 import { initialsOf } from '../../models/member';
 import { clampProgress } from '../../utils/progress';
 import { useProject } from '../../hooks/useProject';
+import { useHuddleHighlights } from '../../context/MaieContext';
 
 const statusBadgeClasses = {
   [TASK_STATUS.TODO]: 'bg-gray-100 text-gray-600',
@@ -18,6 +19,7 @@ const statusBadgeClasses = {
 
 export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks }) {
   const { setTaskProgress } = useProject();
+  const highlightedTaskIds = useHuddleHighlights();
   const isCompleted = task.status === TASK_STATUS.COMPLETED;
   const progress = clampProgress(task.progress);
   const style = {};
@@ -32,6 +34,7 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
 
   const statusLabel = STATUS_LABELS[task.status] || task.status;
   const hasDependentStatus = task.status === TASK_STATUS.IN_PROGRESS;
+  const highlighted = highlightedTaskIds.has(task.id);
 
   return (
     <div
@@ -44,6 +47,7 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
         isDragging && 'opacity-50',
         isCompleted && 'bg-gray-50 opacity-70',
         task.blocked && 'border-l-4 border-l-red-500',
+        highlighted && 'ring-2 ring-forest-500',
       )}
       onClick={() => onOpen(task)}
     >

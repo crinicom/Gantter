@@ -7,6 +7,7 @@ import BoardView from '../board/BoardView';
 import GanttView from '../gantt/GanttView';
 import ProjectsLanding from '../projects/ProjectsLanding';
 import MaiePanel from '../maie/MaiePanel';
+import HuddleSessionBar from '../huddle/HuddleSessionBar';
 
 export default function AppShell() {
   const { project, isLoading } = useProject();
@@ -33,6 +34,7 @@ export default function AppShell() {
       <Navbar />
       <TabsSwitcher activeView={activeView} onChange={setActiveView} />
       <SyncStatusBanner />
+      <HuddleSessionBar />
       <div className="flex min-h-0 flex-1">
         <main className="flex-1 overflow-auto p-4">
           {activeView === VIEWS.BOARD ? <BoardView /> : <GanttView />}

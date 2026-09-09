@@ -25,6 +25,35 @@ export const PROPOSAL_STATUS = {
 
 export const MAIE_ROLE = 'Facilitadora';
 
+// Rituales de huddle (§10). Los IDs son internos en inglés; solo standup lleva
+// el guion demo que muta el tablero (§17.5).
+export const HUDDLE_RITUALS = [
+  {
+    id: 'standup',
+    label: 'Standup de los miércoles',
+    description: 'Ronda del equipo seed: replay del standup que mueve cartas reales.',
+    demo: true,
+  },
+  {
+    id: 'refinement',
+    label: 'Refinamiento',
+    description: 'Pulir cartas flacas o sin dueño antes de la iteración.',
+    demo: false,
+  },
+  {
+    id: 'planning',
+    label: 'Planning',
+    description: 'Definir qué entra esta iteración y con qué fechas.',
+    demo: false,
+  },
+  {
+    id: 'blockers',
+    label: 'Despeje de bloqueos',
+    description: 'Sacar del medio las cartas trabadas del camino.',
+    demo: false,
+  },
+];
+
 // Etiquetas cortas para los badges de kind (§14: rust para stale/overlap, bosque para ok).
 export const INQUIRY_KIND_META = {
   [INQUIRY_KINDS.THIN]: { label: 'Flaca', tone: 'muted' },

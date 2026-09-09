@@ -60,7 +60,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 4 | Panel Maie + scanner determinístico (5 kinds, sin LLM) | opencode | **done** | §7–8 | commit `35adb76`; review Grok por OpenCode `0d4d8cf` |
 | 5 | Click → hilo, auto/confirmar, propuestas, log | opencode | **review** | §7, §9 | dependía de 4; asignado a OpenCode |
 | 6 | Chat LLM (OpenAI `gpt-4o-mini`) + fallback templated | opencode | **review** | §11 | depende de 5; asignado a OpenCode |
-| 7 | Huddle in-app + standup demo que **muta** el tablero | grok | pending | §10, §17.5 | si el demo no mueve cartas, v1 no está |
+| 7 | Huddle in-app + standup demo que **muta** el tablero | opencode | **review** | §10, §17.5 | asignado a OpenCode; motor `huddleEngine` + MaieContext + UI; commit a fill por OpenCode |
 | 8 | Mobile ~390: tabs Tablero / Gantt / Maie | opencode | pending | §14, §17.7 | después de que exista el panel |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maie no vive en `ProjectContext.jsx`. Maie va a `MaieContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
@@ -294,5 +294,20 @@ Decisión humana previa al build: **slice 6 → opencode** (mismo precedente que
 **Requiere acción del operador** (no se commitean secrets): setear la clave para habilitar OpenAI en prod → `flyctl secrets set OPENAI_API_KEY=sk-...` (modelo default `gpt-4o-mini`; opcional `flyctl secrets set OPENAI_MODEL=gpt-4o-mini` y `flyctl secrets unset XAI_API_KEY XAI_MODEL` para limpiar). Sin esto, prod sigue servicial templated sin errores ni gasto.
 
 _(Grok escribe aquí tras un review del diff del slice 6.)_
+
+### Slice 7 implementado por OpenCode (2026-09-09) — notas para Grok
+
+Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que slices 4–6); demo **autoplay ~2s/paso** con pausa/reanudar; línea de texto del usuario con **path LLM + fallback templated**.
+
+- **`src/services/huddleEngine.js`** (nuevo, puro): `createHuddleSession`, `addLine`, `applyDemoStep` (widget de resolución: id por `card_webhook`/`card_magic_link`/`card_onboarding`/`card_qa_staging`/hito go-live con fallback por título; si la carta no existe o la precaución ya está resuelta → línea sin mutación), `stopSession`/`finishPlayback`, `recapText`, `buildStandupSteps` (guion §10 §17.5: Diego bloquea Webhook, Martín toma Auth magic link, Sofía admite onboarding estancado → pregunta, Ana fechas para QA → set-dates hoy→go-live), `interpretHuddleLine` (mismo `requestMaieChat` del slice 6 + `actionsToProposals`; sin `source:'llm'` → `templatedHuddleReply`), `welcomeFor`, `DEMO_STEP_MS=2200`. Aplicar = `applyEngine.apply` con `source:'auto'` (comentario + log) si `applyMode==='auto'`; si `'confirm'`, la propuesta queda en `huddle.pending` para sí/no. Recap final de Maie ("¿qué queda sin dueño?").
+- **`MaieContext.jsx`**: slice huddle — `huddle`, `demoStatus`, `highlightedTaskIds` (Set), `startHuddle(ritual)`, `stopHuddle`, `toggleDemo`, `sendHuddleLine(text)` (firma como Lucía, interpreta, aplica en auto saltando `create-card`), `resolveHuddleProposal(id, accepted)`; el playback es un effect de `setTimeout(DEMO_STEP_MS)` keyed en `[project?.id, demoStatus, huddle?.demo?.cursor, mutateProject]` (el rescan no re-arranca el timer). `useHuddleHighlights` (hook opcional, Set vacío estable) para `TaskCard`/`GanttBar` sin romper husos que no tengan provider.
+- **UI** (`src/components/huddle/`): `RitualPicker` (rituales con demo: standup es el único con `demo`; HUDDLE_RITUALS en `constants/maie.js`), `HuddleSessionBar` (botón global en `AppShell`: Abrir huddle, ritual activo, elapsed, play/pausa, cerrar), `HuddleTab` (pestaña del panel Maie: transcript speaker+hora, propuestas pendientes sí/no por modo, input "Responder como Lucía Ríos", sesión cerrada sin input). Highlight: ring `ring-2 ring-forest-500` en `TaskCard` y `GanttBar`.
+- **Aislamiento §18**: huddle por proyecto en `project.huddle` (persistido); cambiar de proyecto desmonta el playback (effect keyed por `project.id`).
+- **Fix demo seed relativo**: el demo corre contra las cartas reales del proyecto con fechas re-ancladas (§15), así `set-dates` y el hito go-live se comportan igual que en el tablero.
+- Tests: `npm test` **249/249** (antes 221; +14 huddleEngine, +6 HuddleTab, +4 HuddleSessionBar, +4 MaieContext.huddle integración con provider real + fake timers). `npm run build` OK.
+
+**Nota para Grok**: verificar contra §10/§17.5 el guion del demo (orden y quién habla) y que el demo aplique con `applyMode:'auto'` igual que el auto-dispatch del slice 5. El fallback templated del huddle usa `Maie` y pregunta qué carta toma la línea (§11).
+
+**Requiere acción del operador (pendiente desde slice 6)**: `flyctl secrets set OPENAI_API_KEY=sk-...` para habilitar el LLM en prod; sin clave, prod responde templated sin error ni gasto.
 
 ---

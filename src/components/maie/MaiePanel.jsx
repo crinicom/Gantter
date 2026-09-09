@@ -9,6 +9,7 @@ import { es } from 'date-fns/locale';
 import MaieMark from './MaieMark';
 import ApplyModeToggle from './ApplyModeToggle';
 import InquiryThread from './InquiryThread';
+import HuddleTab from '../huddle/HuddleTab';
 import { useMaie } from '../../context/MaieContext';
 import {
   INQUIRY_KIND_META,
@@ -84,19 +85,6 @@ function QuestionsTab({ onOpen }) {
           {rows(parked)}
         </div>
       )}
-    </div>
-  );
-}
-
-function HuddleTab() {
-  return (
-    <div className="px-4 py-6">
-      <p className="text-sm text-ink">
-        El primer huddle se arma acá, con las preguntas abiertas de la semana.
-      </p>
-      <p className="mt-1 text-xs text-muted">
-        El huddle de los miércoles llega en una próxima entrega.
-      </p>
     </div>
   );
 }

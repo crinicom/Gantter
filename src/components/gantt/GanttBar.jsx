@@ -3,14 +3,17 @@ import clsx from 'clsx';
 import { dateRangePx, GANTT } from './ganttLayout';
 import { TASK_STATUS } from '../../constants/project';
 import { clampProgress } from '../../utils/progress';
+import { useHuddleHighlights } from '../../context/MaieContext';
 
 export default function GanttBar({ task, startDate, isCritical, overlapped = false }) {
   // Las cartas sin rango completo viven en el canal "Sin fechas"; no se dibuja una barra.
   if (!task.startDate || !task.endDate) return null;
 
+  const highlightedTaskIds = useHuddleHighlights();
   const isCompleted = task.status === TASK_STATUS.COMPLETED;
   const progress = clampProgress(task.progress);
   const { left, width } = dateRangePx(startDate, task);
+  const highlighted = highlightedTaskIds.has(task.id);
 
   return (
     <div
@@ -25,6 +28,7 @@ export default function GanttBar({ task, startDate, isCritical, overlapped = fal
               : 'border-gray-400 bg-gray-500',
         isCompleted && 'opacity-60',
         overlapped && 'ring-2 ring-red-400',
+        highlighted && 'ring-2 ring-forest-500',
       )}
       style={{ left, width, height: GANTT.BAR_HEIGHT, top: 0 }}
       title={`${task.name}${isCritical ? ' [crítica]' : ''} — ${progress}%`}
