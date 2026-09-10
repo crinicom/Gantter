@@ -52,8 +52,15 @@ export default function TaskCard({ task, onToggle, onOpen, showCompletedTasks })
       onClick={() => onOpen(task)}
     >
       <div className="mb-2 flex items-start justify-between gap-2">
-        <span className={clsx('text-sm font-medium', isCompleted ? 'text-gray-400 line-through' : 'text-gray-800')}>
-          {task.name || 'Sin título'}
+        <span className="flex min-w-0 items-center gap-1.5">
+          {Number.isInteger(task.number) && task.number > 0 && (
+            <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
+              #{task.number}
+            </span>
+          )}
+          <span className={clsx('truncate text-sm font-medium', isCompleted ? 'text-gray-400 line-through' : 'text-gray-800')}>
+            {task.name || 'Sin título'}
+          </span>
         </span>
         <Checkbox checked={isCompleted} onChange={() => onToggle(task)} />
       </div>

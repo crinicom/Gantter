@@ -327,7 +327,9 @@ id, name, initials, role
 id, title, wipLimit?
 
 **Card**  
-id, title, description, columnId, assigneeIds[], startDate, endDate, blocked, blockedReason, comments[], createdAt, updatedAt, lastActivityAt
+id, title, description, columnId, assigneeIds[], startDate, endDate, blocked, blockedReason, comments[], number, createdAt, updatedAt, lastActivityAt
+
+`number` es el número de carta por proyecto (`#N`), inmutable, asignado en orden de creación (1..N). Es la referencia humana en voz ("me quedo con la 12"), el ancla robusta del reconocimiento del huddle y aparece en chips Kanban/Gantt y en labels de propuestas. Se conserva en el round-trip canónico; tareas perseguidas sin número reciben backfill por orden.
 
 **Inquiry**  
 id, projectId, cardId?, kind, question, evidence, status (`open | chatting | resolved | snoozed`), thread[], proposals[]

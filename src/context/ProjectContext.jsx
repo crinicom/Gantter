@@ -1,6 +1,6 @@
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { createEmptyTask, canCompleteTask } from '../models/task';
+import { createEmptyTask, canCompleteTask, nextTaskNumber } from '../models/task';
 import { createEmptyBucket } from '../models/bucket';
 import { linkTasks, unlinkTasks } from '../utils/taskHelpers';
 import { clampProgress } from '../utils/progress';
@@ -430,7 +430,10 @@ export const ProjectProvider = ({ children }) => {
       if (!task.name) return;
       task.name = task.name.trim();
       if (!task.lastActivityAt) task.lastActivityAt = new Date().toISOString();
-      commitToStore((prev) => ({ ...prev, tasks: [...prev.tasks, task] }));
+      commitToStore((prev) => ({
+        ...prev,
+        tasks: [...prev.tasks, { ...task, number: nextTaskNumber(prev.tasks) }],
+      }));
     },
     [commitToStore],
   );

@@ -232,7 +232,9 @@ function bucketName(buckets, id) {
 
 function taskTitle(tasks, id) {
   const t = (tasks || []).find((x) => x.id === id);
-  return t ? cardTitleOf(t) : 'la carta';
+  if (!t) return 'la carta';
+  const n = Number.isInteger(t.number) && t.number > 0 ? `#${t.number} ` : '';
+  return `${n}${cardTitleOf(t)}`;
 }
 
 // Traduce acciones validadas a propuestas con la misma forma que proposalEngine:

@@ -9,6 +9,7 @@ import { normalizeBucket } from '../models/bucket';
 import { normalizeMember, MEMBER_ROLES, MEMBER_STATUS } from '../models/member';
 import { normalizeColumn } from '../models/column';
 import { normalizeCard } from '../models/card';
+import { assignTaskNumbers } from '../models/task';
 import { clampProgress } from '../utils/progress';
 
 const NOW = () => new Date().toISOString();
@@ -46,6 +47,7 @@ function toCards(tasks) {
     blocked: Boolean(t.blocked),
     blockedReason: t.blockedReason || '',
     milestone: Boolean(t.milestone),
+    number: Number.isInteger(t.number) && t.number > 0 ? t.number : null,
     comments: Array.isArray(t.comments) ? t.comments : [],
     createdAt: t.createdAt || NOW(),
     updatedAt: t.updatedAt || NOW(),
@@ -203,6 +205,7 @@ function fromDocumentCanonical(project) {
       blocked: card.blocked,
       blockedReason: card.blockedReason || '',
       milestone: Boolean(card.milestone),
+      number: Number.isInteger(card.number) && card.number > 0 ? card.number : 0,
       comments: Array.isArray(card.comments) ? card.comments : [],
       precedents: [],
       dependents: [],
@@ -212,6 +215,9 @@ function fromDocumentCanonical(project) {
       lastActivityAt: card.lastActivityAt || card.updatedAt,
     };
   });
+  // Backfill: números por proyecto, inmutable, en orden de creación (§10:
+  // referencia humana "la 12" y ancla del ASR del huddle).
+  const tasksWithNumbers = assignTaskNumbers(tasks);
 
   return {
     id: project.id ?? null,
@@ -232,7 +238,7 @@ function fromDocumentCanonical(project) {
     createdAt: project.createdAt || NOW(),
     updatedAt: project.updatedAt || NOW(),
     buckets,
-    tasks,
+    tasks: tasksWithNumbers,
     columns,
     cards,
     inquiries: Array.isArray(project.inquiries) ? project.inquiries : [],
@@ -336,7 +342,7 @@ export function normalizeProject(raw) {
         : id,
     members: Array.isArray(project.members) ? project.members.map(normalizeMember) : [],
     buckets: buckets.map(normalizeBucket),
-    tasks: notes,
+    tasks: assignTaskNumbers(notes),
     columns: cols,
     cards: cardList,
     inquiries: Array.isArray(project.inquiries) ? project.inquiries : [],

@@ -127,6 +127,8 @@ describe('projectStorage', () => {
     expect(restored.tasks[0].assignedUsers[0].id).toBe('u_lucia');
     // status deriva de la columna en v1.
     expect(restored.tasks[0].status).toBe('in-progress');
+    // Backfill: sin número persistido, recibe 1..N en orden.
+    expect(restored.tasks[0].number).toBe(1);
   });
 
   it('round-trip canónico con múltiples responsables, bloqueada e hito', () => {
@@ -203,6 +205,33 @@ describe('projectStorage', () => {
     ]);
     const doc = JSON.parse(serializeProject(p));
     expect(doc.cards[0].assigneeIds).toEqual(['u_demo']);
+  });
+
+  it('números de carta: backfill 1..N en orden y round-trip canónico los conserva', () => {
+    const runtime = {
+      ...createDefaultProject(),
+      id: 'p1',
+      name: 'Portal',
+      ownerId: 'u_lucia',
+      members: [],
+      buckets: [
+        { id: 'b1', name: 'Backlog', color: '#123', collapsed: false },
+        { id: 'b2', name: 'En curso', color: '#456', collapsed: false },
+      ],
+      tasks: [
+        { id: 't1', name: 'Uno', bucketId: 'b1', assignedUser: null, comments: [], precedents: [], dependents: [] },
+        { id: 't2', name: 'Dos', bucketId: 'b2', assignedUser: null, comments: [], precedents: [], dependents: [] },
+      ],
+    };
+    const restored = deserializeProject(serializeProject(runtime));
+    expect(restored.tasks.map((t) => t.number)).toEqual([1, 2]);
+
+    // Un número ya persistido se conserva y el resto se sigue completando.
+    const doc = JSON.parse(serializeProject(runtime));
+    doc.cards[0].number = 7;
+    const again = deserializeProject(JSON.stringify(doc));
+    expect(again.tasks.map((t) => t.number)).toEqual([7, 2]);
+    expect(doc.cards[0].number).toBe(7);
   });
 
   it('normaliza documentos legacy (buckets/tasks) a runtime y genera correos canónicos', () => {

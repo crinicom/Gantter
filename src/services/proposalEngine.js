@@ -36,6 +36,13 @@ function titleOf(task) {
   return task?.title || task?.name || 'Carta sin título';
 }
 
+// Referencia humana de una carta en labels de propuestas: `#12 «Auth magic link»`.
+function cardRef(task) {
+  const t = titleOf(task);
+  const n = Number.isInteger(task?.number) && task.number > 0 ? `#${task.number} ` : '';
+  return `«${n}${t}»`;
+}
+
 function bucketOf(task, buckets) {
   return (buckets || []).find((b) => b.id === task?.bucketId);
 }
@@ -138,7 +145,7 @@ export function defaultProposalsFor(project, inquiry, { now = new Date() } = {})
           proposal(
             inquiry,
             'assign',
-            `Asignar «${titleOf(task)}» a ${member.name}`,
+            `Asignar ${cardRef(task)} a ${member.name}`,
             { memberId: member.id },
             { comment: `Esta carta estaba en «${bucketOf(task, buckets)?.name || ''}» sin dueño. Quedó asignada a ${member.name}, que es quien hoy tiene menos carga.` },
           ),
@@ -184,7 +191,7 @@ export function defaultProposalsFor(project, inquiry, { now = new Date() } = {})
           proposal(
             inquiry,
             'set-dates',
-            `Fechar desde hoy hasta «${titleOf(milestone.task)}»`,
+            `Fechar desde hoy hasta ${cardRef(milestone.task)}`,
             { startDate: iso(now), endDate: milestone.task.endDate },
             { comment: `La carta no tenía fechas y el hito «${titleOf(milestone.task)}» está a ${milestone.days} días. Quedó fechada de hoy a ${milestone.task.endDate}.` },
             { needsInput: false },
@@ -220,7 +227,7 @@ export function defaultProposalsFor(project, inquiry, { now = new Date() } = {})
               proposal(
                 inquiry,
                 'assign',
-                `Reasignar «${titleOf(target)}» a ${member.name}`,
+                `Reasignar ${cardRef(target)} a ${member.name}`,
                 { taskId: target.id, memberId: member.id },
                 { comment: `Las barras de ${names.join(' y ')} se pisaban. «${titleOf(target)}» quedó con ${member.name} para despejarlas.` },
                 { payload: { taskId: target.id, memberId: member.id } },

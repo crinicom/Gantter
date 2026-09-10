@@ -127,6 +127,20 @@ describe('canApply', () => {
     expect(canApply(p, sinBucket)).toBe(false);
     expect(canApply(p, sinTitulo)).toBe(false);
   });
+
+  it('create-card numera la carta nueva con max+1 por proyecto', () => {
+    const p = project({ tasks: [task({ id: 't1', number: 3 })] });
+    const out = apply(
+      p,
+      pendingProposal({
+        action: 'create-card',
+        payload: { title: 'CI', bucketId: 'b_backlog' },
+      }),
+      { source: 'confirm' },
+    );
+    const created = out.project.tasks.find((t) => t.id !== 't1');
+    expect(created.number).toBe(4);
+  });
 });
 
 describe('apply', () => {
@@ -178,6 +192,7 @@ describe('apply', () => {
     expect(out.project.tasks).toHaveLength(1);
     const created = out.project.tasks[0];
     expect(created.name).toBe('Setup CI');
+    expect(created.number).toBe(1);
     expect(created.bucketId).toBe('b_backlog');
     expect(created.status).toBe('todo');
     expect(created.progress).toBe(0);

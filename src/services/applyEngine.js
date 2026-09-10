@@ -7,6 +7,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { TASK_STATUS } from '../constants/project';
 import { MAIA_DEFAULTS } from '../constants/maia';
+import { nextTaskNumber } from '../models/task';
 
 function staleDaysOf(project) {
   return project?.settings?.staleDays ?? MAIA_DEFAULTS.staleDays;
@@ -68,6 +69,7 @@ function patchTask(project, proposal, { now, source }) {
     const at = now.toISOString();
     const newCard = {
       id: uuidv4(),
+      number: nextTaskNumber(project.tasks),
       name: (proposal.payload?.title || '').trim(),
       description: proposal.payload?.description || '',
       assignedUsers: [],

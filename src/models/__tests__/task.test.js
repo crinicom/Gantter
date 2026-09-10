@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { createEmptyTask, canCompleteTask, hasPendingPrecedents, isTaskCompleted } from '../task';
+import {
+  createEmptyTask,
+  canCompleteTask,
+  hasPendingPrecedents,
+  isTaskCompleted,
+  assignTaskNumbers,
+  nextTaskNumber,
+} from '../task';
 import { TASK_STATUS } from '../../constants/project';
 
 describe('models/task', () => {
@@ -30,5 +37,23 @@ describe('models/task', () => {
   it('isTaskCompleted', () => {
     expect(isTaskCompleted({ status: TASK_STATUS.COMPLETED })).toBe(true);
     expect(isTaskCompleted({ status: TASK_STATUS.TODO })).toBe(false);
+  });
+
+  it('assignTaskNumbers numera por proyecto en orden y nextTaskNumber sigue', () => {
+    expect(assignTaskNumbers([])).toEqual([]);
+    expect(nextTaskNumber([])).toBe(1);
+    const tasks = assignTaskNumbers([{ id: 'a' }, { id: 'b' }]);
+    expect(tasks.map((t) => t.number)).toEqual([1, 2]);
+    expect(nextTaskNumber(tasks)).toBe(3);
+  });
+
+  it('assignTaskNumbers conserva números existentes y no duplica', () => {
+    const tasks = assignTaskNumbers([
+      { id: 'a', number: 5 },
+      { id: 'b' },
+      { id: 'c', number: 2 },
+    ]);
+    expect(tasks.map((t) => t.number)).toEqual([5, 6, 2]);
+    expect(nextTaskNumber(tasks)).toBe(7);
   });
 });

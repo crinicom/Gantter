@@ -31,9 +31,11 @@ export default function GanttBar({ task, startDate, isCritical, overlapped = fal
         highlighted && 'ring-2 ring-forest-500',
       )}
       style={{ left, width, height: GANTT.BAR_HEIGHT, top: 0 }}
-      title={`${task.name}${isCritical ? ' [crítica]' : ''} — ${progress}%`}
+      title={`${task.name}${Number.isInteger(task.number) && task.number > 0 ? ` #${task.number}` : ''}${isCritical ? ' [crítica]' : ''} — ${progress}%`}
     >
-      <span className="truncate">{task.name}</span>
+      <span className="truncate">
+        {Number.isInteger(task.number) && task.number > 0 ? `#${task.number} ${task.name}` : task.name}
+      </span>
       {progress > 0 && progress < 100 && (
         <span className="absolute inset-x-0 bottom-0 h-1 bg-white/40">
           <span className="absolute inset-y-0 left-0 bg-white/70" style={{ width: `${progress}%` }} />

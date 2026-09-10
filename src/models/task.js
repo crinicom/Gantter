@@ -4,6 +4,7 @@ import { TASK_STATUS } from '../constants/project';
 export function createEmptyTask(bucketId) {
   return {
     id: uuidv4(),
+    number: 0,
     name: '',
     description: '',
     assignedUsers: [],
@@ -21,6 +22,29 @@ export function createEmptyTask(bucketId) {
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
+}
+
+// El número de carta (##N) es por proyecto, inmutable y se asigna en el orden
+// de creación. Es la referencia humana ("me quedo con la 12") y el ancla
+// robusta del reconocimiento de voz del huddle.
+export function assignTaskNumbers(tasks) {
+  const list = Array.isArray(tasks) ? tasks : [];
+  let seq = 1;
+  return list.map((t) => {
+    if (Number.isInteger(t?.number) && t.number > 0) {
+      seq = Math.max(seq, t.number + 1);
+      return t;
+    }
+    return { ...t, number: seq++ };
+  });
+}
+
+export function nextTaskNumber(tasks) {
+  let max = 0;
+  (Array.isArray(tasks) ? tasks : []).forEach((t) => {
+    if (Number.isInteger(t?.number) && t.number > max) max = t.number;
+  });
+  return max + 1;
 }
 
 export function isTaskCompleted(task) {
