@@ -269,6 +269,7 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
       question: c.question,
       evidence: c.evidence,
       status: INQUIRY_STATUS.OPEN,
+      followedUpAt: null,
       thread: [],
       createdAt: tick,
       updatedAt: tick,

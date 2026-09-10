@@ -33,6 +33,32 @@ describe('parseOnboardingQuestions', () => {
     expect(parseOnboardingQuestions(null).questions).toEqual([]);
     expect(parseOnboardingQuestions('').questions).toEqual([]);
   });
+
+  it('markdown vacío produce intro vacía y 0 preguntas', () => {
+    const { intro, questions } = parseOnboardingQuestions('   \n  \n  ');
+    expect(intro).toBe('');
+    expect(questions).toHaveLength(0);
+  });
+
+  it('solo comentarios produce 0 preguntas', () => {
+    const { intro, questions } = parseOnboardingQuestions('# Primera línea\n# Segunda línea');
+    expect(intro).toBe('');
+    expect(questions).toHaveLength(0);
+  });
+
+  it('un solo heading produce 1 pregunta', () => {
+    const { questions } = parseOnboardingQuestions('## Resumen\n\nBreve resumen del proyecto.');
+    expect(questions).toHaveLength(1);
+    expect(questions[0].heading).toBe('Resumen');
+    expect(questions[0].text).toBe('Breve resumen del proyecto.');
+  });
+
+  it('heading sin body produce texto vacío', () => {
+    const { questions } = parseOnboardingQuestions('## Vacía\n\n## Llena\nCon contenido');
+    expect(questions).toHaveLength(2);
+    expect(questions[0].text).toBe('');
+    expect(questions[1].text).toBe('Con contenido');
+  });
 });
 
 describe('answeredCount', () => {

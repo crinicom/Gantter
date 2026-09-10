@@ -263,4 +263,11 @@ describe('scanInquiries', () => {
     expect(un.question).toContain('«En curso»');
     expect(un.evidence).toBe('Sin responsable en una columna de trabajo.');
   });
+
+  it('nuevos inquiries incluyen followedUpAt: null', () => {
+    const { inquiries } = scanInquiries(portalProject());
+    for (const inq of inquiries) {
+      expect(inq.followedUpAt).toBeNull();
+    }
+  });
 });

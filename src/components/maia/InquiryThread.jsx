@@ -11,16 +11,16 @@ import { ACTIVE_USER } from '../../constants/project';
 import { INQUIRY_KIND_META, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maia';
 import MaiaMark from './MaiaMark';
 
-// P1 de la review del slice 5/6: rechazar una propuesta no corta la charla.
-// Maia sigue la pregunta ("la pregunta sigue", §17.4) para entender qué hacer.
-const DECLINE_FOLLOW_UP = 'No por ahora. ¿Qué habría que hacer entonces?';
+// §9.200: el "No" ahora es local (sin LLM) vía declineProposal en MaiaContext.
+// Maia pregunta una sola vez "¿Qué habría que hacer entonces?" y la segunda
+// vez ofrece snooze; no hay loop.
 
 function kindTone(kind) {
   return INQUIRY_KIND_META[kind]?.tone || 'muted';
 }
 
 function ProposalRow({ inquiry, proposal, applyMode }) {
-  const { applyProposal, dismissProposal, sendThreadMessage } = useMaia();
+  const { applyProposal, dismissProposal, declineProposal } = useMaia();
   const st = proposal.status;
 
   if (st === PROPOSAL_STATUS.APPLIED) {
@@ -69,10 +69,7 @@ function ProposalRow({ inquiry, proposal, applyMode }) {
           </button>
           <button
             type="button"
-            onClick={() => {
-              dismissProposal(inquiry.id, proposal.id);
-              sendThreadMessage(inquiry.id, DECLINE_FOLLOW_UP);
-            }}
+            onClick={() => declineProposal(inquiry.id, proposal.id)}
             className="rounded-md border border-gray-300 px-2.5 py-1 text-xs font-medium text-ink hover:bg-gray-100"
           >
             No

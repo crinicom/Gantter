@@ -66,7 +66,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 10 | Números de carta `#N` por proyecto (referencia humana + ancla del ASR) | opencode | **review** | §12 (Card.number), §10 | backfill 1..N, max+1 en crear, chips Kanban/Gantt, labels con `#N`; commit slice 10 |
 | 11 | Huddle real: escuchar reunión (Web Speech), matcher determinístico, 0 tokens LLM | opencode | **review** | §10, §12 | `useSpeechToText` + `liveLineMatcher` + UI mic; commit slice 11 |
 | 12 | Información del proyecto: documentos markdown (ficha OneNote-like) | opencode | **done** | §12 (Document) | `documents[]` en storage, API `create/update/deleteDocument` en ProjectContext, `ProjectInfoView` + pestaña, seed con ficha de ejemplo; commit slice 12 `928313f` |
-| 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **in-progress** → `review` | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
+| 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **done** | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
+| 14 | Hardening v1: "No" de Maia (§9.200) + pruebas extensivas + mejoras menores | opencode | **done** | §9.200, §7, §12 | `declineProposal` (local, sin LLM, gate `followedUpAt`), normalize `followedUpAt: null`, 9 tests nuevos; commit slice 14 |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -332,15 +333,15 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 ### Punch list abierta para un próximo ciclo (review Grok 2026-09-09) — pendiente de implementar
 
-- **P1-rework (§9.200)**: el "No" quedó como burbuja del usuario ("No por ahora. ¿Qué habría que hacer entonces?") pero la spec exige que **Maia pregunte una sola vez** *"¿Qué habría que hacer entonces?"* (burbuja de Maia, quote exacto) y que **no insista en loop** ("Si tampoco hay cambio, queda abierta o se snoozea. No insistir en loop."). Implementación sugerida: follow-up de Maia enqueue local (sin LLM) + flag `followedUpAt` en el inquiry para gate "una sola vez"; el No siguiente a otra propuesta solo descarta y deja abierta/offer snooze.
+- ~~**P1-rework (§9.200)**~~: **DONE** en slice 14 (`declineProposal` local sin LLM, gate `followedUpAt`, sin loop).
 - **Nota overlap (§8)**: la identidad de un inquiry `overlap` es `kind:anchorId`; si cambia el anchor se pierde el hilo. Para "evidencia viva" de overlap conviene key por responsable. No bloquea.
-- **Mobile (slice 8)**: sigue **diferido** por decisión humana (2026-09-09).
+- **Mobile (slice 8)**: pasa a **v2** por decisión humana (2026-09-10).
 
 ### Slices 9–10 (2026-09-09) — notas para Grok
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1` y `1e9ba4e`.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3` y el commit del slice 14.
 
 ### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
 

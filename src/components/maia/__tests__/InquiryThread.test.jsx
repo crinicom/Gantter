@@ -48,6 +48,7 @@ function baseValue(overrides = {}) {
     sendThreadMessage: vi.fn(),
     applyProposal: vi.fn(),
     dismissProposal: vi.fn(),
+    declineProposal: vi.fn(),
     snoozeInquiry: vi.fn(),
     ...overrides,
   };
@@ -89,14 +90,12 @@ describe('InquiryThread', () => {
 
   it('en modo confirmar la propuesta se aprueba (Sí) o se descarta (No)', () => {
     const applyProposal = vi.fn();
-    const dismissProposal = vi.fn();
-    const sendThreadMessage = vi.fn();
-    renderThread({ applyProposal, dismissProposal, sendThreadMessage });
+    const declineProposal = vi.fn();
+    renderThread({ applyProposal, declineProposal });
     fireEvent.click(screen.getByRole('button', { name: 'Sí' }));
     expect(applyProposal).toHaveBeenCalledWith('q1', 'p1', 'confirm');
     fireEvent.click(screen.getByRole('button', { name: 'No' }));
-    expect(dismissProposal).toHaveBeenCalledWith('q1', 'p1');
-    expect(sendThreadMessage).toHaveBeenCalledWith('q1', 'No por ahora. ¿Qué habría que hacer entonces?');
+    expect(declineProposal).toHaveBeenCalledWith('q1', 'p1');
   });
 
   it('en modo auto aplica con un solo paso y registra source auto', () => {

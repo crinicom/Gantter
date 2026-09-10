@@ -69,4 +69,27 @@ describe('onboardingService', () => {
     const docs = [{ id: 'd1', title: 'Ficha del proyecto', content: '# viejo', createdAt: 'x', updatedAt: 'x' }];
     expect(syncFichaDocument(docs, { objetivo: 'nueva' }, { done: true })).toEqual(docs);
   });
+
+  it('buildFichaContent con todas las preguntas produce todas las secciones', () => {
+    const allAnswers = { objetivo: 'A', entregable: 'B', equipo: 'C', fechas: 'D', riesgos: 'E' };
+    const ficha = buildFichaContent(allAnswers);
+    expect(ficha).toContain('## Objetivo');
+    expect(ficha).toContain('## Entregable');
+    expect(ficha).toContain('## Equipo');
+    expect(ficha).toContain('## Fechas');
+    expect(ficha).toContain('## Riesgos');
+  });
+
+  it('syncFichaDocument actualiza la Ficha existente con nuevas respuestas', () => {
+    const docs = [{ id: 'f1', title: 'Ficha del proyecto', content: '# viejo', createdAt: 'x', updatedAt: 'x' }];
+    const updated = syncFichaDocument(docs, { objetivo: 'nuevo' }, {});
+    expect(updated).toHaveLength(1);
+    expect(updated[0].id).toBe('f1');
+    expect(updated[0].content).toContain('## Objetivo');
+  });
+
+  it('normalizeOnboarding descarta campos extra sin romper', () => {
+    const result = normalizeOnboarding({ done: true, extra: 'field', answers: { a: 'b' } });
+    expect(result).toEqual({ answers: { a: 'b' }, currentQuestionId: null, done: true });
+  });
 });

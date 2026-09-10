@@ -133,12 +133,18 @@ function Probe() {
       </button>
       <button
         type="button"
-        onClick={() => {
-          ctx.dismissProposal('q_a', 'p_a1');
-          ctx.sendThreadMessage('q_a', 'No por ahora. ¿Qué habría que hacer entonces?');
-        }}
+        onClick={() => ctx.declineProposal('q_a', 'p_a1')}
       >
         no-followup
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          ctx.declineProposal('q_a', 'p_a1');
+          ctx.declineProposal('q_a', 'p_a1');
+        }}
+      >
+        no-twice
       </button>
       <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'confirm')}>
         aprobar
@@ -184,26 +190,41 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
     expect(screen.getByTestId('assignees')).toHaveTextContent('');
   });
 
-  it('P1: descartar con "No" deja la negativa como burbuja y Maia responde el follow-up', async () => {
+  it('§9.200: descartar con "No" deja follow-up como burbuja Maia (sin LLM)', async () => {
     const { holder, commit } = mount();
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
 
     fireEvent.click(screen.getByRole('button', { name: 'no-followup' }));
-    // mutaciones 1 y 2 (sincrónicas): dismiss + burbuja del usuario.
-    await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(2));
-    commit(holder.mutateProject.mock.calls[0][0]);
-    commit(holder.mutateProject.mock.calls[1][0]);
+    commit(holder.mutateProject.mock.calls.at(-1)[0]);
+
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('dismissed'));
+    // §9.200: el follow-up es una burbuja de Maia, no del usuario.
     await waitFor(() =>
-      expect(screen.getByTestId('thread')).toHaveTextContent(
-        'No por ahora. ¿Qué habría que hacer entonces?',
-      ),
+      expect(screen.getByTestId('thread')).toHaveTextContent('¿Qué habría que hacer entonces?'),
+    );
+    // §9.200: sin LLM, solo 1 mutateProject.
+    expect(holder.mutateProject).toHaveBeenCalledTimes(1);
+  });
+
+  it('§9.200: segundo "No" ofrece snooze sin loop', async () => {
+    const { holder, commit } = mount();
+    await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
+
+    // Primer "No" → followedUpAt se setea.
+    fireEvent.click(screen.getByRole('button', { name: 'no-followup' }));
+    commit(holder.mutateProject.mock.calls.at(-1)[0]);
+    await waitFor(() =>
+      expect(screen.getByTestId('thread')).toHaveTextContent('¿Qué habría que hacer entonces?'),
     );
 
-    // mutación 3 (async, §11): la respuesta de Maia aterriza después de la burbuja.
-    await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(3));
+    // Segundo "No" → offer snooze, sin loop.
+    fireEvent.click(screen.getByRole('button', { name: 'no-followup' }));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
-    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Vamos a verlo.'));
+    await waitFor(() =>
+      expect(screen.getByTestId('thread')).toHaveTextContent('Queda abierta'),
+    );
+    // §9.200: sin LLM, solo 2 mutateProjects (1 por cada "No").
+    expect(holder.mutateProject).toHaveBeenCalledTimes(2);
   });
 
   it('aprobar aplica, marca applied y el rescan siguiente no lo revierte', async () => {

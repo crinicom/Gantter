@@ -601,6 +601,47 @@ export function MaiaProvider({ children }) {
     [mutateProject],
   );
 
+  // §9.200: "No" de Lucía → burbuja Maia "¿Qué habría que hacer entonces?"
+  // (local, sin LLM). Segunda vez → offer snooze, sin loop.
+  const declineProposal = React.useCallback(
+    (inquiryId, proposalId) => {
+      const at = new Date().toISOString();
+      mutateProject((prev) => {
+        const inq = (prev.inquiries || []).find((i) => i.id === inquiryId);
+        if (!inq) return prev;
+        const alreadyAsked = Boolean(inq.followedUpAt);
+        const maiaBubble = {
+          id: uuidv4(),
+          role: 'maia',
+          author: 'Maia',
+          text: alreadyAsked
+            ? 'Queda abierta. ¿Querés que te lo recuerde en el próximo standup?'
+            : '¿Qué habría que hacer entonces?',
+          at,
+        };
+        return {
+          ...prev,
+          inquiries: (prev.inquiries || []).map((i) =>
+            i.id === inquiryId
+              ? {
+                  ...i,
+                  followedUpAt: alreadyAsked ? i.followedUpAt : at,
+                  proposals: (i.proposals || []).map((p) =>
+                    p.id === proposalId
+                      ? { ...p, status: PROPOSAL_STATUS.DISMISSED, dismissedAt: at }
+                      : p,
+                  ),
+                  thread: [...(i.thread || []), maiaBubble],
+                  updatedAt: at,
+                }
+              : i,
+          ),
+        };
+      });
+    },
+    [mutateProject],
+  );
+
   const snoozeInquiry = React.useCallback(
     (inquiryId) => {
       const at = new Date().toISOString();
@@ -638,6 +679,7 @@ export function MaiaProvider({ children }) {
       sendThreadMessage,
       applyProposal,
       dismissProposal,
+      declineProposal,
       snoozeInquiry,
       startHuddle,
       stopHuddle,
@@ -660,6 +702,7 @@ export function MaiaProvider({ children }) {
       sendThreadMessage,
       applyProposal,
       dismissProposal,
+      declineProposal,
       snoozeInquiry,
       startHuddle,
       stopHuddle,
