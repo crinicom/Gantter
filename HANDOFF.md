@@ -340,7 +340,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f` y el commit del slice 13.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1` y `1e9ba4e`.
 
 ### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
 
