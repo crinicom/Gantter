@@ -596,29 +596,8 @@ export function MaiaProvider({ children }) {
     [mutateProject],
   );
 
-  const dismissProposal = React.useCallback(
-    (inquiryId, proposalId) => {
-      const at = new Date().toISOString();
-      mutateProject((prev) => ({
-        ...prev,
-        inquiries: (prev.inquiries || []).map((inq) =>
-          inq.id === inquiryId
-            ? {
-                ...inq,
-                proposals: (inq.proposals || []).map((p) =>
-                  p.id === proposalId ? { ...p, status: PROPOSAL_STATUS.DISMISSED, dismissedAt: at } : p,
-                ),
-                updatedAt: at,
-              }
-            : inq,
-        ),
-      }));
-    },
-    [mutateProject],
-  );
-
   // §9.200: "No" de Lucía → burbuja Maia "¿Qué habría que hacer entonces?"
-  // (local, sin LLM). Segunda vez → offer snooze, sin loop. Pulse los estados
+  // (local, sin LLM). Segunda vez → offer snooze, sin loop. Cambia el estado
   // del inquiry (CHATTING), descarta la propuesta apuntada (o todas en el texto
   // libre) y deja el gate `followedUpAt`.
   const declineInquiry = (inq, at, { entry = null, onlyProposalId = null, dismissPending = false } = {}) => {
@@ -628,7 +607,7 @@ export function MaiaProvider({ children }) {
       role: 'maia',
       author: 'Maia',
       text: alreadyAsked
-        ? 'Queda abierta. ¿Querés que te lo recuerde en el próximo standup?'
+        ? 'Queda abierta.'
         : '¿Qué habría que hacer entonces?',
       at,
     };
@@ -702,7 +681,6 @@ export function MaiaProvider({ children }) {
       setApplyMode: (mode) => setSettings({ applyMode: mode }),
       sendThreadMessage,
       applyProposal,
-      dismissProposal,
       declineProposal,
       snoozeInquiry,
       startHuddle,
@@ -725,7 +703,6 @@ export function MaiaProvider({ children }) {
       setSettings,
       sendThreadMessage,
       applyProposal,
-      dismissProposal,
       declineProposal,
       snoozeInquiry,
       startHuddle,

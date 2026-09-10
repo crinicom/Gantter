@@ -133,14 +133,8 @@ function Probe() {
       <span data-testid="inq-status">{inq?.status || ''}</span>
       <span data-testid="assignees">{assignees}</span>
       <span data-testid="open-count">{ctx.openCount}</span>
-      <span data-testid="doc-thread">
-        {(project.inquiries[0]?.thread || []).map((m) => m.text).join('|') || ''}
-      </span>
       <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maia')}>
         send
-      </button>
-      <button type="button" onClick={() => ctx.dismissProposal('q_a', 'p_a1')}>
-        descartar
       </button>
       <button type="button" onClick={() => ctx.declineProposal('q_a', 'p_a1')}>
         no-followup
@@ -182,17 +176,6 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
     await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(2));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
     await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maia|Vamos a verlo.'));
-  });
-
-  it('descartar refleja el estado en el contexto y no muta la carta', async () => {
-    const { holder, commit } = mount();
-    await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
-
-    fireEvent.click(screen.getByRole('button', { name: 'descartar' }));
-    commit(holder.mutateProject.mock.calls.at(-1)[0]);
-
-    await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('dismissed'));
-    expect(screen.getByTestId('assignees')).toHaveTextContent('');
   });
 
   it('§9.200: descartar con "No" deja follow-up como burbuja Maia (sin LLM)', async () => {

@@ -47,7 +47,6 @@ function baseValue(overrides = {}) {
     maiaReplying: false,
     sendThreadMessage: vi.fn(),
     applyProposal: vi.fn(),
-    dismissProposal: vi.fn(),
     declineProposal: vi.fn(),
     snoozeInquiry: vi.fn(),
     ...overrides,

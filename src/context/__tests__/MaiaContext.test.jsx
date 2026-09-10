@@ -200,9 +200,6 @@ function Harness({ project }) {
       <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'auto')}>
         aplicar-auto
       </button>
-      <button type="button" onClick={() => ctx.dismissProposal('q_a', 'p_a1')}>
-        descartar
-      </button>
       <button type="button" onClick={() => ctx.snoozeInquiry('q_a')}>
         snooze
       </button>
@@ -301,19 +298,6 @@ describe('MaiaContext acciones del hilo', () => {
     expect(next.tasks[0].comments[0]).toMatchObject({ author: 'Maia' });
     expect(next.inquiries[0].proposals[0].status).toBe('applied');
     expect(next.actionLog[0]).toMatchObject({ source: 'confirm', cardId: 't1' });
-  });
-
-  it('dismissProposal marca descartada sin mutar tareas', () => {
-    const { mutateProject } = mockSetup();
-    render(
-      <MaiaProvider>
-        <Harness />
-      </MaiaProvider>,
-    );
-    fireEvent.click(screen.getByRole('button', { name: 'descartar' }));
-    const next = runLastMutator(mutateProject);
-    expect(next.inquiries[0].proposals[0].status).toBe('dismissed');
-    expect(next.tasks[0].assignedUsers).toEqual([]);
   });
 
   it('snoozeInquiry aparca hasta el próximo standup', () => {
