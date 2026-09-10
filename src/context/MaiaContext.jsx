@@ -27,6 +27,7 @@ import {
   DEMO_STATUS,
 } from '../services/huddleEngine';
 import { matchLiveLine } from '../services/liveLineMatcher';
+import { isDeclineMessage } from '../utils/declineMessage';
 import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIA_DEFAULTS } from '../constants/maia';
 import { ACTIVE_USER } from '../constants/project';
 
@@ -538,6 +539,21 @@ export function MaiaProvider({ children }) {
         text: message,
         at,
       };
+      // §9.200: un "No" escueto en texto libre no va al LLM: deriva al mismo
+      // gate local del botón (burbuja Maia + followedUpAt + descarta pending).
+      if (isDeclineMessage(message)) {
+        mutateProject((prev) => {
+          const inq = (prev.inquiries || []).find((i) => i.id === inquiryId);
+          if (!inq) return prev;
+          return {
+            ...prev,
+            inquiries: (prev.inquiries || []).map((i) =>
+              i.id === inquiryId ? declineInquiry(i, at, { entry, dismissPending: true }) : i,
+            ),
+          };
+        });
+        return;
+      }
       mutateProject((prev) => ({
         ...prev,
         inquiries: (prev.inquiries || []).map((inq) =>
@@ -602,38 +618,46 @@ export function MaiaProvider({ children }) {
   );
 
   // §9.200: "No" de Lucía → burbuja Maia "¿Qué habría que hacer entonces?"
-  // (local, sin LLM). Segunda vez → offer snooze, sin loop.
+  // (local, sin LLM). Segunda vez → offer snooze, sin loop. Pulse los estados
+  // del inquiry (CHATTING), descarta la propuesta apuntada (o todas en el texto
+  // libre) y deja el gate `followedUpAt`.
+  const declineInquiry = (inq, at, { entry = null, onlyProposalId = null, dismissPending = false } = {}) => {
+    const alreadyAsked = Boolean(inq.followedUpAt);
+    const maiaBubble = {
+      id: uuidv4(),
+      role: 'maia',
+      author: 'Maia',
+      text: alreadyAsked
+        ? 'Queda abierta. ¿Querés que te lo recuerde en el próximo standup?'
+        : '¿Qué habría que hacer entonces?',
+      at,
+    };
+    return {
+      ...inq,
+      status: INQUIRY_STATUS.CHATTING,
+      followedUpAt: alreadyAsked ? inq.followedUpAt : at,
+      proposals: (inq.proposals || []).map((p) =>
+        p.status === PROPOSAL_STATUS.PENDING &&
+        (dismissPending || p.id === onlyProposalId)
+          ? { ...p, status: PROPOSAL_STATUS.DISMISSED, dismissedAt: at }
+          : p,
+      ),
+      thread: [...(inq.thread || []), entry, maiaBubble].filter(Boolean),
+      updatedAt: at,
+    };
+  };
+
   const declineProposal = React.useCallback(
     (inquiryId, proposalId) => {
       const at = new Date().toISOString();
       mutateProject((prev) => {
         const inq = (prev.inquiries || []).find((i) => i.id === inquiryId);
         if (!inq) return prev;
-        const alreadyAsked = Boolean(inq.followedUpAt);
-        const maiaBubble = {
-          id: uuidv4(),
-          role: 'maia',
-          author: 'Maia',
-          text: alreadyAsked
-            ? 'Queda abierta. ¿Querés que te lo recuerde en el próximo standup?'
-            : '¿Qué habría que hacer entonces?',
-          at,
-        };
         return {
           ...prev,
           inquiries: (prev.inquiries || []).map((i) =>
             i.id === inquiryId
-              ? {
-                  ...i,
-                  followedUpAt: alreadyAsked ? i.followedUpAt : at,
-                  proposals: (i.proposals || []).map((p) =>
-                    p.id === proposalId
-                      ? { ...p, status: PROPOSAL_STATUS.DISMISSED, dismissedAt: at }
-                      : p,
-                  ),
-                  thread: [...(i.thread || []), maiaBubble],
-                  updatedAt: at,
-                }
+              ? declineInquiry(i, at, { onlyProposalId: proposalId })
               : i,
           ),
         };

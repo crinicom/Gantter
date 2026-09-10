@@ -20,7 +20,7 @@ function kindTone(kind) {
 }
 
 function ProposalRow({ inquiry, proposal, applyMode }) {
-  const { applyProposal, dismissProposal, declineProposal } = useMaia();
+  const { applyProposal, declineProposal } = useMaia();
   const st = proposal.status;
 
   if (st === PROPOSAL_STATUS.APPLIED) {
