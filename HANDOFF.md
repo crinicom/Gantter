@@ -373,4 +373,12 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - Tests: **322/322** (parseOnboarding 8, onboardingService 7, projectStorage +2 onboarding, OnboardingModal 5, MaiaPanel envuelto con `ProjectContext.Provider` por el nuevo bloque) · `npm run build` OK.
 - **Revisar contra §12/§7/§16**: que la Ficha siga siendo dato del proyecto (no localStorage suelto), que el dictado en el modal no deje el reconocimiento activo, y que las seeds no rompan el round-trip (`onboarding: null`).
 
+### Review OpenCode de 12–13 (2026-09-10) — fixes aplicados
+
+1. **H1 — doc recién creado/duplicado nunca persistía**: `ProjectInfoView` abría con id `__pending__` ignorando el id real de `createDocument` → el autosave `updateDocument('__pending__')` era no-op y el texto tipiado se perdía (solo vivía en el draft local). Ahora se usa el id devuelto y se conserva el fallback de drafts para el tick en que el doc aún no está en el store. Test de regresión (el mock del harness agrega el doc como el contexto real): tipiar tras crear → `updateDocument` al id real con el contenido.
+2. **P1 — el modal saltaba de pregunta al guardar con blur**: el reset de índice dependía de `[open, firstUnanswered]`, así que guardar una respuesta (blur) movía `firstUnanswered` y empujaba el índice a la siguiente pregunta. Ahora solo se resetea al abrir (`deps [open]` leyendo el primer pendiente vía ref). Test: blur-guardado no salta de índice en la misma sesión.
+3. **P2 — modo server perdía onboarding/ficha**: `createNewProject` (server) guarda el doc raw de `projectStore.createProject` (sin `onboarding`/`documents`) → ahora se normaliza antes de `applyToStore` (onboarding activo para proyectos nuevos). `resetDemo` (server) no copiaba `documents`/`onboarding`/`inquiries`/`actionLog`/`huddle` → copiados por paridad con los seeds.
+4. **P3 — contador del modal contaba claves vacías** → `answeredCount` (solo texto); el botón de dictado se deriva de `speech.listening` (con `continuous:false` el `onend` corta solo y ya no quedaba "Detener" sin escucha).
+- Tests **324/324** · `npm run build` OK. Slices 12 y 13 quedan en `review` para Grok (humano puede cerrarlos).
+
 ---

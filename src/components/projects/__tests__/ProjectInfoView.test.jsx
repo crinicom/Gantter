@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import ProjectInfoView from '../ProjectInfoView';
@@ -22,18 +22,29 @@ const mocks = {
 };
 
 function renderView({ documents = [doc()] } = {}) {
-  return render(
-    <ProjectContext.Provider
-      value={{
-        project: { documents },
-        createDocument: mocks.createDocument,
-        updateDocument: mocks.updateDocument,
-        deleteDocument: mocks.deleteDocument,
-      }}
-    >
-      <ProjectInfoView />
-    </ProjectContext.Provider>,
-  );
+  function Harness() {
+    const [docs, setDocs] = useState(documents);
+    const value = {
+      project: { documents: docs },
+      createDocument: (payload) => {
+        mocks.createDocument(payload);
+        const id = 'doc_nuevo';
+        setDocs((d) => [
+          ...d,
+          { ...payload, id, createdAt: '', updatedAt: '' },
+        ]);
+        return id;
+      },
+      updateDocument: mocks.updateDocument,
+      deleteDocument: mocks.deleteDocument,
+    };
+    return (
+      <ProjectContext.Provider value={value}>
+        <ProjectInfoView />
+      </ProjectContext.Provider>
+    );
+  }
+  return render(<Harness />);
 }
 
 describe('ProjectInfoView', () => {
@@ -54,6 +65,23 @@ describe('ProjectInfoView', () => {
       title: 'Nuevo documento',
       content: '',
     });
+  });
+
+  it('persiste el contenido tipiado en el id real del documento recién creado', async () => {
+    renderView({ documents: [] });
+    fireEvent.click(screen.getAllByText(/Nuevo documento/)[0]);
+    expect(mocks.createDocument).toHaveBeenCalled();
+    const editor = screen.getByLabelText(/Contenido del documento/);
+    fireEvent.change(editor, { target: { value: 'Primer borrador\n' } });
+    await waitFor(
+      () => {
+        expect(mocks.updateDocument).toHaveBeenCalledWith(
+          'doc_nuevo',
+          expect.objectContaining({ content: 'Primer borrador\n', title: 'Nuevo documento' }),
+        );
+      },
+      { timeout: 2500 },
+    );
   });
 
   it('lista los documentos y abre el seleccionado con su contenido', () => {

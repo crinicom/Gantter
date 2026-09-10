@@ -10,7 +10,9 @@ const state = vi.hoisted(() => ({
       done: false,
     },
   },
-  saveOnboardingAnswer: vi.fn(),
+  saveOnboardingAnswer: vi.fn((qid, text) => {
+    state.project.onboarding.answers = { ...state.project.onboarding.answers, [qid]: text };
+  }),
   completeOnboarding: vi.fn(),
   updateOnboarding: vi.fn(),
 }));
@@ -37,6 +39,11 @@ describe('OnboardingModal', () => {
   beforeEach(() => {
     state.saveOnboardingAnswer.mockClear();
     state.completeOnboarding.mockClear();
+    state.project.onboarding = {
+      answers: { objetivo: 'Entregar el portal' },
+      currentQuestionId: 'objetivo',
+      done: false,
+    };
   });
 
   it('arranca en la primera pregunta sin responder y muestra el progreso', () => {
@@ -81,5 +88,16 @@ describe('OnboardingModal', () => {
   it('avisa cuando el dictado no está disponible', () => {
     renderModal();
     expect(screen.getByText(/Dictado no disponible/)).toBeInTheDocument();
+  });
+
+  it('guardar con blur no salta de pregunta a mitad de sesión', () => {
+    state.project.onboarding.answers = {};
+    renderModal();
+    expect(screen.getByText(/Pregunta 1 de 5/)).toBeInTheDocument();
+    const textarea = screen.getByPlaceholderText(/Escribí acá/);
+    fireEvent.change(textarea, { target: { value: 'Un objetivo clarito' } });
+    fireEvent.blur(textarea);
+    expect(state.saveOnboardingAnswer).toHaveBeenCalledWith('objetivo', 'Un objetivo clarito');
+    expect(screen.getByText(/Pregunta 1 de 5/)).toBeInTheDocument();
   });
 });

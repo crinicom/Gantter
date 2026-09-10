@@ -3,12 +3,13 @@
 // autosave (sin botón de guardar) y dictado opcional. Cada respuesta se
 // regenera en la "Ficha del proyecto" hasta que el onboarding se marca done.
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Mic, Square } from 'lucide-react';
 import Modal from '../common/Modal';
 import { useProject } from '../../hooks/useProject';
 import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { getOnboardingQuestions } from '../../services/onboardingService';
+import { answeredCount } from '../../utils/parseOnboarding';
 
 export default function OnboardingModal({ open, onClose }) {
   const { project, saveOnboardingAnswer, completeOnboarding } = useProject();
@@ -18,14 +19,16 @@ export default function OnboardingModal({ open, onClose }) {
 
   const [index, setIndex] = useState(0);
   const [draft, setDraft] = useState('');
-  const [dictating, setDictating] = useState(false);
 
   const firstUnanswered = questions.findIndex((q) => !String(answers[q.id] || '').trim());
+  const firstUnansweredRef = useRef(firstUnanswered);
+  firstUnansweredRef.current = firstUnanswered;
+
   useEffect(() => {
     if (!open) return;
-    setIndex(firstUnanswered === -1 ? 0 : firstUnanswered);
-    setDictating(false);
-  }, [open, firstUnanswered]);
+    const target = firstUnansweredRef.current === -1 ? 0 : firstUnansweredRef.current;
+    setIndex(target);
+  }, [open]);
 
   const question = questions[index] || null;
   useEffect(() => {
@@ -46,7 +49,6 @@ export default function OnboardingModal({ open, onClose }) {
 
   const go = (direction) => {
     save();
-    setDictating(false);
     speech.stop();
     const next = Math.min(Math.max(index + direction, 0), total - 1);
     if (next === index) return false;
@@ -56,7 +58,6 @@ export default function OnboardingModal({ open, onClose }) {
 
   const onDone = () => {
     save();
-    setDictating(false);
     speech.stop();
     completeOnboarding();
     onClose();
@@ -64,14 +65,13 @@ export default function OnboardingModal({ open, onClose }) {
 
   const onCloseSaving = () => {
     save();
-    setDictating(false);
     speech.stop();
     onClose();
   };
 
   if (total === 0) return null;
 
-  const answered = Object.keys(answers).length;
+  const answered = answeredCount(answers);
 
   return (
     <Modal
@@ -146,21 +146,16 @@ export default function OnboardingModal({ open, onClose }) {
             <button
               type="button"
               onClick={() => {
-                if (dictating) {
-                  speech.stop();
-                  setDictating(false);
-                } else {
-                  speech.start();
-                  setDictating(true);
-                }
+                if (speech.listening) speech.stop();
+                else speech.start();
               }}
               disabled={!speech.supported}
               className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 px-3 py-1.5 text-sm font-medium text-ink hover:bg-gray-50 disabled:opacity-40"
             >
-              {dictating ? <Square size={14} /> : <Mic size={14} />}
-              {dictating ? 'Detener' : 'Dictar'}
+              {speech.listening ? <Square size={14} /> : <Mic size={14} />}
+              {speech.listening ? 'Detener' : 'Dictar'}
             </button>
-            {dictating && speech.interim && (
+            {speech.listening && speech.interim && (
               <span className="text-xs italic text-muted">…{speech.interim}</span>
             )}
             {speech.supported === false && (

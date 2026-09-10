@@ -126,8 +126,8 @@ export default function ProjectInfoView() {
   };
 
   const onNewDocument = () => {
-    createDocument({ title: 'Nuevo documento', content: '' });
-    openDoc('__pending__', { title: 'Nuevo documento', content: '' });
+    const id = createDocument({ title: 'Nuevo documento', content: '' });
+    openDoc(id, { title: 'Nuevo documento', content: '' });
   };
 
   const onChangeContent = (value) => {
@@ -154,11 +154,11 @@ export default function ProjectInfoView() {
 
   const onDuplicate = () => {
     if (!selectedId) return;
-    createDocument({
+    const id = createDocument({
       title: `${titleDraft || 'Documento'} (Copia)`,
       content: contentDraft,
     });
-    openDoc('__pending__', { title: `${titleDraft || 'Documento'} (Copia)`, content: contentDraft });
+    openDoc(id, { title: `${titleDraft || 'Documento'} (Copia)`, content: contentDraft });
   };
 
   const onDownload = () => {

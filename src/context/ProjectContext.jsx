@@ -13,7 +13,7 @@ import { getBackend } from '../services/storage';
 import { RealtimeService } from '../services/realtimeService';
 import { ServerRealtime } from '../services/serverRealtime';
 import { InviteService } from '../services/inviteService';
-import { createProject } from '../services/projectStorage';
+import { createProject, normalizeProject } from '../services/projectStorage';
 import {
   defaultOnboarding,
   normalizeOnboarding,
@@ -250,10 +250,13 @@ export const ProjectProvider = ({ children }) => {
       if (isServerMode()) {
         backendRef.current.createProject({ name, description }).then((doc) => {
           if (!doc) return;
-          const map = { ...storeRef.current, [doc.id]: doc };
+          // El server crea un doc legacy (buckets/tasks) sin los campos de §12:
+          // normalizar agrega onboarding activo, documents[], inquiries[], etc.
+          const normalized = normalizeProject(doc);
+          const map = { ...storeRef.current, [normalized.id]: normalized };
           storeRef.current = map;
           setStore(map);
-          openProject(doc.id);
+          openProject(normalized.id);
         });
         return null;
       }
@@ -332,6 +335,11 @@ export const ProjectProvider = ({ children }) => {
           created.members = seed.members.map((m) =>
             m.role === MEMBER_ROLES.OWNER ? { ...m, role: MEMBER_ROLES.OWNER } : m,
           );
+          created.documents = seed.documents || [];
+          created.onboarding = seed.onboarding || null;
+          created.inquiries = seed.inquiries || [];
+          created.actionLog = seed.actionLog || [];
+          created.huddle = seed.huddle || null;
           await backendRef.current.saveProject(created);
           const map = { ...storeRef.current, [created.id]: created };
           storeRef.current = map;
