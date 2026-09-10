@@ -66,26 +66,31 @@ function huddleProject() {
       task({
         id: 'card_webhook',
         name: 'Webhook de pagos',
+        number: 12,
         assignedUsers: [{ id: 'u_ana', name: 'Ana Soler' }],
       }),
       task({
         id: 'card_magic_link',
         name: 'Auth magic link',
+        number: 3,
         bucketId: 'b_listo',
         assignedUsers: [{ id: 'u_lucia', name: 'Lucía Ríos' }],
       }),
       task({
         id: 'card_onboarding',
         name: 'Rediseñar onboarding',
+        number: 7,
       }),
       task({
         id: 'card_qa_staging',
         name: 'QA staging release',
+        number: 4,
         bucketId: 'b_listo',
       }),
       task({
         id: 'card_go_live',
         name: 'Go-live portal',
+        number: 1,
         milestone: true,
         startDate: '2026-09-13',
         endDate: '2026-09-13',
@@ -153,6 +158,10 @@ function Probe() {
         {(ctx.huddle?.transcript || []).map((l) => l.text).join('|') || ''}
       </span>
       <span data-testid="highlights">{ctx.highlightedTaskIds.size}</span>
+      <span data-testid="pending">{ctx.huddle?.pending?.length || 0}</span>
+      <span data-testid="webhook-assigned">
+        {project.tasks.find((t) => t.id === 'card_webhook')?.assignedUsers?.map((u) => u.id).join(',') || ''}
+      </span>
       <button type="button" onClick={() => ctx.startHuddle({ ritual: 'standup' })}>
         start
       </button>
@@ -167,6 +176,15 @@ function Probe() {
       </button>
       <button type="button" onClick={() => ctx.sendHuddleLine('Fecho el QA para el go-live')}>
         line
+      </button>
+      <button type="button" onClick={() => ctx.submitHuddleMicLine('me quedo con la 12')}>
+        mic-assign
+      </button>
+      <button type="button" onClick={() => ctx.submitHuddleMicLine('se bloqueó la 12 porque el proveedor no responde')}>
+        mic-block
+      </button>
+      <button type="button" onClick={() => ctx.submitHuddleMicLine('buenos días a todos')}>
+        mic-noise
       </button>
     </div>
   );
@@ -279,5 +297,66 @@ describe('MaiaContext huddle (integración con el engine real)', () => {
     });
     await commitAll();
     expect(holder.project.huddle.demo.cursor).toBe(1);
+  });
+
+  it('mic alta confianza + auto: asigna, comenta, loguea y no re-aplica (anti-loop)', async () => {
+    const { holder, commitAll } = mount();
+    await commitAll();
+    fireEvent.click(screen.getByRole('button', { name: 'start' }));
+    await commitAll();
+
+    fireEvent.click(screen.getByRole('button', { name: 'mic-assign' }));
+    await commitAll();
+    fireEvent.click(screen.getByRole('button', { name: 'mic-assign' }));
+    await commitAll();
+
+    const webhook = holder.project.tasks.find((t) => t.id === 'card_webhook');
+    expect(webhook.assignedUsers.map((u) => u.id)).toContain('u_lucia');
+    const transcript = holder.project.huddle.transcript.map((l) => l.text).join('|');
+    expect(transcript).toContain('me quedo con la 12');
+    expect(transcript.split('quedó aplicado').length - 1).toBe(1);
+    expect(holder.project.actionLog.length).toBeGreaterThanOrEqual(1);
+    expect(holder.project.huddle.matchedKeys).toEqual(['assign|card_webhook']);
+    expect(holder.project.huddle.highlights).toContain('card_webhook');
+  });
+
+  it('mic en modo confirm: no aplica y deja la propuesta sí/no con #N en el label', async () => {
+    const { holder, commitAll } = mount();
+    await commitAll();
+    holder.project = { ...holder.project, settings: { applyMode: 'confirm' } };
+    await commitAll();
+    fireEvent.click(screen.getByRole('button', { name: 'start' }));
+    await commitAll();
+
+    const logBefore = holder.project.actionLog.length;
+    fireEvent.click(screen.getByRole('button', { name: 'mic-block' }));
+    await commitAll();
+
+    const webhook = holder.project.tasks.find((t) => t.id === 'card_webhook');
+    expect(webhook.blocked).toBe(false);
+    expect(screen.getByTestId('pending')).toHaveTextContent('1');
+    const proposal = holder.project.huddle.pending[0];
+    expect(proposal.action).toBe('set-blocked');
+    expect(proposal.label).toContain('#12');
+    expect(holder.project.actionLog.length).toBe(logBefore);
+  });
+
+  it('mic low: sin ancla, Maia responde templated y sin mutaciones nuevas', async () => {
+    const { holder, commitAll } = mount();
+    await commitAll();
+    fireEvent.click(screen.getByRole('button', { name: 'start' }));
+    await commitAll();
+
+    const logBefore = holder.project.actionLog.length;
+    fireEvent.click(screen.getByRole('button', { name: 'mic-noise' }));
+    await commitAll();
+
+    const transcript = holder.project.huddle.transcript.map((l) => l.text).join('|');
+    expect(transcript).toContain('buenos días a todos');
+    expect(holder.project.huddle.transcript.at(-1).role).toBe('maia');
+    expect(holder.project.huddle.pending).toHaveLength(0);
+    expect(holder.project.actionLog.length).toBe(logBefore);
+    expect(holder.project.huddle.matchedKeys).toEqual([]);
+    expect(screen.getByTestId('pending')).toHaveTextContent('0');
   });
 });

@@ -21,9 +21,12 @@ import {
   stopSession,
   addLine as huddleLine,
   interpretHuddleLine,
+  proposalFromAction,
+  templatedHuddleReply,
   DEMO_STEP_MS,
   DEMO_STATUS,
 } from '../services/huddleEngine';
+import { matchLiveLine } from '../services/liveLineMatcher';
 import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIA_DEFAULTS } from '../constants/maia';
 import { ACTIVE_USER } from '../constants/project';
 
@@ -362,6 +365,105 @@ export function MaiaProvider({ children }) {
     [activeUser, mutateProject],
   );
 
+  // Línea de voz del usuario activo (Lucía) sin LLM (§10, Web Speech). El
+  // matcher determinístico ancla por #N/título + verbo; en modo auto una
+  // coincidencia alta se aplica y registra sola (anti-loop por sesión vía
+  // `matchedKeys`); en confirmar, o si la confianza no amerita, queda como
+  // propuesta sí/no. Sin señal, Maia responde con pregunta templated.
+  const submitHuddleMicLine = React.useCallback(
+    (text) => {
+      const message = String(text || '').trim();
+      if (!message) return;
+      const at = new Date();
+      const base = projectRef.current;
+      if (!base?.huddle || base.huddle.endedAt) return;
+      const match = matchLiveLine(message, {
+        tasks: base.tasks,
+        members: base.members,
+        self: { id: activeUser?.id || ACTIVE_USER.id, name: activeUser?.name || ACTIVE_USER.name },
+        now: at,
+      });
+
+      mutateProject(
+        (prev) => {
+          if (!prev.huddle || prev.huddle.endedAt) return prev;
+          const userLine = {
+            id: uuidv4(),
+            role: 'user',
+            speaker: activeUser?.name || ACTIVE_USER.name,
+            text: message,
+            cardIds: match.cardIds,
+            at: at.toISOString(),
+          };
+          let next = huddleLine(prev.huddle, userLine);
+          let acc = prev;
+          const appliedKeys = [];
+          const keysOf = (s) => new Set(s?.matchedKeys || []);
+
+          for (const action of match.actions || []) {
+            const cardId = action.payload?.taskId || null;
+            if (!cardId) continue;
+            const key = `${action.type}|${cardId}`;
+            if (keysOf(next).has(key)) continue;
+            const proposal = proposalFromAction(cardId, action, prev);
+            const isApply = (prev.settings?.applyMode ?? 'confirm') === 'auto' && match.confidence === 'high';
+            if (isApply) {
+              if (!canApply(acc, proposal)) continue;
+              const { project: np } = applyAction(acc, proposal, { source: 'auto', now: new Date() });
+              acc = np;
+              appliedKeys.push(key);
+              next = {
+                ...next,
+                touchedIds: dedupe([...(next.touchedIds || []), cardId]),
+              };
+              next = huddleLine(next, {
+                role: 'maia',
+                speaker: 'Maia',
+                text: `Listo, quedó aplicado: ${proposal.label}. En la carta quedó un comentario y en el registro una entrada.`,
+                cardIds: [cardId],
+                at: new Date().toISOString(),
+              });
+            } else {
+              next = huddleLine(next, {
+                role: 'maia',
+                speaker: 'Maia',
+                text: `Propuesta en pantalla: ${proposal.label}. ¿Sí o no?`,
+                cardIds: [cardId],
+                at: new Date().toISOString(),
+              });
+              next = { ...next, pending: [...(next.pending || []), proposal] };
+              appliedKeys.push(key);
+            }
+          }
+
+          // Sin señal accionable: pregunta templated (determinística, 0 tokens).
+          if ((match.actions || []).length === 0) {
+            const spokenCard = (prev.tasks || []).find((t) => t.id === match.cardIds[0]);
+            const seededLine = spokenCard ? `Hablemos de ${spokenCard.name}` : message;
+            const replyText = templatedHuddleReply(seededLine, { project: prev });
+            next = huddleLine(next, {
+              role: 'maia',
+              speaker: 'Maia',
+              text: replyText,
+              cardIds: match.cardIds,
+              at: new Date().toISOString(),
+            });
+          }
+
+          return {
+            ...acc,
+            huddle: {
+              ...next,
+              matchedKeys: dedupe([...(next.matchedKeys || []), ...appliedKeys]),
+            },
+          };
+        },
+        { debounce: 0 },
+      );
+    },
+    [activeUser, mutateProject],
+  );
+
   // Pide la respuesta de Maia (§11): LLM con fallback templated, nunca lanza.
   // Las acciones del LLM se validan (ids reales) y llegan como propuestas; en
   // modo auto se aplican solas, con excepción de create-card (§9) que siempre
@@ -542,6 +644,7 @@ export function MaiaProvider({ children }) {
       toggleDemo,
       replayDemo,
       sendHuddleLine,
+      submitHuddleMicLine,
       resolveHuddleProposal,
     }),
     [
@@ -563,6 +666,7 @@ export function MaiaProvider({ children }) {
       toggleDemo,
       replayDemo,
       sendHuddleLine,
+      submitHuddleMicLine,
       resolveHuddleProposal,
     ],
   );

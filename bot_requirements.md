@@ -240,8 +240,9 @@ Dos entradas, las dos válidas:
 
 1. **Demo de standup** (obligatoria para que el producto se entienda en 60 segundos). Reproduce un guion del equipo seed. Maia reacciona en vivo: aparecen preguntas y sí/no (o auto-aplica). Las cartas se mueven de verdad. Al cerrar, Maia pregunta: “Antes de cortar, ¿qué de todo esto queda sin dueño?”
 2. **Texto del usuario** como si hablara en el huddle (el usuario activo escribe una línea). Maia la interpreta contra el tablero.
+3. **Micrófono (Web Speech, Chrome/Edge)** — se trata como otra línea de transcript del usuario activo. Se interpreta **sin LLM**, con un matcher determinístico que ancla por número de carta `#N` (§12) o título exacto y por el nombre del miembro (“me quedo con la 12”, “la toma Sofía”, “se bloqueó la 12”). Cero tokens: nada de reconocimiento ni de matching pasa por el modelo. Si la detección es de alta confianza y el modo es **auto**, la acción se aplica y registra sola; si no, queda como propuesta sí/no; sin señal clara, Maia pregunta con un templated. Crear cartas nunca sale del mic. Sin `SpeechRecognition` disponible, el botón no se muestra y quedan las vías 2 y demo.
 
-Micrófono / Web Speech es extra, no bloquea v1. Si está, se trata como otra línea de transcript del usuario activo.
+Esto no es “transcripción como feature de portada” (§16): no se produce un documento de notas; la línea entra al transcript del huddle, su acción pasa por las mismas propuestas/log del resto de mutaciones de Maia y las cartas se tocan una por una, nunca decenas.
 
 ### Cierre
 

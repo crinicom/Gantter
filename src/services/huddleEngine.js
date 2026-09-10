@@ -163,33 +163,35 @@ export function buildStandupSteps(project, now) {
 // Armador de propuesta en la forma de proposalEngine (§12 ProposedAction).
 // La etiqueta se resuelve contra el tablero vivo (título de la carta, nombre del
 // dueño, hito) para que el sí/no del transcript sea legible.
-function proposalFromAction(cardId, action, project) {
+export function proposalFromAction(cardId, action, project) {
   const payload = { taskId: cardId, ...(action.payload || {}) };
   const task = (project?.tasks || []).find((t) => t.id === cardId);
   const title = task?.name || 'la carta';
+  const ref =
+    Number.isInteger(task?.number) && task.number > 0 ? `#${task.number} ${title}` : title;
   let label = '';
   let comment = '';
   switch (action.type) {
     case 'set-blocked':
-      label = `Marcar «${title}» como bloqueada`;
+      label = `Marcar «${ref}» como bloqueada`;
       comment = action.payload?.blockedReason
-        ? `Por lo que se dijo en el standup, la carta quedó marcada como bloqueada: ${action.payload.blockedReason}`
-        : `Por lo que se dijo en el standup, «${title}» quedó marcada como bloqueada.`;
+        ? `Por lo que se dijo en el huddle, la carta quedó marcada como bloqueada: ${action.payload.blockedReason}`
+        : `Por lo que se dijo en el huddle, «${ref}» quedó marcada como bloqueada.`;
       break;
     case 'assign': {
       const member = (project?.members || []).find((m) => m.id === action.payload?.memberId);
       const name = member?.name || memberId(action.payload?.memberId);
-      label = `Asignar «${title}» a ${name}`;
-      comment = `En el standup, «${title}» quedó en manos de ${name}.`;
+      label = `Asignar «${ref}» a ${name}`;
+      comment = `En el huddle, «${ref}» quedó en manos de ${name}.`;
       break;
     }
     case 'set-dates':
-      label = `Fechar «${title}» de ${payload.startDate} a ${payload.endDate}`;
-      comment = `En el standup, «${title}» quedó fechada de ${payload.startDate} a ${payload.endDate}.`;
+      label = `Fechar «${ref}» de ${payload.startDate} a ${payload.endDate}`;
+      comment = `En el huddle, «${ref}» quedó fechada de ${payload.startDate} a ${payload.endDate}.`;
       break;
     default:
-      label = `Aplicar acción en «${title}»`;
-      comment = 'Según lo que se acordó en el standup, la carta quedó actualizada.';
+      label = `Aplicar acción en «${ref}»`;
+      comment = 'Según lo que se acordó en el huddle, la carta quedó actualizada.';
   }
   return {
     id: uuidv4(),
@@ -226,6 +228,7 @@ export function createHuddleSession({ project, ritual, mode, now = new Date(), u
     pending: [],
     highlights: [],
     touchedIds: [],
+    matchedKeys: [],
   };
   if (ritual === 'standup') {
     session.demo = {

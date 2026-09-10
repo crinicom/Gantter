@@ -36,7 +36,7 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-08 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 10 — Números de carta `#N` por proyecto (ancla del huddle real) |
+| Slice en curso | 11 — Huddle real: escuchar reunión (Web Speech), matcher determinístico, 0 tokens LLM |
 | Owner | **opencode** |
 | Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
@@ -64,7 +64,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 8 | Mobile ~390: tabs Tablero / Gantt / Maia | opencode | pending | §14, §17.7 | después de que exista el panel |
 | 9 | Rename Maie → Maia (identidad y código, cero `maie`) | opencode | **done** | global, este archivo | commit `4c58631` (55 files, 420/420 sustituciones); dirs y alias `@maia` |
 | 10 | Números de carta `#N` por proyecto (referencia humana + ancla del ASR) | opencode | **review** | §12 (Card.number), §10 | backfill 1..N, max+1 en crear, chips Kanban/Gantt, labels con `#N`; commit slice 10 |
-| 11 | Huddle real: escuchar reunión (Web Speech), matcher determinístico, 0 tokens LLM | opencode | pending | §10, §19 | `useSpeechToText` + `src/services/liveLineMatcher.js` + UI mic en Huddle |
+| 11 | Huddle real: escuchar reunión (Web Speech), matcher determinístico, 0 tokens LLM | opencode | **review** | §10, §12 | `useSpeechToText` + `liveLineMatcher` + UI mic; commit slice 11 |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -338,6 +338,16 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631` y el commit del slice 10.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202` y el commit del slice 11.
+
+### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
+
+- **`src/services/liveLineMatcher.js`** (nuevo, puro, 0 tokens): `matchLiveLine(text, {tasks, members, self, now})` → `{cardIds, actions, confidence, note}`. Ancla por **número de carta `#N`** (slice 10) o título exacto único; miembro por nombre (completo o primer nombre); primera persona ("me quedo con la 12") → `self` (Lucía). Verbos: asignar (`asign*`, "que la tome X", "en manos de"), bloquear ("se bloqueó"), fechar ("fechamos" → hoy/hoy, no se inventan fechas). `create-card` **no se emite**: derivar bucket/título de voz sería inventar (§). Confianza: `high` = carta + verbo claro (aplica en auto, propuesta sí/no en confirmar); `low` = sin señal → pregunta templated (nunca crea notas ni decenas de cartas, respeta §16).
+- **`src/hooks/useSpeechToText.js`** (nuevo): `speechToTextSupported()` + `useSpeechToText({...})` sobre `webkitSpeechRecognition` (Chrome/Edge). Interims solo en vivo (nunca se persisten); los resultados finales van a `onFinal` como línea del usuario activo, con `autoRestart` para seguir el huddle; `supported=false` → el botón se oculta (quedan demo y línea escrita).
+- **`MaiaContext.jsx`**: `submitHuddleMicLine(text)` — persiste la línea (Lucía, con `cardIds` del matcher), aplica en auto solo match `high` con `source:'auto'` (comentario + log), en confirmar deja propuesta sí/no; `matchedKeys` por sesión (`action|payload`) como anti-loop si el navegador re-emite el mismo final. Sin señal → `templatedHuddleReply` contextual (determinística). `proposalFromAction` ahora es exportado y etiqueta con `#N`; `createHuddleSession` gana `matchedKeys: []`.
+- **UI**: `HuddleTab` tiene botón mic (icono Mic/Square) a la par de Enviar, indicador "Escuchando…" con interim en vivo, y feature-detect (oculto sin `SpeechRecognition`). Copy es español ("Escuchar reunión", no "transcripción").
+- **Spec**: §10 "Cómo entra el habla" agrega la vía 3 (Web Speech) y aclara que no es "transcripción como feature de portada" (§16): la línea entra al transcript, la acción pasa por propuestas/log normales y toca cartas una por una.
+- Tests: `npm test` **284/284** (antes 270; +9 liveLineMatcher, +3 MaiaContext.huddle mic, +2 HuddleTab feature-detect/final) · `npm run build` OK. Pendiente validar en Chrome/Edge real (SpeechRecognition solo en contextos seguros; `npm run dev` y Fly son HTTPS).
+- **Revisar contra §10/§11/§16**: que el mic no desborde el modo confirm (todo lo que aplica en auto también existe como propuesta), que el matcher respete "no auto-crear decenas de cartas" y que los labels con `#N` queden legibles en el transcript.
 
 ---

@@ -5,9 +5,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Pause, Play, X } from 'lucide-react';
+import { Mic, Pause, Play, Square, X } from 'lucide-react';
 import { useMaia } from '../../context/MaiaContext';
 import { useAuth } from '../../hooks/useAuth';
+import { useSpeechToText } from '../../hooks/useSpeechToText';
 import { ACTIVE_USER } from '../../constants/project';
 import { HUDDLE_RITUALS, PROPOSAL_STATUS } from '../../constants/maia';
 
@@ -104,11 +105,13 @@ function EmptyState() {
 }
 
 export default function HuddleTab() {
-  const { huddle, demoStatus, sendHuddleLine, resolveHuddleProposal, stopHuddle, toggleDemo, maiaReplying } = useMaia();
+  const { huddle, demoStatus, sendHuddleLine, submitHuddleMicLine, resolveHuddleProposal, stopHuddle, toggleDemo, maiaReplying } = useMaia();
   const { user } = useAuth();
   const activeUser = user || ACTIVE_USER;
   const [draft, setDraft] = useState('');
   const bottomRef = useRef(null);
+
+  const mic = useSpeechToText({ onFinal: (text) => submitHuddleMicLine(text) });
 
   const session = huddle;
 
@@ -190,14 +193,35 @@ export default function HuddleTab() {
 
       {!closed && (
         <div className="border-t border-gray-100 px-4 py-2">
+          {mic.supported && mic.listening && (
+            <p className="mb-1.5 flex items-center gap-1.5 text-xs text-muted">
+              <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-rust" aria-hidden="true" />
+              Escuchando… {mic.interim || 'hablá, te anoto'}
+            </p>
+          )}
           <form onSubmit={send} className="flex items-end gap-2">
             <textarea
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
-              placeholder={`Escribir una línea como ${activeUser?.name || ACTIVE_USER.name}…`}
+              placeholder={`Escribir o hablar como ${activeUser?.name || ACTIVE_USER.name}…`}
               className="min-w-0 flex-1 resize-none rounded-md border border-gray-300 bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-forest-500 focus:outline-none"
             />
+            {mic.supported && (
+              <button
+                type="button"
+                aria-label={mic.listening ? 'Dejar de escuchar' : 'Escuchar reunión'}
+                title={mic.listening ? 'Dejar de escuchar' : 'Escuchar la reunión con el micrófono'}
+                onClick={mic.toggle}
+                className={`flex shrink-0 items-center gap-1 rounded-md px-3 py-2 text-sm font-medium ${
+                  mic.listening
+                    ? 'bg-rust text-paper hover:bg-rust/90'
+                    : 'border border-gray-300 bg-surface text-ink hover:bg-gray-100'
+                }`}
+              >
+                {mic.listening ? <Square size={14} /> : <Mic size={14} />}
+              </button>
+            )}
             <button
               type="submit"
               disabled={!draft.trim()}
