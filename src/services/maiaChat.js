@@ -1,4 +1,4 @@
-// Chat de Maie (§11 Contrato de IA). Solo se llama cuando el usuario envía un
+// Chat de Maia (§11 Contrato de IA). Solo se llama cuando el usuario envía un
 // mensaje en el hilo: se arma un contexto acotado del tablero (cartas
 // relevantes, miembros, modo) y se pide un reply estructurado a OpenAI
 // (`gpt-4o-mini`, elegido por costo mínimo) vía el relay del server (la clave
@@ -13,13 +13,13 @@
 // proposalEngine.
 
 import { v4 as uuidv4 } from 'uuid';
-import { INQUIRY_KINDS, MAIE_DEFAULTS } from '../constants/maie';
+import { INQUIRY_KINDS, MAIA_DEFAULTS } from '../constants/maia';
 import { isServerMode, apiBase } from '../config/appConfig';
 import { TASK_STATUS } from '../constants/project';
 import { renderPrompt } from '../utils/renderPrompt';
 
 // Tipos de acción que el hilo acepta (whitelist de §11, sin create-card en auto).
-export const MAIE_ACTION_TYPES = [
+export const MAIA_ACTION_TYPES = [
   'assign',
   'move',
   'set-dates',
@@ -68,9 +68,9 @@ export function buildBoardContext({ project, inquiry, now = new Date() } = {}) {
   const buckets = project?.buckets || [];
   const members = project?.members || [];
   const mode = project?.settings?.applyMode ?? 'confirm';
-  const staleDays = project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
+  const staleDays = project?.settings?.staleDays ?? MAIA_DEFAULTS.staleDays;
   const card = inquiry?.cardId ? tasks.find((t) => t.id === inquiry.cardId) || null : null;
-  const windowDays = project?.settings?.milestoneWindowDays ?? MAIE_DEFAULTS.milestoneWindowDays;
+  const windowDays = project?.settings?.milestoneWindowDays ?? MAIA_DEFAULTS.milestoneWindowDays;
 
   const lines = [];
   lines.push(`Proyecto: ${project?.name || 'Sin nombre'}.`);
@@ -119,14 +119,14 @@ export function buildBoardContext({ project, inquiry, now = new Date() } = {}) {
 
 // Respuestas socráticas templated por kind (§11 fallback, §8 tono). Son
 // preguntas, no órdenes; español rioplatense; sin emoji; mencionan la carta.
-// El copy vive en `maie/templates/*.md` (config a nivel app); acá solo queda
+// El copy vive en `maia/templates/*.md` (config a nivel app); acá solo queda
 // la selección por kind y el cálculo de los {vars}.
-import thinTemplate from '@maie/templates/thin.md?raw';
-import unassignedTemplate from '@maie/templates/unassigned.md?raw';
-import staleTemplate from '@maie/templates/stale.md?raw';
-import missingDateTemplate from '@maie/templates/missing-date.md?raw';
-import overlapTemplate from '@maie/templates/overlap.md?raw';
-import genericTemplate from '@maie/templates/generic.md?raw';
+import thinTemplate from '@maia/templates/thin.md?raw';
+import unassignedTemplate from '@maia/templates/unassigned.md?raw';
+import staleTemplate from '@maia/templates/stale.md?raw';
+import missingDateTemplate from '@maia/templates/missing-date.md?raw';
+import overlapTemplate from '@maia/templates/overlap.md?raw';
+import genericTemplate from '@maia/templates/generic.md?raw';
 
 const KIND_TEMPLATES = {
   [INQUIRY_KINDS.THIN]: thinTemplate,
@@ -136,7 +136,7 @@ const KIND_TEMPLATES = {
   [INQUIRY_KINDS.OVERLAP]: overlapTemplate,
 };
 
-export function templatedMaieReply({ project, inquiry, now = new Date() } = {}) {
+export function templatedMaiaReply({ project, inquiry, now = new Date() } = {}) {
   const tasks = project?.tasks || [];
   const buckets = project?.buckets || [];
   const card = inquiry?.cardId ? tasks.find((t) => t.id === inquiry.cardId) || null : null;
@@ -159,7 +159,7 @@ export function templatedMaieReply({ project, inquiry, now = new Date() } = {}) 
   }
 
   if (kind === INQUIRY_KINDS.MISSING_DATE) {
-    const windowDays = project?.settings?.milestoneWindowDays ?? MAIE_DEFAULTS.milestoneWindowDays;
+    const windowDays = project?.settings?.milestoneWindowDays ?? MAIA_DEFAULTS.milestoneWindowDays;
     const milestone = tasks
       .filter((t) => t.milestone && !isCompleted(t) && t.endDate)
       .map((t) => ({ task: t, days: daysUntil(now, t.endDate) }))
@@ -185,7 +185,7 @@ export function sanitizeActions({ project, actions } = {}) {
 
   return (actions || []).filter((a) => {
     if (!a || typeof a !== 'object') return false;
-    if (!MAIE_ACTION_TYPES.includes(a.type)) return false;
+    if (!MAIA_ACTION_TYPES.includes(a.type)) return false;
     const p = a.payload || {};
     switch (a.type) {
       case 'assign':
@@ -308,16 +308,16 @@ function fetchWithTimeout(url, options, timeoutMs) {
 
 function templatedResponse({ project, inquiry, now }) {
   return {
-    reply: templatedMaieReply({ project, inquiry, now }),
+    reply: templatedMaiaReply({ project, inquiry, now }),
     actions: [],
     source: 'templated',
   };
 }
 
-// Pide la respuesta a Maie. Offline/drive: fallback templated directo. Server:
-// POST al relay `/api/maie/chat`; un solo reintento (§11 cap); cualquier
+// Pide la respuesta a Maia. Offline/drive: fallback templated directo. Server:
+// POST al relay `/api/maia/chat`; un solo reintento (§11 cap); cualquier
 // fallo → fallback templated. Nunca lanza.
-export async function requestMaieChat({
+export async function requestMaiaChat({
   project,
   inquiry,
   userText,
@@ -339,7 +339,7 @@ export async function requestMaieChat({
     userText: String(userText).trim().slice(0, MAX_USER_TEXT_CHARS),
     threadTail: (inquiry.thread || [])
       .slice(-MAX_THREAD_TURNS)
-      .map((m) => (typeof m === 'string' ? m : `${m.role || 'maie'}: ${m.text || ''}`)),
+      .map((m) => (typeof m === 'string' ? m : `${m.role || 'maia'}: ${m.text || ''}`)),
   };
 
   let attempt = 0;
@@ -347,7 +347,7 @@ export async function requestMaieChat({
     attempt += 1;
     try {
       const res = await fetchWithTimeout(
-        `${apiBase()}/api/maie/chat`,
+        `${apiBase()}/api/maia/chat`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -373,11 +373,11 @@ export async function requestMaieChat({
   return templatedResponse({ project, inquiry, now });
 }
 
-export const maieChat = {
-  MAIE_ACTION_TYPES,
+export const maiaChat = {
+  MAIA_ACTION_TYPES,
   buildBoardContext,
-  templatedMaieReply,
+  templatedMaiaReply,
   sanitizeActions,
   actionsToProposals,
-  requestMaieChat,
+  requestMaiaChat,
 };

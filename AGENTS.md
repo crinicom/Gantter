@@ -4,7 +4,7 @@ Reglas de trabajo para agentes de IA dentro de este repositorio.
 
 ## Proyecto
 
-**Gantter** — SPA React 18 + Vite + Tailwind. Tablero Kanban + Gantt sobre las **mismas cartas**, más **Maie** (facilitadora socrática) y huddle in-app.
+**Gantter** — SPA React 18 + Vite + Tailwind. Tablero Kanban + Gantt sobre las **mismas cartas**, más **Maia** (facilitadora socrática) y huddle in-app.
 
 - **Spec v1 (única fuente de verdad de producto):** `bot_requirements.md`
 - **Slices y ownership:** `HANDOFF.md`
@@ -31,13 +31,13 @@ Lo marcado **v2** en `bot_requirements.md` no se construye. No inventar features
 
 1. **Backlog:** el trabajo se toma de `HANDOFF.md`, no de `docs/requirements.md`. No inventes IDs `US-###`. No retomes invitaciones, OAuth, Drive, SQLite ni realtime como features de v1.
 2. **Entrega:** la app arranca (`npm run dev`) y pasan `npm run build` y `npm test`. Sin imports rotos ni deps sin instalar.
-3. **Arquitectura:** `components/`, `context/`, `hooks/`, `models/`, `services/`, `utils/`. Alias `@/`. Maie no se mete en `ProjectContext.jsx`: va a su propio contexto/servicios cuando toque ese slice.
+3. **Arquitectura:** `components/`, `context/`, `hooks/`, `models/`, `services/`, `utils/`. Alias `@/`. Maia no se mete en `ProjectContext.jsx`: va a su propio contexto/servicios cuando toque ese slice.
 4. **Persistencia:** todo dato durable pasa por `services/*`. Nunca `localStorage` desde un componente. v1 es store local; no agregues DB ni auth “por si acaso”.
-5. **Código:** JSX + Tailwind, comentarios solo si aportan contexto. UI en **español**. Ids internos en inglés (`thin`, `stale`, `applyMode`). Cero emoji. Maie no se llama “Asistente IA”.
+5. **Código:** JSX + Tailwind, comentarios solo si aportan contexto. UI en **español**. Ids internos en inglés (`thin`, `stale`, `applyMode`). Cero emoji. Maia no se llama “Asistente IA”.
 6. **Seguridad:** no commitear secretos. API keys en `.env` (ignorado).
 7. **Commits, push y deploys:** OpenCode commitea (mensajes concisos en español, un slice por commit si se puede evitar); al terminar cada cambio avisa **“push”** y el humano pushea a Gitea (`origin`). Fly NO se deploya hasta el cierre del slice (`flyctl deploy` + `pull-prod-feedback`). Grok no commitea ni pushea.
 8. **Tests:** al cambiar lógica pura (`utils/`, `models/`, `services/`) añadir o actualizar tests en `src/**/__tests__/`.
-9. **v1 no incluye:** auth real, billing, invitaciones, bot de Zoom/Meet, voz de Maie, facilitador de portafolio, flechas de dependencias Gantt, multiplayer entre navegadores, escanear el tablero con LLM.
+9. **v1 no incluye:** auth real, billing, invitaciones, bot de Zoom/Meet, voz de Maia, facilitador de portafolio, flechas de dependencias Gantt, multiplayer entre navegadores, escanear el tablero con LLM.
 
 ## Flujo
 
@@ -52,4 +52,4 @@ Lo marcado **v2** en `bot_requirements.md` no se construye. No inventar features
 
 ## Identidad v1
 
-Equipo seed, usuario activo **Lucía Ríos**. No hace falta login real para el MVP de Maie.
+Equipo seed, usuario activo **Lucía Ríos**. No hace falta login real para el MVP de Maia.

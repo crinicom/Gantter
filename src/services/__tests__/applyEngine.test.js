@@ -130,14 +130,14 @@ describe('canApply', () => {
 });
 
 describe('apply', () => {
-  it('asigna el miembro, comenta la carta en voz de Maie y registra el log', () => {
+  it('asigna el miembro, comenta la carta en voz de Maia y registra el log', () => {
     const p = project({ tasks: [task({ id: 't1' })] });
     const proposal = pendingProposal();
     const out = apply(p, proposal, { source: 'confirm', now: new Date('2026-09-08T10:00:00Z') });
     const appliedTask = out.project.tasks.find((t) => t.id === 't1');
     expect(appliedTask.assignedUsers.map((u) => u.id)).toEqual(['m_lucia']);
     expect(appliedTask.comments).toHaveLength(1);
-    expect(appliedTask.comments[0]).toMatchObject({ author: 'Maie', text: proposal.comment });
+    expect(appliedTask.comments[0]).toMatchObject({ author: 'Maia', text: proposal.comment });
     expect(out.project.actionLog).toHaveLength(1);
     expect(out.project.actionLog[0]).toMatchObject({
       source: 'confirm',
@@ -165,7 +165,7 @@ describe('apply', () => {
     expect(blocked.project.tasks[0].blocked).toBe(true);
   });
 
-  it('create-card crea la tarea nueva en la columna, con comentario de Maie y log apuntando a la carta creada', () => {
+  it('create-card crea la tarea nueva en la columna, con comentario de Maia y log apuntando a la carta creada', () => {
     const p = project();
     const now = new Date('2026-09-08T10:00:00Z');
     const proposal = pendingProposal({
@@ -184,7 +184,7 @@ describe('apply', () => {
     expect(created.assignedUsers).toEqual([]);
     expect(created.createdAt).toBe(now.toISOString());
     expect(out.task?.id).toBe(created.id);
-    expect(created.comments[0]).toMatchObject({ author: 'Maie', text: proposal.comment });
+    expect(created.comments[0]).toMatchObject({ author: 'Maia', text: proposal.comment });
     expect(out.project.actionLog[0]).toMatchObject({ cardId: created.id });
   });
 });

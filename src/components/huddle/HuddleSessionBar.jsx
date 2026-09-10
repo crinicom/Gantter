@@ -4,8 +4,8 @@
 
 import React, { useEffect, useState } from 'react';
 import { Radio, Pause, Play, X, MessagesSquare, RotateCcw } from 'lucide-react';
-import { useMaie } from '../../context/MaieContext';
-import { HUDDLE_RITUALS, MAIE_ROLE } from '../../constants/maie';
+import { useMaia } from '../../context/MaiaContext';
+import { HUDDLE_RITUALS, MAIA_ROLE } from '../../constants/maia';
 import RitualPicker from './RitualPicker';
 
 function ritualLabel(id) {
@@ -21,7 +21,7 @@ function elapsed(startedAt, now) {
 }
 
 export default function HuddleSessionBar() {
-  const { huddle, demoStatus, startHuddle, stopHuddle, toggleDemo, replayDemo } = useMaie();
+  const { huddle, demoStatus, startHuddle, stopHuddle, toggleDemo, replayDemo } = useMaia();
   const [pickerOpen, setPickerOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
@@ -60,7 +60,7 @@ export default function HuddleSessionBar() {
         <>
           <span className="text-xs tabular-nums text-muted">{elapsed(huddle.startedAt, now)}</span>
           <span className="inline-flex items-center gap-1 text-xs text-muted">
-            <Radio size={12} /> {MAIE_ROLE} en línea
+            <Radio size={12} /> {MAIA_ROLE} en línea
           </span>
           {isDemo && !closed && huddle.demo.status === 'done' && (
             <button
@@ -93,7 +93,7 @@ export default function HuddleSessionBar() {
         </>
       )}
       {closed && (
-        <span className="ml-auto text-xs text-muted">Sesión cerrada — transcript en el panel de Maie</span>
+        <span className="ml-auto text-xs text-muted">Sesión cerrada — transcript en el panel de Maia</span>
       )}
     </div>
   );

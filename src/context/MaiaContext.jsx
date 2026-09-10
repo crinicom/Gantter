@@ -1,9 +1,9 @@
-// Contexto de Maie (§7–9). Escucha el tablero: cada cambio de `project.version`
+// Contexto de Maia (§7–9). Escucha el tablero: cada cambio de `project.version`
 // dispara un rescan determinístico (services/inquiryEngine). El scanner genera
 // inquiries (con sus propuestas por defecto de proposalEngine), auto-resuelve
 // las vencidas y deja rastro en el actionLog. En modo auto (§9) el rescan
 // aplica las propuestas "obvias" (asignar, fechar, bloquear) dejando comentario
-// en la carta + log. Maie NO escribe en ProjectContext por otro camino que
+// en la carta + log. Maia NO escribe en ProjectContext por otro camino que
 // `mutateProject`; su lógica vive acá y en services/inquiryEngine|proposalEngine|
 // applyEngine.
 
@@ -14,7 +14,7 @@ import { useAuth } from '../hooks/useAuth';
 import { scanInquiries } from '../services/inquiryEngine';
 import { autoEligible } from '../services/proposalEngine';
 import { canApply, apply as applyAction, selectAutoActions } from '../services/applyEngine';
-import { requestMaieChat, actionsToProposals } from '../services/maieChat';
+import { requestMaiaChat, actionsToProposals } from '../services/maiaChat';
 import {
   createHuddleSession,
   applyDemoStep,
@@ -24,17 +24,17 @@ import {
   DEMO_STEP_MS,
   DEMO_STATUS,
 } from '../services/huddleEngine';
-import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIE_DEFAULTS } from '../constants/maie';
+import { INQUIRY_STATUS, PROPOSAL_STATUS, MAIA_DEFAULTS } from '../constants/maia';
 import { ACTIVE_USER } from '../constants/project';
 
-const MaieContext = createContext(null);
+const MaiaContext = createContext(null);
 
 // Set vacío estable para consumidores sin provider (TaskCard/GanttBar
 // resaltan cartas mencionadas en el huddle §10, pero nunca crashean).
 const EMPTY_HIGHLIGHTS = new Set();
 
 export function useHuddleHighlights() {
-  const ctx = useContext(MaieContext);
+  const ctx = useContext(MaiaContext);
   return ctx?.highlightedTaskIds || EMPTY_HIGHLIGHTS;
 }
 
@@ -81,13 +81,13 @@ function nextStandupAt(now = new Date()) {
   return target.toISOString();
 }
 
-export function MaieProvider({ children }) {
+export function MaiaProvider({ children }) {
   const { project, mutateProject, setSettings } = useProject();
   const { user } = useAuth();
   const [inquiries, setInquiries] = useState([]);
   const [actionLog, setActionLog] = useState([]);
   const [lastScanAt, setLastScanAt] = useState(null);
-  const [maieReplying, setMaieReplying] = useState(false);
+  const [maiaReplying, setMaiaReplying] = useState(false);
 
   // El documento es la fuente de verdad; para el flujo async de chat
   // necesitamos el proyecto más fresco aunque la promesa tarde (§11).
@@ -99,7 +99,7 @@ export function MaieProvider({ children }) {
   // que mensajes del hilo y estados de propuestas decididos por el usuario nunca
   // queden invisibles ni sean pisados por el rescan. Escribe solo si cambió
   // (anti-loop). El modo auto (§9) está gateado por `applyMode`: en "confirmar"
-  // Maie no muta el tablero sola.
+  // Maia no muta el tablero sola.
   useEffect(() => {
     if (!project) {
       setInquiries([]);
@@ -161,7 +161,7 @@ export function MaieProvider({ children }) {
   }, [project, mutateProject]);
 
   const applyMode = project?.settings?.applyMode ?? 'confirm';
-  const staleDays = project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
+  const staleDays = project?.settings?.staleDays ?? MAIA_DEFAULTS.staleDays;
 
   const activeUser = user || ACTIVE_USER;
 
@@ -256,8 +256,8 @@ export function MaieProvider({ children }) {
           return {
             ...prev,
             huddle: huddleLine({ ...s, pending }, {
-              role: 'maie',
-              speaker: 'Maie',
+              role: 'maia',
+              speaker: 'Maia',
               text: 'Lo dejo así; no aplico por ahora.',
               at: at.toISOString(),
             }),
@@ -283,8 +283,8 @@ export function MaieProvider({ children }) {
           highlights: dedupe([...(s.highlights || []), cardId]),
         };
         next = huddleLine(next, {
-          role: 'maie',
-          speaker: 'Maie',
+          role: 'maia',
+          speaker: 'Maia',
           text: `Aplicado: ${item.label}.`,
           cardIds: cardId ? [cardId] : [],
           at: at.toISOString(),
@@ -312,7 +312,7 @@ export function MaieProvider({ children }) {
         if (!prev.huddle) return prev;
         return { ...prev, huddle: huddleLine(prev.huddle, userLine) };
       }, { debounce: 0 });
-      setMaieReplying(true);
+      setMaiaReplying(true);
       try {
         const base = projectRef.current;
         if (!base?.huddle) return;
@@ -322,10 +322,10 @@ export function MaieProvider({ children }) {
           userText: message,
           now: at,
         });
-        const maieLine = {
+        const maiaLine = {
           id: uuidv4(),
-          role: 'maie',
-          speaker: 'Maie',
+          role: 'maia',
+          speaker: 'Maia',
           text: reply,
           cardIds: dedupe((proposals || []).map((p) => p.payload?.taskId).filter(Boolean)),
           at: new Date().toISOString(),
@@ -334,7 +334,7 @@ export function MaieProvider({ children }) {
           const s = prev.huddle;
           if (!s) return prev;
           let acc = prev;
-          let next = huddleLine(s, maieLine);
+          let next = huddleLine(s, maiaLine);
           const applied = [];
           const isAuto = (prev.settings?.applyMode ?? 'confirm') === 'auto';
           if (isAuto) {
@@ -356,29 +356,29 @@ export function MaieProvider({ children }) {
           return { ...acc, huddle: next };
         }, { debounce: 0 });
       } finally {
-        setMaieReplying(false);
+        setMaiaReplying(false);
       }
     },
     [activeUser, mutateProject],
   );
 
-  // Pide la respuesta de Maie (§11): LLM con fallback templated, nunca lanza.
+  // Pide la respuesta de Maia (§11): LLM con fallback templated, nunca lanza.
   // Las acciones del LLM se validan (ids reales) y llegan como propuestas; en
   // modo auto se aplican solas, con excepción de create-card (§9) que siempre
   // queda en confirmar. Todo dentro de un mismo mutateProject.
-  const deliverMaieReply = async (inquiryId, userText) => {
+  const deliverMaiaReply = async (inquiryId, userText) => {
     const base = projectRef.current;
     if (!base) return;
     const inq = (base.inquiries || []).find((i) => i.id === inquiryId);
     if (!inq) return;
-    setMaieReplying(true);
+    setMaiaReplying(true);
     try {
-      const res = await requestMaieChat({ project: base, inquiry: inq, userText });
+      const res = await requestMaiaChat({ project: base, inquiry: inq, userText });
       const tick = new Date().toISOString();
       mutateProject((prev) => {
         const current = (prev.inquiries || []).find((i) => i.id === inquiryId);
         if (!current) return prev;
-        const bubble = { id: uuidv4(), role: 'maie', author: 'Maie', text: res.reply, at: tick };
+        const bubble = { id: uuidv4(), role: 'maia', author: 'Maia', text: res.reply, at: tick };
         const fresh = actionsToProposals({ project: prev, inquiry: current, actions: res.actions });
         const key = (p) => `${p.action}|${JSON.stringify(p.payload || {})}`;
         const existing = new Set((current.proposals || []).map(key));
@@ -419,7 +419,7 @@ export function MaieProvider({ children }) {
         };
       });
     } finally {
-      setMaieReplying(false);
+      setMaiaReplying(false);
     }
   };
 
@@ -444,7 +444,7 @@ export function MaieProvider({ children }) {
             : inq,
         ),
       }));
-      void deliverMaieReply(inquiryId, message);
+      void deliverMaiaReply(inquiryId, message);
     },
     [activeUser, mutateProject],
   );
@@ -528,7 +528,7 @@ export function MaieProvider({ children }) {
       applyMode,
       staleDays,
       lastScanAt,
-      maieReplying,
+      maiaReplying,
       huddle,
       demoStatus,
       highlightedTaskIds: new Set(huddle?.highlights || []),
@@ -550,7 +550,7 @@ export function MaieProvider({ children }) {
       applyMode,
       staleDays,
       lastScanAt,
-      maieReplying,
+      maiaReplying,
       huddle,
       demoStatus,
       setSettings,
@@ -567,15 +567,15 @@ export function MaieProvider({ children }) {
     ],
   );
 
-  return <MaieContext.Provider value={value}>{children}</MaieContext.Provider>;
+  return <MaiaContext.Provider value={value}>{children}</MaiaContext.Provider>;
 }
 
-export function useMaie() {
-  const ctx = useContext(MaieContext);
+export function useMaia() {
+  const ctx = useContext(MaiaContext);
   if (!ctx) {
-    throw new Error('useMaie debe usarse dentro de <MaieProvider>.');
+    throw new Error('useMaia debe usarse dentro de <MaiaProvider>.');
   }
   return ctx;
 }
 
-export { MaieContext };
+export { MaiaContext };

@@ -5,18 +5,18 @@
 // actionLog = el rescan del tablero reacciona solo); en confirmar quedan como
 // propuestas sí/no. Las cartas mencionadas se iluminan en Kanban/Gantt.
 // La línea de texto del usuario se interpreta con el mismo path LLM del slice 6
-// (requestMaieChat) y cae a un fallback socrático templated si no hay key.
+// (requestMaiaChat) y cae a un fallback socrático templated si no hay key.
 
 import { v4 as uuidv4 } from 'uuid';
-import { requestMaieChat, actionsToProposals, MAIE_ACTION_TYPES } from './maieChat';
+import { requestMaiaChat, actionsToProposals, MAIA_ACTION_TYPES } from './maiaChat';
 import { apply as applyAction } from './applyEngine';
-import { PROPOSAL_STATUS } from '../constants/maie';
+import { PROPOSAL_STATUS } from '../constants/maia';
 import { TASK_STATUS } from '../constants/project';
 import { renderPrompt, sectionText } from '../utils/renderPrompt';
-import welcomeMd from '@maie/huddle/welcome.md?raw';
-import replyMd from '@maie/huddle/reply.md?raw';
-import demoMd from '@maie/huddle/demo.md?raw';
-import recapMd from '@maie/huddle/recap.md?raw';
+import welcomeMd from '@maia/huddle/welcome.md?raw';
+import replyMd from '@maia/huddle/reply.md?raw';
+import demoMd from '@maia/huddle/demo.md?raw';
+import recapMd from '@maia/huddle/recap.md?raw';
 
 // Fallback por si un ritual no tiene sección en welcome.md (nunca crashear).
 const WELCOME_DEFAULT =
@@ -78,8 +78,8 @@ export function welcomeFor(ritual) {
 function makeLine({ role, speaker, text, cardIds = [], at, id }) {
   return {
     id: id || uuidv4(),
-    role, // 'maie' | 'member' | 'user'
-    speaker: speaker || 'Maie',
+    role, // 'maia' | 'member' | 'user'
+    speaker: speaker || 'Maia',
     text,
     cardIds: cardIds.filter(Boolean),
     at,
@@ -92,8 +92,8 @@ function dedupe(list) {
 
 // Pasos del guion de standup (§10, orden y acciones del equipo seed). Cada paso
 // es un descriptor; la propuesta/acción se resuelve contra el tablero vivo en
-// `applyDemoStep`. `question` evita aplicar: Maie pregunta y la carta se ilumina.
-// El copy de cada paso vive en `maie/huddle/demo.md` (config a nivel app); acá
+// `applyDemoStep`. `question` evita aplicar: Maia pregunta y la carta se ilumina.
+// El copy de cada paso vive en `maia/huddle/demo.md` (config a nivel app); acá
 // quedan los ids, speakers, acciones y el cálculo de {vars} contra el tablero.
 export function buildStandupSteps(project, now) {
   const webhook = findCard(project, 'card_webhook', 'Webhook de pagos');
@@ -222,7 +222,7 @@ export function createHuddleSession({ project, ritual, mode, now = new Date(), u
     startedAt: at,
     endedAt: null,
     joinedIds: joined,
-    transcript: [makeLine({ role: 'maie', speaker: 'Maie', text: welcomeFor(ritual), at })],
+    transcript: [makeLine({ role: 'maia', speaker: 'Maia', text: welcomeFor(ritual), at })],
     pending: [],
     highlights: [],
     touchedIds: [],
@@ -288,8 +288,8 @@ export function applyDemoStep({ project, session, now = new Date() } = {}) {
 
   if (step.question) {
     nextSession = addLine(nextSession, {
-      role: 'maie',
-      speaker: 'Maie',
+      role: 'maia',
+      speaker: 'Maia',
       text: step.question,
       cardIds,
       at,
@@ -309,8 +309,8 @@ export function applyDemoStep({ project, session, now = new Date() } = {}) {
         },
       };
       nextSession = addLine(nextSession, {
-        role: 'maie',
-        speaker: 'Maie',
+        role: 'maia',
+        speaker: 'Maia',
         text: `Listo, quedó aplicado: ${proposal.label}. En la carta quedó un comentario y en el registro una entrada.`,
         cardIds,
         at,
@@ -318,8 +318,8 @@ export function applyDemoStep({ project, session, now = new Date() } = {}) {
       applied = true;
     } else {
       nextSession = addLine(nextSession, {
-        role: 'maie',
-        speaker: 'Maie',
+        role: 'maia',
+        speaker: 'Maia',
         text: confirmText(proposal),
         cardIds,
         at,
@@ -358,7 +358,7 @@ export function applyDemoStep({ project, session, now = new Date() } = {}) {
 
 // Recap al cerrar/terminar: decisiones aplicadas, propuestas sin confirmar y
 // cartas mencionadas sin tocar (§10 "¿Qué queda sin dueño?"). Las frases
-// numéricas son cálculo (plurales); el cierre vive en `maie/huddle/recap.md`.
+// numéricas son cálculo (plurales); el cierre vive en `maia/huddle/recap.md`.
 export function recapText(session) {
   const pendingCount = (session.pending || []).filter((p) => p.status === PROPOSAL_STATUS.PENDING).length;
   const applied = session.demo?.appliedCount || 0;
@@ -386,7 +386,7 @@ export function finishPlayback({ session, now = new Date() } = {}) {
       ...session,
       demo: { ...session.demo, status: DEMO_STATUS.DONE },
     },
-    { role: 'maie', speaker: 'Maie', text: recapText(session), at },
+    { role: 'maia', speaker: 'Maia', text: recapText(session), at },
   );
 }
 
@@ -405,17 +405,17 @@ export async function interpretHuddleLine({ project, session, userText, now = ne
   if (!text || !project) {
     return { reply: '', proposals: [] };
   }
-  // El historial se pasa como entradas { role, text } (requestMaieChat las
+  // El historial se pasa como entradas { role, text } (requestMaiaChat las
   // formatea), para que el modelo reciba el hilo real y no "undefined: …".
   const threadTail = (session?.transcript || [])
-    .filter((m) => m.role === 'user' || m.role === 'member' || m.role === 'maie')
+    .filter((m) => m.role === 'user' || m.role === 'member' || m.role === 'maia')
     .slice(-6)
     .map((m) => ({
-      role: m.role === 'user' || m.role === 'member' ? 'user' : 'maie',
-      text: m.role === 'maie' ? m.text : `${m.speaker}: ${m.text}`,
+      role: m.role === 'user' || m.role === 'member' ? 'user' : 'maia',
+      text: m.role === 'maia' ? m.text : `${m.speaker}: ${m.text}`,
     }));
   const inquiry = { id: null, kind: 'huddle', cardId: null, thread: threadTail };
-  const res = await requestMaieChat({ project, inquiry, userText: text, now });
+  const res = await requestMaiaChat({ project, inquiry, userText: text, now });
   const proposals = actionsToProposals({ project, inquiry, actions: res.actions });
   if (res.source === 'llm') {
     return { reply: res.reply, proposals };
@@ -425,7 +425,7 @@ export async function interpretHuddleLine({ project, session, userText, now = ne
 
 // Fallback socrático sin LLM: si la línea menciona una carta del tablero la
 // reconoce (sigue el hilo); si no, la pregunta genérica de siempre. El copy
-// vive en `maie/huddle/reply.md`; la lista de gaps (sin dueño/sin fechas/
+// vive en `maia/huddle/reply.md`; la lista de gaps (sin dueño/sin fechas/
 // bloqueada) se usa también en tests y matching, por eso queda en código.
 export function templatedHuddleReply(userText, { project } = {}) {
   const text = String(userText || '').trim();
@@ -457,5 +457,5 @@ export const huddleEngine = {
   interpretHuddleLine,
   templatedHuddleReply,
   welcomeFor,
-  MAIE_ACTION_TYPES,
+  MAIA_ACTION_TYPES,
 };

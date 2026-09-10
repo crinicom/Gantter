@@ -1,4 +1,4 @@
-// Render de templates markdown de Maie (`maie/`). Las líneas que arrancan con
+// Render de templates markdown de Maia (`maia/`). Las líneas que arrancan con
 // `#` son comentarios editables (nunca llegan al prompt); los `{vars}` se
 // rellenan con datos del tablero. `sectionText` extrae una sección `## clave`.
 

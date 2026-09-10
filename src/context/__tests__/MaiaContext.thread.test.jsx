@@ -1,22 +1,22 @@
-// Integración del hilo con el provider REAL de Maie y el scanner real
+// Integración del hilo con el provider REAL de Maia y el scanner real
 // (sin mockear inquiryEngine): verifica que mensajes, descartes y aplicaciones
 // se reflejan en el contexto de UI y que el rescan no los pisa. Replica el
 // flujo de ProjectContext.comitToStore: una mutación del documento + re-render
-// del provider debe sincronizar el contexto de Maie.
+// del provider debe sincronizar el contexto de Maia.
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MaieProvider, MaieContext } from '../MaieContext';
+import { MaiaProvider, MaiaContext } from '../MaiaContext';
 import * as useProjectModule from '../../hooks/useProject';
 import * as useAuthModule from '../../hooks/useAuth';
-import * as maieChatModule from '../../services/maieChat';
+import * as maiaChatModule from '../../services/maiaChat';
 
 vi.mock('../../hooks/useProject');
 vi.mock('../../hooks/useAuth');
-vi.mock('../../services/maieChat', async (importActual) => {
+vi.mock('../../services/maiaChat', async (importActual) => {
   const actual = await importActual();
-  return { ...actual, requestMaieChat: vi.fn() };
+  return { ...actual, requestMaiaChat: vi.fn() };
 });
 
 function task() {
@@ -98,9 +98,9 @@ function mount() {
   const build = () => (
     <div>
       <Setup holder={holder} />
-      <MaieProvider>
+      <MaiaProvider>
         <Probe />
-      </MaieProvider>
+      </MaiaProvider>
     </div>
   );
   const view = render(build());
@@ -112,7 +112,7 @@ function mount() {
 }
 
 function Probe() {
-  const ctx = React.useContext(MaieContext);
+  const ctx = React.useContext(MaiaContext);
   const inq = ctx.inquiries.find((i) => i.id === 'q_a');
   const { project } = useProjectModule.useProject();
   const assignees = (project.tasks[0]?.assignedUsers || []).map((u) => u.name).join(',');
@@ -125,7 +125,7 @@ function Probe() {
       <span data-testid="doc-thread">
         {(project.inquiries[0]?.thread || []).map((m) => m.text).join('|') || ''}
       </span>
-      <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maie')}>
+      <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maia')}>
         send
       </button>
       <button type="button" onClick={() => ctx.dismissProposal('q_a', 'p_a1')}>
@@ -147,30 +147,30 @@ function Probe() {
   );
 }
 
-describe('MaieContext hilo (integración con el engine real)', () => {
+describe('MaiaContext hilo (integración con el engine real)', () => {
   beforeEach(() => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
-    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({
+    vi.mocked(maiaChatModule.requestMaiaChat).mockResolvedValue({
       reply: 'Vamos a verlo.',
       actions: [],
     });
   });
 
-it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta de Maie también', async () => {
+it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta de Maia también', async () => {
     const { holder, commit } = mount();
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
 
     fireEvent.click(screen.getByRole('button', { name: 'send' }));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
 
-    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maie'));
+    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maia'));
     expect(screen.getByTestId('open-count')).toHaveTextContent('1');
 
-    // La respuesta de Maie llega en un segundo mutateProject (§11): commitearlo
+    // La respuesta de Maia llega en un segundo mutateProject (§11): commitearlo
     // muestra la burbuja en el hilo sin pisar el mensaje del usuario.
     await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(2));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
-    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maie|Vamos a verlo.'));
+    await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maia|Vamos a verlo.'));
   });
 
   it('descartar refleja el estado en el contexto y no muta la carta', async () => {
@@ -184,7 +184,7 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
     expect(screen.getByTestId('assignees')).toHaveTextContent('');
   });
 
-  it('P1: descartar con "No" deja la negativa como burbuja y Maie responde el follow-up', async () => {
+  it('P1: descartar con "No" deja la negativa como burbuja y Maia responde el follow-up', async () => {
     const { holder, commit } = mount();
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('pending'));
 
@@ -200,7 +200,7 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
       ),
     );
 
-    // mutación 3 (async, §11): la respuesta de Maie aterriza después de la burbuja.
+    // mutación 3 (async, §11): la respuesta de Maia aterriza después de la burbuja.
     await waitFor(() => expect(holder.mutateProject).toHaveBeenCalledTimes(3));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
     await waitFor(() => expect(screen.getByTestId('thread')).toHaveTextContent('Vamos a verlo.'));
@@ -220,6 +220,6 @@ it('el mensaje enviado aparece en el hilo vía el provider real y la respuesta d
     fireEvent.click(screen.getByRole('button', { name: 'send' }));
     commit(holder.mutateProject.mock.calls.at(-1)[0]);
     await waitFor(() => expect(screen.getByTestId('prop-status')).toHaveTextContent('applied'));
-    expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maie');
+    expect(screen.getByTestId('thread')).toHaveTextContent('Hola Maia');
   });
 });

@@ -3,11 +3,11 @@
 
 import React from 'react';
 import Modal from '../common/Modal';
-import { useMaie } from '../../context/MaieContext';
-import { HUDDLE_RITUALS } from '../../constants/maie';
+import { useMaia } from '../../context/MaiaContext';
+import { HUDDLE_RITUALS } from '../../constants/maia';
 
 export default function RitualPicker({ open, onClose }) {
-  const { startHuddle } = useMaie();
+  const { startHuddle } = useMaia();
 
   const pick = (id) => {
     startHuddle({ ritual: id });

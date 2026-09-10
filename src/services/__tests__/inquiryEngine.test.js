@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { scanInquiries } from '../inquiryEngine';
-import { INQUIRY_STATUS } from '../../constants/maie';
+import { INQUIRY_STATUS } from '../../constants/maia';
 import { TASK_STATUS } from '../../constants/project';
 
 const DAY = 86400000;

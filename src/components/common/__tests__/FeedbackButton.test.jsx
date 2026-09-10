@@ -3,12 +3,12 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import FeedbackButton from '../FeedbackButton';
 import * as useAuthModule from '../../../hooks/useAuth';
 import * as useProjectModule from '../../../hooks/useProject';
-import * as useMaieModule from '../../../context/MaieContext';
+import * as useMaiaModule from '../../../context/MaiaContext';
 import * as feedbackServiceModule from '../../../services/feedbackService';
 
 vi.mock('../../../hooks/useAuth');
 vi.mock('../../../hooks/useProject');
-vi.mock('../../../context/MaieContext');
+vi.mock('../../../context/MaiaContext');
 vi.mock('../../../services/feedbackService');
 
 function setup(overrides = {}) {
@@ -23,11 +23,11 @@ function setup(overrides = {}) {
     lastSyncAt: new Date().toISOString(),
     ...overrides.project,
   });
-  vi.mocked(useMaieModule.useMaie).mockReturnValue({
+  vi.mocked(useMaiaModule.useMaia).mockReturnValue({
     applyMode: 'confirm',
     staleDays: 15,
     openCount: 1,
-    ...overrides.maie,
+    ...overrides.maia,
   });
   vi.mocked(feedbackServiceModule.feedbackService.submitFeedback).mockResolvedValue({ ok: true });
 }

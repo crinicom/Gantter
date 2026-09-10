@@ -1,4 +1,4 @@
-// Catálogo de interpelaciones de Maie (§8) y defaults del panel (§7). Los IDs
+// Catálogo de interpelaciones de Maia (§8) y defaults del panel (§7). Los IDs
 // son internos en inglés; el copy de producto va en español (tono socrático).
 
 export const INQUIRY_KINDS = {
@@ -23,7 +23,7 @@ export const PROPOSAL_STATUS = {
   DISMISSED: 'dismissed',
 };
 
-export const MAIE_ROLE = 'Facilitadora';
+export const MAIA_ROLE = 'Facilitadora';
 
 // Rituales de huddle (§10). Los IDs son internos en inglés; solo standup lleva
 // el guion demo que muta el tablero (§17.5).
@@ -70,13 +70,13 @@ export const INQUIRY_STATUS_LABELS = {
   [INQUIRY_STATUS.RESOLVED]: 'Resuelta',
 };
 
-export const MAIE_DEFAULTS = {
+export const MAIA_DEFAULTS = {
   staleDays: 15,
   minDescriptionChars: 20,
   milestoneWindowDays: 10,
 };
 
-// Columnas donde Maie "pregunta de trabajo": Listo / En curso (u equivalentes).
+// Columnas donde Maia "pregunta de trabajo": Listo / En curso (u equivalentes).
 // Backlog, Hecho y revisión quedan fuera: no insistir en lo que aún no se tomaría.
 export const WORKING_COLUMNS = new Set([
   'listo',

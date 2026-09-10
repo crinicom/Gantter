@@ -9,7 +9,7 @@ import { formatISODate } from '../../utils/dateUtils';
 import { initialsOf } from '../../models/member';
 import { clampProgress } from '../../utils/progress';
 import { useProject } from '../../hooks/useProject';
-import { useHuddleHighlights } from '../../context/MaieContext';
+import { useHuddleHighlights } from '../../context/MaiaContext';
 
 const statusBadgeClasses = {
   [TASK_STATUS.TODO]: 'bg-gray-100 text-gray-600',

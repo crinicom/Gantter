@@ -677,7 +677,7 @@ export const ProjectProvider = ({ children }) => {
   }, []);
 
   // Aplica un mutador arbitrario al proyecto activo y persiste. Es la puerta
-  // de datos que usan otros contextos (p. ej. Maie) sin tomar control del store.
+  // de datos que usan otros contextos (p. ej. Maia) sin tomar control del store.
   const mutateProject = useCallback(
     (mutator, opts) => commitToStore(mutator, opts),
     [commitToStore],

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import InquiryThread from '../InquiryThread';
-import { MaieContext } from '../../../context/MaieContext';
-import { INQUIRY_STATUS } from '../../../constants/maie';
+import { MaiaContext } from '../../../context/MaiaContext';
+import { INQUIRY_STATUS } from '../../../constants/maia';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
@@ -44,7 +44,7 @@ function baseValue(overrides = {}) {
       },
     ],
     applyMode: 'confirm',
-    maieReplying: false,
+    maiaReplying: false,
     sendThreadMessage: vi.fn(),
     applyProposal: vi.fn(),
     dismissProposal: vi.fn(),
@@ -56,9 +56,9 @@ function baseValue(overrides = {}) {
 function renderThread(valueOverrides = {}) {
   const value = baseValue(valueOverrides);
   return render(
-    <MaieContext.Provider value={value}>
+    <MaiaContext.Provider value={value}>
       <InquiryThread inquiryId="q1" onClose={vi.fn()} />
-    </MaieContext.Provider>,
+    </MaiaContext.Provider>,
   );
 }
 
@@ -69,12 +69,12 @@ describe('InquiryThread', () => {
     expect(screen.getByText('Sin responsable en una columna de trabajo.')).toBeInTheDocument();
     expect(screen.getByText('Lo toma Ana mañana.')).toBeInTheDocument();
     expect(screen.getByText('Lucía Ríos')).toBeInTheDocument();
-    expect(screen.queryByText('Maie está pensando…')).not.toBeInTheDocument();
+    expect(screen.queryByText('Maia está pensando…')).not.toBeInTheDocument();
   });
 
-  it('mientras Maie responde muestra el indicador de escritura', () => {
-    renderThread({ maieReplying: true });
-    expect(screen.getByText('Maie está pensando…')).toBeInTheDocument();
+  it('mientras Maia responde muestra el indicador de escritura', () => {
+    renderThread({ maiaReplying: true });
+    expect(screen.getByText('Maia está pensando…')).toBeInTheDocument();
   });
 
   it('envia mensajes firmados por el usuario activo y limpia el texto', () => {
@@ -117,7 +117,7 @@ describe('InquiryThread', () => {
       ],
     });
     expect(screen.queryByRole('button', { name: 'Sí' })).not.toBeInTheDocument();
-    expect(screen.getByText(/se completa conversando con Maie/)).toBeInTheDocument();
+    expect(screen.getByText(/se completa conversando con Maia/)).toBeInTheDocument();
   });
 
   it('snooze aparca la pregunta hasta el próximo standup', () => {

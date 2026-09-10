@@ -1,4 +1,4 @@
-// Motor de interpelaciones de Maie (§8). Determinístico: sin LLM. Dado el
+// Motor de interpelaciones de Maia (§8). Determinístico: sin LLM. Dado el
 // proyecto (runtime §12) y el set de inquiries vigentes, produce el set nuevo
 // de inquiries + entradas de log. Escribe solo cuando algo cambió (anti-loop):
 // el rescan con las mismas entradas devuelve lo mismo.
@@ -20,9 +20,9 @@ import { findOverlaps } from '../utils/ganttSchedule';
 import {
   INQUIRY_KINDS,
   INQUIRY_STATUS,
-  MAIE_DEFAULTS,
+  MAIA_DEFAULTS,
   WORKING_COLUMNS,
-} from '../constants/maie';
+} from '../constants/maia';
 import { defaultProposalsFor } from './proposalEngine';
 
 function normColumnTitle(title) {
@@ -98,11 +98,11 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
   const buckets = Array.isArray(project?.buckets) ? project.buckets : [];
   const tasks = Array.isArray(project?.tasks) ? project.tasks : [];
   const settings = project?.settings || {};
-  const staleDays = settings.staleDays ?? MAIE_DEFAULTS.staleDays;
+  const staleDays = settings.staleDays ?? MAIA_DEFAULTS.staleDays;
   const minDescriptionChars =
-    settings.minDescriptionChars ?? MAIE_DEFAULTS.minDescriptionChars;
+    settings.minDescriptionChars ?? MAIA_DEFAULTS.minDescriptionChars;
   const milestoneWindowDays =
-    settings.milestoneWindowDays ?? MAIE_DEFAULTS.milestoneWindowDays;
+    settings.milestoneWindowDays ?? MAIA_DEFAULTS.milestoneWindowDays;
 
   // Hitos próximos (no finalizados): marcan la ventana de missing-date.
   const milestoneCandidates = tasks

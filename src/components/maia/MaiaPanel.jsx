@@ -1,4 +1,4 @@
-// Panel de Maie (§7–8): dock derecho fijo en desktop (mobile = slice 8).
+// Panel de Maia (§7–8): dock derecho fijo en desktop (mobile = slice 8).
 // Pestañas: Preguntas (open/chatting/snoozed), Huddle (slice 7) y Registro
 // (actionLog read-only). El hilo de cada pregunta (click → chat, propuestas)
 // llega en el slice 5.
@@ -6,17 +6,17 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
-import MaieMark from './MaieMark';
+import MaiaMark from './MaiaMark';
 import ApplyModeToggle from './ApplyModeToggle';
 import InquiryThread from './InquiryThread';
 import HuddleTab from '../huddle/HuddleTab';
-import { useMaie } from '../../context/MaieContext';
+import { useMaia } from '../../context/MaiaContext';
 import {
   INQUIRY_KIND_META,
   INQUIRY_STATUS,
   INQUIRY_STATUS_LABELS,
-  MAIE_ROLE,
-} from '../../constants/maie';
+  MAIA_ROLE,
+} from '../../constants/maia';
 
 const TABS = [
   { id: 'questions', label: 'Preguntas' },
@@ -43,7 +43,7 @@ function KindBadge({ kind }) {
 }
 
 function QuestionsTab({ onOpen }) {
-  const { inquiries } = useMaie();
+  const { inquiries } = useMaia();
   const open = inquiries.filter(
     (i) => i.status === INQUIRY_STATUS.OPEN || i.status === INQUIRY_STATUS.CHATTING,
   );
@@ -52,7 +52,7 @@ function QuestionsTab({ onOpen }) {
   if (open.length === 0 && parked.length === 0) {
     return (
       <p className="px-4 py-6 text-sm text-muted">
-        No hay preguntas abiertas. Maie pregunta cuando algo se queda flaco, sin dueño o estancado.
+        No hay preguntas abiertas. Maia pregunta cuando algo se queda flaco, sin dueño o estancado.
       </p>
     );
   }
@@ -96,7 +96,7 @@ const SOURCE_BADGES = {
 };
 
 function LogTab() {
-  const { actionLog } = useMaie();
+  const { actionLog } = useMaia();
   if (actionLog.length === 0) {
     return <p className="px-4 py-6 text-sm text-muted">Todavía no hay entradas en el registro.</p>;
   }
@@ -125,21 +125,21 @@ function LogTab() {
   );
 }
 
-export default function MaiePanel() {
-  const { openCount, applyMode, setApplyMode } = useMaie();
+export default function MaiaPanel() {
+  const { openCount, applyMode, setApplyMode } = useMaia();
   const [tab, setTab] = useState(TABS[0].id);
   const [chatInquiryId, setChatInquiryId] = useState(null);
 
   return (
     <aside
       className="relative hidden w-[360px] shrink-0 flex-col overflow-hidden border-l border-gray-200 bg-surface lg:flex"
-      aria-label="Panel de Maie"
+      aria-label="Panel de Maia"
     >
       <header className="flex items-center gap-3 border-b border-gray-200 px-4 py-3">
-        <MaieMark />
+        <MaiaMark />
         <div className="min-w-0 flex-1">
-          <h2 className="font-display text-lg leading-tight text-ink">Maie</h2>
-          <p className="text-xs text-muted">{MAIE_ROLE}</p>
+          <h2 className="font-display text-lg leading-tight text-ink">Maia</h2>
+          <p className="text-xs text-muted">{MAIA_ROLE}</p>
         </div>
         <span className="inline-flex items-center rounded-full bg-forest-600 px-2.5 py-0.5 text-xs font-medium text-paper">
           {openCount} {openCount === 1 ? 'abierta' : 'abiertas'}
@@ -151,7 +151,7 @@ export default function MaiePanel() {
       </div>
 
       <nav
-        aria-label="Secciones de Maie"
+        aria-label="Secciones de Maia"
         className="flex gap-1 border-b border-gray-200 px-3 pt-2"
       >
         {TABS.map(({ id, label }) => (

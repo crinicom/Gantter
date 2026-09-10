@@ -1,6 +1,6 @@
 # Gantter
 
-Aplicación web de gestión de trabajo: **tablero Kanban** + **Gantt** sobre las mismas cartas, más **Maie** (facilitadora socrática) y huddle in-app.
+Aplicación web de gestión de trabajo: **tablero Kanban** + **Gantt** sobre las mismas cartas, más **Maia** (facilitadora socrática) y huddle in-app.
 
 **Producto v1:** [`bot_requirements.md`](bot_requirements.md). **Quién implementa qué:** [`HANDOFF.md`](HANDOFF.md). Este README describe el stack y el código que ya existe (persistencia local/Drive/server, collab). No usar las secciones de Drive/backend como permiso para ampliarlos en v1.
 
@@ -97,15 +97,15 @@ Start:  npm start    # node server/src/index.js
 
 En modo server, tanto la **capa de persistencia** (`ServerBackend`), el **realtime** (`ServerRealtime`) y la **autenticación** (`/api/auth/*`) se seleccionan automáticamente según `VITE_APP_MODE`. El "entrar como" y `DEFAULT_COLLAB_USERS` quedan solo para el modo offline/demo.
 
-## Voz de Maie (prompts en markdown)
+## Voz de Maia (prompts en markdown)
 
-La personalidad y las respuestas de Maie viven en `maie/` como markdown editable a nivel app (un solo set global; no por proyecto):
+La personalidad y las respuestas de Maia viven en `maia/` como markdown editable a nivel app (un solo set global; no por proyecto):
 
-- `maie/system/persona.md` — system prompt del LLM (relay de `/api/maie/chat`, §11).
-- `maie/templates/*.md` — fallbacks sin LLM por `kind` (thin/unassigned/stale/missing-date/overlap/generic).
-- `maie/huddle/welcome.md`, `reply.md`, `demo.md`, `recap.md` — bienvenidas por ritual, fallback del huddle, guion del standup demo y cierre del recap.
+- `maia/system/persona.md` — system prompt del LLM (relay de `/api/maia/chat`, §11).
+- `maia/templates/*.md` — fallbacks sin LLM por `kind` (thin/unassigned/stale/missing-date/overlap/generic).
+- `maia/huddle/welcome.md`, `reply.md`, `demo.md`, `recap.md` — bienvenidas por ritual, fallback del huddle, guion del standup demo y cierre del recap.
 
-Reglas de edición: las líneas que empiezan con `#` son comentarios (nunca llegan al prompt); los `{vars}` se rellenan con datos del tablero (no borrarlos ni renombrarlos: el código los pasa y un test valida la cobertura). El contrato JSON de salida y los límites de tokens quedan fijos en `server/src/routes/maie.js`. En desarrollo los cambios se aplican al instante (HMR del bundle cliente; el server lee el archivo por request); en producción, editar los `.md` y desplegar (push → build → Fly). `MAIE_PROMPTS_DIR` permite apuntar a otra carpeta (default `./maie`).
+Reglas de edición: las líneas que empiezan con `#` son comentarios (nunca llegan al prompt); los `{vars}` se rellenan con datos del tablero (no borrarlos ni renombrarlos: el código los pasa y un test valida la cobertura). El contrato JSON de salida y los límites de tokens quedan fijos en `server/src/routes/maia.js`. En desarrollo los cambios se aplican al instante (HMR del bundle cliente; el server lee el archivo por request); en producción, editar los `.md` y desplegar (push → build → Fly). `MAIA_PROMPTS_DIR` permite apuntar a otra carpeta (default `./maia`).
 
 ## Comandos
 

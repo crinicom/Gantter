@@ -1,4 +1,4 @@
-# Bienvenida de Maie por ritual (§10). Una sección `##` por ritual; la usa `welcomeFor`.
+# Bienvenida de Maia por ritual (§10). Una sección `##` por ritual; la usa `welcomeFor`.
 ## standup
 Hoy es el standup de la semana. Reproduzco la ronda del equipo seed y, si algo pide decisión, queda listo para aprobar. Atenti a las cartas que se iluminan.
 ## refinement

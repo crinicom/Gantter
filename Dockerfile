@@ -44,7 +44,7 @@ ENV NODE_ENV=production
 # Copy server deps + code + built SPA
 COPY --from=builder /app/package.json /app/package-lock.json ./
 COPY --from=builder /app/server /app/server
-COPY --from=builder /app/maie /app/maie
+COPY --from=builder /app/maia /app/maia
 COPY --from=builder /app/dist /app/dist
 
 # Ensure server deps are present/compiled for this image

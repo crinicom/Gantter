@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import MaiePanel from '../MaiePanel';
-import { MaieContext } from '../../../context/MaieContext';
-import { INQUIRY_STATUS } from '../../../constants/maie';
+import MaiaPanel from '../MaiaPanel';
+import { MaiaContext } from '../../../context/MaiaContext';
+import { INQUIRY_STATUS } from '../../../constants/maia';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
@@ -67,16 +67,16 @@ const baseValue = {
 function renderPanel(valueOverrides = {}) {
   const value = { ...baseValue, ...valueOverrides };
   return render(
-    <MaieContext.Provider value={value}>
-      <MaiePanel />
-    </MaieContext.Provider>,
+    <MaiaContext.Provider value={value}>
+      <MaiaPanel />
+    </MaiaContext.Provider>,
   );
 }
 
-describe('MaiePanel', () => {
-  it('muestra la identidad de Maie y el contador de preguntas abiertas', () => {
+describe('MaiaPanel', () => {
+  it('muestra la identidad de Maia y el contador de preguntas abiertas', () => {
     renderPanel();
-    expect(screen.getByText('Maie')).toBeInTheDocument();
+    expect(screen.getByText('Maia')).toBeInTheDocument();
     expect(screen.getByText('Facilitadora')).toBeInTheDocument();
     expect(screen.getByText('2 abiertas')).toBeInTheDocument();
   });
@@ -89,7 +89,7 @@ describe('MaiePanel', () => {
     expect(screen.getByText('Aparcadas')).toBeInTheDocument();
   });
 
-  it('el toggle de modo de Maie persiste el applyMode elegido', () => {
+  it('el toggle de modo de Maia persiste el applyMode elegido', () => {
     const setApplyMode = vi.fn();
     renderPanel({ setApplyMode });
     fireEvent.click(screen.getByRole('button', { name: 'Aplicar y registrar' }));

@@ -12,7 +12,7 @@ v1 necesita sentirse real en 60 segundos y funcionar **sin backend ni LLM en el 
 
 - **§12**: persistencia local en el cliente, un tablero por proyecto, varios proyectos en el mismo store, sin auth, sin DB.
 - **§13**: dos proyectos seed (uno "sucia", otro limpio) para explicar el producto sin build local.
-- **§8**: al cargar el tablero, Maie **genera sus preguntas con reglas determinísticas** (`thin`, `unassigned`, `stale`, `missing-date`, `overlap`). El LLM queda **excluido explícitamente** del page load ("No llamar a un LLM al cargar el tablero").
+- **§8**: al cargar el tablero, Maia **genera sus preguntas con reglas determinísticas** (`thin`, `unassigned`, `stale`, `missing-date`, `overlap`). El LLM queda **excluido explícitamente** del page load ("No llamar a un LLM al cargar el tablero").
 
 El problema de diseño: cómo persistir, sembrar y escanear sin que una pregunta "computada" rompa el tablero ni genere un loop de escrituras.
 
@@ -47,7 +47,7 @@ El problema de diseño: cómo persistir, sembrar y escanear sin que una pregunta
   - `stale`: sin actividad > `staleDays` (default 15, configurable).
   - `missing-date`: carta sin rango en la ruta de un hito a ≤ `milestoneWindowDays` (10).
   - `overlap`: por responsable con barras que se pisan (`findOverlaps` en `src/utils/ganttSchedule`).
-- **Trigger:** effect en `MaieContext.jsx:81` con dependencias `[project, mutateProject]`. Cada cambio de `project.version` re-escannea.
+- **Trigger:** effect en `MaiaContext.jsx:81` con dependencias `[project, mutateProject]`. Cada cambio de `project.version` re-escannea.
 - **Anti-loop:** el effect calcula el set nuevo, compara contra el persistido (`sameSet` sobre campos estables: id/kind/cardId/status/question/evidence/resolvedNote) y **solo escribe si cambió**. El rescan del mismo documento devuelve lo mismo (estabilidad garantizada por tests).
 - **IDs estables:** los inquiries persisten su `id`; se fusionan por key `kind:cardId` (`inquiryEngine.js:217-250`) conservando hilo, `proposals` y snooze.
 - **Auto-resolución:** si la condición desaparece (ganó dueño, ganó descripción, salió del trabajo), la pregunta pasa a `resolved` con motivo + entrada en `actionLog` (§8: "se resolvió porque Ana tomó la carta").
@@ -78,12 +78,12 @@ El problema de diseño: cómo persistir, sembrar y escanear sin que una pregunta
 | §12 Column / Card | `src/models/column.js`, `src/models/card.js` (canónico: `columns`/`cards`) |
 | §12 runtime tickets | `src/models/task.js`, `src/models/bucket.js` (runtime: `tasks`/`buckets`) |
 | §12 Inquiry / ProposedAction | `inquiryEngine.js:254-269`, `proposalEngine.js:102` |
-| §12 ActionLogEntry | `MaieContext`/`applyEngine` (`source: auto\|confirm\|manual`) |
+| §12 ActionLogEntry | `MaiaContext`/`applyEngine` (`source: auto\|confirm\|manual`) |
 | §12 Huddle | Campo `huddle` (model completo = slice 7, pendiente) |
 | §8 scan determinístico | `src/services/inquiryEngine.js` |
-| §8 defaults | `src/constants/maie.js:44` (`MAIE_DEFAULTS`) |
+| §8 defaults | `src/constants/maia.js:44` (`MAIA_DEFAULTS`) |
 | §8 propuestas | `src/services/proposalEngine.js` |
-| §8 re-scan + anti-loop | `src/context/MaieContext.jsx:81` |
+| §8 re-scan + anti-loop | `src/context/MaiaContext.jsx:81` |
 | §13 seed + re-anclaje + reset | `DB/sample_data.json`, `localStorageBackend.js:51`, `ProjectContext.jsx:307` |
 | Store / persistencia | `src/context/ProjectContext.jsx`, `src/services/storage.js`, `localStorageBackend.js` |
 

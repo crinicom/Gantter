@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as maieChatModule from '../maieChat';
+import * as maiaChatModule from '../maiaChat';
 import * as appConfig from '../../config/appConfig';
 
 vi.mock('../../config/appConfig', () => ({
@@ -62,7 +62,7 @@ function fetchStub() {
 
 describe('buildBoardContext', () => {
   it('incluye la carta en cuestión, miembros, hitos próximos y modo', () => {
-    const ctx = maieChatModule.buildBoardContext({
+    const ctx = maiaChatModule.buildBoardContext({
       project: project(),
       inquiry: inquiry(),
       now: new Date('2026-09-08T00:00:00Z'),
@@ -83,7 +83,7 @@ describe('buildBoardContext', () => {
         milestone: i % 2 === 0,
       })),
     });
-    const ctx = maieChatModule.buildBoardContext({
+    const ctx = maiaChatModule.buildBoardContext({
       project: big,
       inquiry: inquiry(),
       now: new Date('2026-09-08T00:00:00Z'),
@@ -92,7 +92,7 @@ describe('buildBoardContext', () => {
   });
 
   it('en kind overlap suma las cartas con fechas visibles', () => {
-    const ctx = maieChatModule.buildBoardContext({
+    const ctx = maiaChatModule.buildBoardContext({
       project: project(),
       inquiry: inquiry({ kind: 'overlap' }),
       now: new Date('2026-09-08T00:00:00Z'),
@@ -101,21 +101,21 @@ describe('buildBoardContext', () => {
   });
 });
 
-describe('templatedMaieReply', () => {
+describe('templatedMaiaReply', () => {
   const base = { project: project(), inquiry: inquiry({ cardId: 't1' }), now: new Date('2026-09-08T00:00:00Z') };
 
   it('responde por kind con tono socrático rioplatense y menciona la carta', () => {
-    expect(maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ cardId: 't1' }) })).toMatch(/¿/);
-    expect(maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ cardId: 't1' }) })).toContain('Auth magic link');
+    expect(maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ cardId: 't1' }) })).toMatch(/¿/);
+    expect(maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ cardId: 't1' }) })).toContain('Auth magic link');
   });
 
   it('distingue thin, unassigned, stale, missing-date y overlap', () => {
     const replies = [
-      maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ kind: 'thin', cardId: 't1' }) }),
-      maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ kind: 'unassigned', cardId: 't1' }) }),
-      maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ kind: 'stale', cardId: 't1' }) }),
-      maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ kind: 'missing-date', cardId: 't1' }) }),
-      maieChatModule.templatedMaieReply({ ...base, inquiry: inquiry({ kind: 'overlap', cardId: 't1' }) }),
+      maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ kind: 'thin', cardId: 't1' }) }),
+      maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ kind: 'unassigned', cardId: 't1' }) }),
+      maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ kind: 'stale', cardId: 't1' }) }),
+      maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ kind: 'missing-date', cardId: 't1' }) }),
+      maiaChatModule.templatedMaiaReply({ ...base, inquiry: inquiry({ kind: 'overlap', cardId: 't1' }) }),
     ];
     const unique = new Set(replies);
     expect(unique.size).toBe(5);
@@ -125,7 +125,7 @@ describe('templatedMaieReply', () => {
     const small = project({
       tasks: [{ ...project().tasks[0], name: 'Solo obra', title: undefined }],
     });
-    expect(maieChatModule.templatedMaieReply({ ...base, project: small })).toContain('Solo obra');
+    expect(maiaChatModule.templatedMaiaReply({ ...base, project: small })).toContain('Solo obra');
   });
 });
 
@@ -142,14 +142,14 @@ describe('sanitizeActions / actionsToProposals', () => {
       { type: 'create-card', payload: { bucketId: 'b_ausente', title: 'X' } },
       null,
     ];
-    const clean = maieChatModule.sanitizeActions({ project: p, actions: [...ok, ...bad] });
+    const clean = maiaChatModule.sanitizeActions({ project: p, actions: [...ok, ...bad] });
     expect(clean).toHaveLength(2);
     expect(clean.map((a) => a.type)).toEqual(['assign', 'create-card']);
   });
 
   it('traduce acciones válidas a propuestas con id, label, payload y comment', () => {
     const p = project();
-    const proposals = maieChatModule.actionsToProposals({
+    const proposals = maiaChatModule.actionsToProposals({
       project: p,
       inquiry: inquiry(),
       actions: [
@@ -171,14 +171,14 @@ describe('sanitizeActions / actionsToProposals', () => {
   });
 });
 
-describe('requestMaieChat', () => {
+describe('requestMaiaChat', () => {
   beforeEach(() => {
     fetchStub();
     vi.mocked(appConfig.isServerMode).mockReturnValue(false);
   });
 
   it('sin server degrada a la respuesta templated sin fetch ni llanto', async () => {
-    const res = await maieChatModule.requestMaieChat({
+    const res = await maiaChatModule.requestMaiaChat({
       project: project(),
       inquiry: inquiry(),
       userText: 'Lo toma Ana.',
@@ -196,14 +196,14 @@ describe('requestMaieChat', () => {
       ok: true,
       json: async () => ({ reply: 'Vamos a verlo.', actions: [{ type: 'assign', payload: { taskId: 't1', memberId: 'm_lucia' } }] }),
     });
-    const res = await maieChatModule.requestMaieChat({
+    const res = await maiaChatModule.requestMaiaChat({
       project: project(),
       inquiry: inquiry(),
       userText: 'Lo toma Ana.',
     });
     expect(global.fetch).toHaveBeenCalledTimes(1);
     expect(global.fetch).toHaveBeenCalledWith(
-      'https://gantter.fly.dev/api/maie/chat',
+      'https://gantter.fly.dev/api/maia/chat',
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     );
     expect(res.source).toBe('llm');
@@ -218,10 +218,10 @@ describe('requestMaieChat', () => {
       status: 503,
       json: async () => ({}),
     });
-    const res = await maieChatModule.requestMaieChat({
+    const res = await maiaChatModule.requestMaiaChat({
       project: project(),
       inquiry: inquiry(),
-      userText: 'Hola Maie',
+      userText: 'Hola Maia',
     });
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(res.source).toBe('templated');
@@ -237,12 +237,12 @@ describe('requestMaieChat', () => {
     const inq = inquiry({
       thread: Array.from({ length: 8 }, (_, i) => ({
         id: `m${i}`,
-        role: i % 2 ? 'maie' : 'user',
+        role: i % 2 ? 'maia' : 'user',
         author: 'X',
         text: `mensaje del turno ${i}`,
       })),
     });
-    const res = await maieChatModule.requestMaieChat({
+    const res = await maiaChatModule.requestMaiaChat({
       project: project(),
       inquiry: inq,
       userText: 'a'.repeat(3000),
@@ -264,13 +264,13 @@ describe('requestMaieChat', () => {
     });
     const inq = inquiry({
       thread: [
-        { role: 'maie', text: '¿Qué carta?' },
+        { role: 'maia', text: '¿Qué carta?' },
         'usuario: Me refiero al webhook',
         { role: 'user', text: 'Fecho el QA' },
-        { role: 'maie', text: 'Listo' },
+        { role: 'maia', text: 'Listo' },
       ],
     });
-    const res = await maieChatModule.requestMaieChat({
+    const res = await maiaChatModule.requestMaiaChat({
       project: project(),
       inquiry: inq,
       userText: 'Sí.',
@@ -280,7 +280,7 @@ describe('requestMaieChat', () => {
     expect(body.threadTail).toEqual([
       'usuario: Me refiero al webhook',
       'user: Fecho el QA',
-      'maie: Listo',
+      'maia: Listo',
     ]);
     expect(res.source).toBe('llm');
   });

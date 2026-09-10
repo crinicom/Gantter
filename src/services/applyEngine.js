@@ -1,15 +1,15 @@
-// Aplicación determinística de propuestas de Maie (§9/§12). Puro y sin contexto:
+// Aplicación determinística de propuestas de Maia (§9/§12). Puro y sin contexto:
 // `apply(project, proposal)` devuelve el proyecto nuevo con la tarea tocada, el
-// comentario de Maie con la evidencia y la entrada de actionLog (fuente
+// comentario de Maia con la evidencia y la entrada de actionLog (fuente
 // auto|confirm). `canApply` valida que la condición que originó la propuesta
 // siga presente (nunca aplicar propuestas vencidas).
 
 import { v4 as uuidv4 } from 'uuid';
 import { TASK_STATUS } from '../constants/project';
-import { MAIE_DEFAULTS } from '../constants/maie';
+import { MAIA_DEFAULTS } from '../constants/maia';
 
 function staleDaysOf(project) {
-  return project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
+  return project?.settings?.staleDays ?? MAIA_DEFAULTS.staleDays;
 }
 
 function workingSinceDays(task, now) {
@@ -88,7 +88,7 @@ function patchTask(project, proposal, { now, source }) {
     };
     const comment = {
       id: uuidv4(),
-      author: 'Maie',
+      author: 'Maia',
       text: proposal.comment || proposal.label || '',
       createdAt: at,
     };
@@ -125,7 +125,7 @@ function patchTask(project, proposal, { now, source }) {
           ...t,
           blocked: true,
           blockedReason:
-            proposal.payload?.blockedReason || 'Marcada al aplicar la propuesta de Maie.',
+            proposal.payload?.blockedReason || 'Marcada al aplicar la propuesta de Maia.',
         };
         break;
       case 'set-description':
@@ -137,7 +137,7 @@ function patchTask(project, proposal, { now, source }) {
       default:
         return t;
     }
-    const comment = { id: uuidv4(), author: 'Maie', text: '', createdAt: at };
+    const comment = { id: uuidv4(), author: 'Maia', text: '', createdAt: at };
     if (proposal.action === 'add-comment') {
       comment.text = proposal.payload?.text || proposal.comment || '';
     } else {

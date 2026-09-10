@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import HuddleSessionBar from '../HuddleSessionBar';
-import { MaieContext } from '../../../context/MaieContext';
+import { MaiaContext } from '../../../context/MaiaContext';
 
 function baseValue(overrides = {}) {
   return {
@@ -14,7 +14,7 @@ function baseValue(overrides = {}) {
     applyMode: 'auto',
     staleDays: 15,
     lastScanAt: null,
-    maieReplying: false,
+    maiaReplying: false,
     huddle: null,
     demoStatus: null,
     highlightedTaskIds: new Set(),
@@ -53,9 +53,9 @@ function session(overrides = {}) {
 
 function renderBar(value) {
   return render(
-    <MaieContext.Provider value={baseValue(value)}>
+    <MaiaContext.Provider value={baseValue(value)}>
       <HuddleSessionBar />
-    </MaieContext.Provider>,
+    </MaiaContext.Provider>,
   );
 }
 
@@ -95,9 +95,9 @@ describe('HuddleSessionBar', () => {
     expect(toggleDemo).toHaveBeenCalled();
 
     rerender(
-      <MaieContext.Provider value={baseValue({ huddle: session({ endedAt: '2026-09-09T10:15:00.000Z' }), demoStatus: 'done', toggleDemo })}>
+      <MaiaContext.Provider value={baseValue({ huddle: session({ endedAt: '2026-09-09T10:15:00.000Z' }), demoStatus: 'done', toggleDemo })}>
         <HuddleSessionBar />
-      </MaieContext.Provider>,
+      </MaiaContext.Provider>,
     );
     expect(screen.queryByRole('button', { name: /Pausar/ })).not.toBeInTheDocument();
     expect(screen.getByText(/Sesión cerrada/)).toBeInTheDocument();

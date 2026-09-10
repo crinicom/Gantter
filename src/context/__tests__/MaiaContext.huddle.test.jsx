@@ -1,22 +1,22 @@
-// Integración del huddle con el provider REAL de Maie y el motor real
+// Integración del huddle con el provider REAL de Maia y el motor real
 // (sin mockear huddleEngine): abrir sesión (standup demo), el playback del guion
 // avanza con timers y aplica en modo auto, pausa/reanuda, y la línea del usuario
-// se interpreta con el path LLM (mockeado) dejando la respuesta de Maie en el
+// se interpreta con el path LLM (mockeado) dejando la respuesta de Maia en el
 // transcript.
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { MaieProvider, MaieContext } from '../MaieContext';
+import { MaiaProvider, MaiaContext } from '../MaiaContext';
 import * as useProjectModule from '../../hooks/useProject';
 import * as useAuthModule from '../../hooks/useAuth';
-import * as maieChatModule from '../../services/maieChat';
+import * as maiaChatModule from '../../services/maiaChat';
 
 vi.mock('../../hooks/useProject');
 vi.mock('../../hooks/useAuth');
-vi.mock('../../services/maieChat', async (importActual) => {
+vi.mock('../../services/maiaChat', async (importActual) => {
   const actual = await importActual();
-  return { ...actual, requestMaieChat: vi.fn() };
+  return { ...actual, requestMaiaChat: vi.fn() };
 });
 
 function task(overrides = {}) {
@@ -115,9 +115,9 @@ function mount() {
   const build = () => (
     <div>
       <Setup holder={holder} />
-      <MaieProvider>
+      <MaiaProvider>
         <Probe />
-      </MaieProvider>
+      </MaiaProvider>
     </div>
   );
   const view = render(build());
@@ -141,7 +141,7 @@ function mount() {
 }
 
 function Probe() {
-  const ctx = React.useContext(MaieContext);
+  const ctx = React.useContext(MaiaContext);
   const { project } = useProjectModule.useProject();
   const webhook = project.tasks.find((t) => t.id === 'card_webhook');
   return (
@@ -172,10 +172,10 @@ function Probe() {
   );
 }
 
-describe('MaieContext huddle (integración con el engine real)', () => {
+describe('MaiaContext huddle (integración con el engine real)', () => {
   beforeEach(() => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
-    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({
+    vi.mocked(maiaChatModule.requestMaiaChat).mockResolvedValue({
       reply: 'Anotado, lo fechamos de hoy hasta el go-live.',
       actions: [],
       source: 'llm',
@@ -195,7 +195,7 @@ describe('MaieContext huddle (integración con el engine real)', () => {
 
     expect(holder.project.huddle).toBeDefined();
     expect(holder.project.huddle.demo.status).toBe('playing');
-    expect(holder.project.huddle.transcript[0].role).toBe('maie');
+    expect(holder.project.huddle.transcript[0].role).toBe('maia');
     expect(screen.getByTestId('demo-status')).toHaveTextContent('playing');
   });
 
@@ -236,7 +236,7 @@ describe('MaieContext huddle (integración con el engine real)', () => {
     expect(holder.project.huddle.demo.status).toBe('playing');
   });
 
-  it('la línea del usuario se interpreta y la respuesta de Maie cae en el transcript', async () => {
+  it('la línea del usuario se interpreta y la respuesta de Maia cae en el transcript', async () => {
     const { holder, commitAll } = mount();
     await commitAll();
     fireEvent.click(screen.getByRole('button', { name: 'start' }));
@@ -272,7 +272,7 @@ describe('MaieContext huddle (integración con el engine real)', () => {
     expect(holder.project.huddle.demo.status).toBe('playing');
     expect(holder.project.huddle.demo.cursor).toBe(0);
     expect(holder.project.huddle.transcript).toHaveLength(1);
-    expect(holder.project.huddle.transcript[0].role).toBe('maie');
+    expect(holder.project.huddle.transcript[0].role).toBe('maia');
 
     await act(async () => {
       vi.advanceTimersByTime(2300);

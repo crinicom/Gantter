@@ -1,4 +1,4 @@
-// Relay de Maie (§11 Contrato de IA): recibe el contexto acotado del tablero y
+// Relay de Maia (§11 Contrato de IA): recibe el contexto acotado del tablero y
 // el mensaje del usuario, llama a OpenAI (`gpt-4o-mini`, el modelo grande más
 // barato) con la clave del dueño, y devuelve `{ reply, actions }` estructurado.
 // Si no hay clave, falla el upstream o se rompe el JSON: responde 50x/400 para
@@ -16,12 +16,12 @@ const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
 const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
 // Intención del system prompt (§11, no es texto sagrado). La persona se lee de
-// `maie/system/persona.md` (config a nivel app, editable sin tocar código);
+// `maia/system/persona.md` (config a nivel app, editable sin tocar código);
 // el contrato JSON de salida es estructural (el parsing depende de su forma
 // exacta) y queda fijo acá. Corto: cada token de entrada cuesta; el cap del
 // presupuesto está en max_tokens.
 const DEFAULT_PERSONA_PROMPT = [
-  'Sos Maie, facilitadora socrática de Gantter, sobre un tablero Kanban + Gantt (contexto: cartas, miembros, fechas, modo auto/confirm).',
+  'Sos Maia, facilitadora socrática de Gantter, sobre un tablero Kanban + Gantt (contexto: cartas, miembros, fechas, modo auto/confirm).',
   'No das órdenes: preguntás. 2-4 oraciones, español rioplatense, sin emoji.',
   'Si el usuario dio un dato accionable, devolvé acciones concretas con ids reales que existan en el contexto.',
   'Si no alcanza, una sola pregunta más. No interrogatorio. Hablá del trabajo, no de la persona.',
@@ -33,13 +33,13 @@ const SYS_CONTRACT = [
   'Sin acción concreta y segura: actions va vacío.',
 ].join(' ');
 
-// Ruta de los prompts de Maie. Default: `maie/` del repo (en Docker se copia a
-// /app/maie); se puede overridear con MAIE_PROMPTS_DIR si algún día viven en un
+// Ruta de los prompts de Maia. Default: `maia/` del repo (en Docker se copia a
+// /app/maia); se puede overridear con MAIA_PROMPTS_DIR si algún día viven en un
 // volumen. Las líneas con `#` son comentarios que no llegan al modelo.
-const DEFAULT_PROMPTS_DIR = fileURLToPath(new URL('../../../maie', import.meta.url));
+const DEFAULT_PROMPTS_DIR = fileURLToPath(new URL('../../../maia', import.meta.url));
 
 function personaPromptText() {
-  const dir = process.env.MAIE_PROMPTS_DIR || DEFAULT_PROMPTS_DIR;
+  const dir = process.env.MAIA_PROMPTS_DIR || DEFAULT_PROMPTS_DIR;
   try {
     return readFileSync(`${dir}/system/persona.md`, 'utf8')
       .split(/\r?\n/)
@@ -56,13 +56,13 @@ function systemPrompt() {
   return `${personaPromptText()} ${SYS_CONTRACT}`;
 }
 
-router.post('/maie/chat', requireAuth, async (req, res) => {
+router.post('/maia/chat', requireAuth, async (req, res) => {
   const { kind, mode, boardContext, userText, threadTail } = req.body || {};
   if (typeof boardContext !== 'string' || typeof userText !== 'string' || !userText.trim()) {
     return res.status(400).json({ error: 'Faltan contexto y mensaje' });
   }
   if (!process.env.OPENAI_API_KEY) {
-    return res.status(503).json({ error: 'no-key', message: 'Maie está sin clave' });
+    return res.status(503).json({ error: 'no-key', message: 'Maia está sin clave' });
   }
 
   const parts = [

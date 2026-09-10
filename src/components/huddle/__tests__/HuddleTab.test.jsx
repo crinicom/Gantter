@@ -4,7 +4,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import HuddleTab from '../HuddleTab';
-import { MaieContext } from '../../../context/MaieContext';
+import { MaiaContext } from '../../../context/MaiaContext';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
@@ -20,7 +20,7 @@ function session(overrides = {}) {
     endedAt: null,
     joinedIds: ['u_lucia'],
     transcript: [
-      { id: 'l1', role: 'maie', speaker: 'Maie', text: 'Empezamos el standup.', cardIds: [], at: '2026-09-09T10:00:00.000Z' },
+      { id: 'l1', role: 'maia', speaker: 'Maia', text: 'Empezamos el standup.', cardIds: [], at: '2026-09-09T10:00:00.000Z' },
       {
         id: 'l2',
         role: 'member',
@@ -64,7 +64,7 @@ function baseValue(overrides = {}) {
     applyMode: 'auto',
     staleDays: 15,
     lastScanAt: null,
-    maieReplying: false,
+    maiaReplying: false,
     huddle: null,
     demoStatus: null,
     highlightedTaskIds: new Set(),
@@ -84,9 +84,9 @@ function baseValue(overrides = {}) {
 
 function renderTab(value) {
   return render(
-    <MaieContext.Provider value={baseValue(value)}>
+    <MaiaContext.Provider value={baseValue(value)}>
       <HuddleTab />
-    </MaieContext.Provider>,
+    </MaiaContext.Provider>,
   );
 }
 

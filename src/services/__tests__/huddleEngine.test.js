@@ -12,12 +12,12 @@ import {
   templatedHuddleReply,
   DEMO_STATUS,
 } from '../huddleEngine';
-import * as maieChatModule from '../maieChat';
-import { PROPOSAL_STATUS } from '../../constants/maie';
+import * as maiaChatModule from '../maiaChat';
+import { PROPOSAL_STATUS } from '../../constants/maia';
 
-vi.mock('../maieChat', async (importActual) => {
+vi.mock('../maiaChat', async (importActual) => {
   const actual = await importActual();
-  return { ...actual, requestMaieChat: vi.fn() };
+  return { ...actual, requestMaiaChat: vi.fn() };
 });
 
 const NOW = new Date('2026-09-09T10:00:00.000Z');
@@ -143,7 +143,7 @@ describe('createHuddleSession', () => {
     expect(s.endedAt).toBeNull();
     expect(s.demo.status).toBe(DEMO_STATUS.PLAYING);
     expect(s.demo.steps).toHaveLength(4);
-    expect(s.transcript[0].role).toBe('maie');
+    expect(s.transcript[0].role).toBe('maia');
     expect(s.joinedIds).toContain('u_lucia');
     expect(s.joinedIds).toContain('u_martin');
   });
@@ -164,7 +164,7 @@ describe('applyDemoStep en modo auto', () => {
     const card = out.project.tasks.find((t) => t.id === 'card_webhook');
     expect(card.blocked).toBe(true);
     expect(card.comments.length).toBe(1);
-    expect(card.comments[0].author).toBe('Maie');
+    expect(card.comments[0].author).toBe('Maia');
     expect(out.project.actionLog).toHaveLength(1);
     expect(out.applied).toBe(true);
     expect(out.session.touchedIds).toContain('card_webhook');
@@ -274,31 +274,31 @@ describe('interpretHuddleLine', () => {
   beforeEach(() => {
     project = makeProject();
     session = createHuddleSession({ project, ritual: 'standup', mode: 'confirm', now: NOW, userId: HOST });
-    vi.mocked(maieChatModule.requestMaieChat).mockReset();
+    vi.mocked(maiaChatModule.requestMaiaChat).mockReset();
   });
 
-  it('pasa el historial a requestMaieChat como entradas { role, text }', async () => {
+  it('pasa el historial a requestMaiaChat como entradas { role, text }', async () => {
     const withThread = {
       ...session,
       transcript: [
         ...session.transcript,
         { role: 'user', speaker: 'Lucía Ríos', text: 'Fecho el QA', cardIds: [], at: NOW.toISOString() },
-        { role: 'maie', speaker: 'Maie', text: '¿De qué carta hablamos?', cardIds: [], at: NOW.toISOString() },
+        { role: 'maia', speaker: 'Maia', text: '¿De qué carta hablamos?', cardIds: [], at: NOW.toISOString() },
       ],
     };
-    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({ reply: 'Ok.', actions: [], source: 'llm' });
+    vi.mocked(maiaChatModule.requestMaiaChat).mockResolvedValue({ reply: 'Ok.', actions: [], source: 'llm' });
     await interpretHuddleLine({ project, session: withThread, userText: 'QA staging release', now: NOW });
 
-    const call = vi.mocked(maieChatModule.requestMaieChat).mock.calls[0][0];
+    const call = vi.mocked(maiaChatModule.requestMaiaChat).mock.calls[0][0];
     expect(call.inquiry.thread.every((t) => typeof t === 'object' && typeof t.role === 'string' && typeof t.text === 'string')).toBe(true);
-    expect(call.inquiry.thread.map((t) => t.role)).toEqual(expect.arrayContaining(['user', 'maie']));
+    expect(call.inquiry.thread.map((t) => t.role)).toEqual(expect.arrayContaining(['user', 'maia']));
     const userLine = call.inquiry.thread.find((t) => t.role === 'user');
     expect(userLine.text).toContain('Fecho el QA');
-    expect(call.inquiry.thread.some((t) => t.role === 'maie' && t.text.includes('¿De qué carta'))).toBe(true);
+    expect(call.inquiry.thread.some((t) => t.role === 'maia' && t.text.includes('¿De qué carta'))).toBe(true);
   });
 
   it('con source templated aplica el fallback contextual que reconoce la carta', async () => {
-    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({ reply: 'x', actions: [], source: 'templated' });
+    vi.mocked(maiaChatModule.requestMaiaChat).mockResolvedValue({ reply: 'x', actions: [], source: 'templated' });
     const out = await interpretHuddleLine({ project, session, userText: 'La carta QA staging release necesita fechas', now: NOW });
     expect(out.reply).toContain('QA staging release');
     expect(out.reply).not.toContain('¿Qué carta del tablero');

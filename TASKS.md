@@ -1,7 +1,7 @@
-# TASKS.md — Historia de trabajo (legado hasta Maie)
+# TASKS.md — Historia de trabajo (legado hasta Maia)
 
 Registro de lo **ya construido** (Kanban/Gantt, landing, collab simulada) y sus commits.
-**No es el plan de v1.** El producto ahora es Maie + huddle; el trabajo vivo está en
+**No es el plan de v1.** El producto ahora es Maia + huddle; el trabajo vivo está en
 `HANDOFF.md` contra `bot_requirements.md`.
 
 No implementar el P1/P2 de más abajo (export JSON, backend real, invitaciones, OAuth).

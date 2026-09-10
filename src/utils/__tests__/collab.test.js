@@ -94,7 +94,7 @@ describe('mergeProjects', () => {
     expect(sameProjectAs(project, first)).toBe(true);
   });
 
-  it('conserva el estado de Maie del documento más reciente (inquiries/actionLog/settings)', () => {
+  it('conserva el estado de Maia del documento más reciente (inquiries/actionLog/settings)', () => {
     const local = {
       ...baseProject,
       updatedAt: '2026-09-01T12:00:00.000Z',

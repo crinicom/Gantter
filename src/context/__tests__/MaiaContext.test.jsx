@@ -1,18 +1,18 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { MaieProvider, MaieContext } from '../MaieContext';
+import { MaiaProvider, MaiaContext } from '../MaiaContext';
 import * as useProjectModule from '../../hooks/useProject';
 import * as useAuthModule from '../../hooks/useAuth';
 import * as inquiryEngine from '../../services/inquiryEngine';
-import * as maieChatModule from '../../services/maieChat';
+import * as maiaChatModule from '../../services/maiaChat';
 
 vi.mock('../../hooks/useProject');
 vi.mock('../../hooks/useAuth');
 vi.mock('../../services/inquiryEngine');
-vi.mock('../../services/maieChat', async (importActual) => {
+vi.mock('../../services/maiaChat', async (importActual) => {
   const actual = await importActual();
-  return { ...actual, requestMaieChat: vi.fn() };
+  return { ...actual, requestMaiaChat: vi.fn() };
 });
 
 const snoozedInquiry = {
@@ -46,7 +46,7 @@ function makeProject(overrides = {}) {
 }
 
 function Consumer() {
-  const ctx = React.useContext(MaieContext);
+  const ctx = React.useContext(MaiaContext);
   if (!ctx) return null;
   return (
     <div>
@@ -58,7 +58,7 @@ function Consumer() {
   );
 }
 
-describe('MaieProvider hydration', () => {
+describe('MaiaProvider hydration', () => {
   beforeEach(() => {
     vi.mocked(inquiryEngine.scanInquiries).mockReturnValue({
       inquiries: [snoozedInquiry],
@@ -78,9 +78,9 @@ describe('MaieProvider hydration', () => {
   it('hidrata inquiries y actionLog desde el proyecto persistido', () => {
     setupProject(makeProject());
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Consumer />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     expect(screen.getByTestId('inquiry-count')).toHaveTextContent('1');
     expect(screen.getByTestId('inquiry-id')).toHaveTextContent('q_snoozed');
@@ -91,9 +91,9 @@ describe('MaieProvider hydration', () => {
   it('no genera nuevos ids ni regenera inquiries hidratadas', () => {
     setupProject(makeProject());
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Consumer />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     expect(inquiryEngine.scanInquiries).toHaveBeenCalledWith(
       expect.any(Object),
@@ -104,17 +104,17 @@ describe('MaieProvider hydration', () => {
 
   it('resetear al cambiar a proyecto null', () => {
     const { rerender } = render(
-      <MaieProvider>
+      <MaiaProvider>
         <Consumer />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     expect(screen.getByTestId('inquiry-count')).toHaveTextContent('1');
 
     setupProject(null);
     rerender(
-      <MaieProvider>
+      <MaiaProvider>
         <Consumer />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     expect(screen.getByTestId('inquiry-count')).toHaveTextContent('0');
     expect(screen.getByTestId('log-count')).toHaveTextContent('0');
@@ -186,12 +186,12 @@ function actionProject() {
 }
 
 function Harness({ project }) {
-  const ctx = React.useContext(MaieContext);
+  const ctx = React.useContext(MaiaContext);
   if (!ctx) return null;
   return (
     <div>
       <span data-testid="harness-ids">{ctx.inquiries.map((i) => i.id).join(',')}</span>
-      <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maie')}>
+      <button type="button" onClick={() => ctx.sendThreadMessage('q_a', 'Hola Maia')}>
         send
       </button>
       <button type="button" onClick={() => ctx.applyProposal('q_a', 'p_a1', 'confirm')}>
@@ -227,30 +227,30 @@ function runLastMutator(mutateProject) {
   return mutator(mockProjectFrom(actionProject()));
 }
 
-describe('MaieContext acciones del hilo', () => {
+describe('MaiaContext acciones del hilo', () => {
   beforeEach(() => {
     vi.mocked(useAuthModule.useAuth).mockReturnValue({ user: null });
     vi.mocked(inquiryEngine.scanInquiries).mockReturnValue({
       inquiries: [actionInquiry()],
       logEntries: [],
     });
-    vi.mocked(maieChatModule.requestMaieChat).mockResolvedValue({
+    vi.mocked(maiaChatModule.requestMaiaChat).mockResolvedValue({
       reply: 'Vamos a verlo.',
       actions: [],
     });
   });
 
-  it('en modo confirm el rescan NO aplica propuestas (Maie no muta sola)', () => {
+  it('en modo confirm el rescan NO aplica propuestas (Maia no muta sola)', () => {
     const { mutateProject } = mockSetup();
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     expect(mutateProject).not.toHaveBeenCalled();
   });
 
-  it('sendThreadMessage persiste el mensaje, deja chatting y la respuesta de Maie aterriza en el hilo', async () => {
+  it('sendThreadMessage persiste el mensaje, deja chatting y la respuesta de Maia aterriza en el hilo', async () => {
     let doc = mockProjectFrom(actionProject());
     const mutateProject = vi.fn((mutator) => {
       doc = mutator(doc);
@@ -262,9 +262,9 @@ describe('MaieContext acciones del hilo', () => {
       setSettings: vi.fn(),
     });
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
 
     fireEvent.click(screen.getByRole('button', { name: 'send' }));
@@ -275,30 +275,30 @@ describe('MaieContext acciones del hilo', () => {
     expect(doc.inquiries[0].thread[0]).toMatchObject({
       role: 'user',
       author: 'Lucía Ríos',
-      text: 'Hola Maie',
+      text: 'Hola Maia',
     });
     expect(doc.inquiries[0].thread[1]).toMatchObject({
-      role: 'maie',
-      author: 'Maie',
+      role: 'maia',
+      author: 'Maia',
       text: 'Vamos a verlo.',
     });
     expect(doc.inquiries[0].status).toBe('chatting');
-    expect(maieChatModule.requestMaieChat).toHaveBeenCalledWith(
-      expect.objectContaining({ userText: 'Hola Maie', inquiry: expect.objectContaining({ kind: 'unassigned' }) }),
+    expect(maiaChatModule.requestMaiaChat).toHaveBeenCalledWith(
+      expect.objectContaining({ userText: 'Hola Maia', inquiry: expect.objectContaining({ kind: 'unassigned' }) }),
     );
   });
 
   it('applyProposal aplica la acción, comenta la carta y registra el log source confirm', () => {
     const { mutateProject } = mockSetup();
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'aprobar' }));
     const next = runLastMutator(mutateProject);
     expect(next.tasks[0].assignedUsers.map((u) => u.id)).toEqual(['m_lucia']);
-    expect(next.tasks[0].comments[0]).toMatchObject({ author: 'Maie' });
+    expect(next.tasks[0].comments[0]).toMatchObject({ author: 'Maia' });
     expect(next.inquiries[0].proposals[0].status).toBe('applied');
     expect(next.actionLog[0]).toMatchObject({ source: 'confirm', cardId: 't1' });
   });
@@ -306,9 +306,9 @@ describe('MaieContext acciones del hilo', () => {
   it('dismissProposal marca descartada sin mutar tareas', () => {
     const { mutateProject } = mockSetup();
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'descartar' }));
     const next = runLastMutator(mutateProject);
@@ -319,9 +319,9 @@ describe('MaieContext acciones del hilo', () => {
   it('snoozeInquiry aparca hasta el próximo standup', () => {
     const { mutateProject } = mockSetup();
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     fireEvent.click(screen.getByRole('button', { name: 'snooze' }));
     const next = runLastMutator(mutateProject);
@@ -339,9 +339,9 @@ describe('MaieContext acciones del hilo', () => {
     });
     // El effect detecta la propuesta pending aplicable y aplica + log.
     render(
-      <MaieProvider>
+      <MaiaProvider>
         <Harness />
-      </MaieProvider>,
+      </MaiaProvider>,
     );
     const mutator = mutateProject.mock.calls[0][0];
     const next = mutator(mockProjectFrom(projectWithAuto));

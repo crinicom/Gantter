@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useProject } from '../../hooks/useProject';
-import { useMaie } from '../../context/MaieContext';
+import { useMaia } from '../../context/MaiaContext';
 import { collectSystemState, describeScreen } from '../../utils/systemState';
 import { feedbackService } from '../../services/feedbackService';
 
@@ -12,7 +12,7 @@ const TYPE_LABELS = { error: 'Error', sugerencia: 'Sugerencia', comentario: 'Com
 export default function FeedbackButton() {
   const { user, isAuthenticated } = useAuth();
   const { project, syncStatus, lastSyncAt } = useProject();
-  const { applyMode, staleDays, openCount } = useMaie();
+  const { applyMode, staleDays, openCount } = useMaia();
 
   const [open, setOpen] = useState(false);
   const [type, setType] = useState('comentario');

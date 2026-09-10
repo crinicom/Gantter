@@ -6,7 +6,7 @@ import SyncStatusBanner from './SyncStatusBanner';
 import BoardView from '../board/BoardView';
 import GanttView from '../gantt/GanttView';
 import ProjectsLanding from '../projects/ProjectsLanding';
-import MaiePanel from '../maie/MaiePanel';
+import MaiaPanel from '../maia/MaiaPanel';
 import HuddleSessionBar from '../huddle/HuddleSessionBar';
 
 export default function AppShell() {
@@ -39,7 +39,7 @@ export default function AppShell() {
         <main className="flex-1 overflow-auto p-4">
           {activeView === VIEWS.BOARD ? <BoardView /> : <GanttView />}
         </main>
-        <MaiePanel />
+        <MaiaPanel />
       </div>
     </div>
   );

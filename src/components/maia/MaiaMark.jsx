@@ -1,9 +1,9 @@
-// Marca de Maie (§14): monograma "M" geométrico sobre un arco de escucha.
+// Marca de Maia (§14): monograma "M" geométrico sobre un arco de escucha.
 // Bosque sobre fondo claro, sin cara ni emoji.
 
 import React from 'react';
 
-export default function MaieMark({ size = 34 }) {
+export default function MaiaMark({ size = 34 }) {
   return (
     <span
       className="relative inline-flex shrink-0 items-center justify-center rounded-xl bg-forest-600"

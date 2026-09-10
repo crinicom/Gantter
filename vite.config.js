@@ -50,7 +50,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src'),
-      '@maie': resolve(__dirname, 'maie'),
+      '@maia': resolve(__dirname, 'maia'),
     },
   },
   server: {

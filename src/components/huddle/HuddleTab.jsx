@@ -1,15 +1,15 @@
-// Pestaña Huddle del panel de Maie (§10): transcript de la sesión con speaker y
+// Pestaña Huddle del panel de Maia (§10): transcript de la sesión con speaker y
 // hora, cartas mencionadas, propuestas sí/no del demo (modo confirmar) y la
-// línea de texto del usuario interpretada por Maie (mismo path LLM del chat).
+// línea de texto del usuario interpretada por Maia (mismo path LLM del chat).
 
 import React, { useEffect, useRef, useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Pause, Play, X } from 'lucide-react';
-import { useMaie } from '../../context/MaieContext';
+import { useMaia } from '../../context/MaiaContext';
 import { useAuth } from '../../hooks/useAuth';
 import { ACTIVE_USER } from '../../constants/project';
-import { HUDDLE_RITUALS, PROPOSAL_STATUS } from '../../constants/maie';
+import { HUDDLE_RITUALS, PROPOSAL_STATUS } from '../../constants/maia';
 
 function ritualLabel(id) {
   return HUDDLE_RITUALS.find((r) => r.id === id)?.label || id || 'Huddle';
@@ -72,7 +72,7 @@ function ProposalRow({ proposal, onResolve }) {
 }
 
 function EmptyState() {
-  const { startHuddle } = useMaie();
+  const { startHuddle } = useMaia();
   return (
     <div className="px-4 py-6">
       <p className="text-sm text-ink">
@@ -104,7 +104,7 @@ function EmptyState() {
 }
 
 export default function HuddleTab() {
-  const { huddle, demoStatus, sendHuddleLine, resolveHuddleProposal, stopHuddle, toggleDemo, maieReplying } = useMaie();
+  const { huddle, demoStatus, sendHuddleLine, resolveHuddleProposal, stopHuddle, toggleDemo, maiaReplying } = useMaia();
   const { user } = useAuth();
   const activeUser = user || ACTIVE_USER;
   const [draft, setDraft] = useState('');
@@ -163,16 +163,16 @@ export default function HuddleTab() {
               >
                 <p className="whitespace-pre-wrap">{line.text}</p>
                 <p className="mt-0.5 text-[11px] text-muted">
-                  {line.role === 'maie' ? 'Maie' : line.speaker || 'Equipo'} · {time(line.at)}
+                  {line.role === 'maia' ? 'Maia' : line.speaker || 'Equipo'} · {time(line.at)}
                 </p>
               </div>
             </div>
           );
         })}
-        {maieReplying && (
+        {maiaReplying && (
           <div className="flex justify-start">
             <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm text-muted">
-              Maie está pensando…
+              Maia está pensando…
             </div>
           </div>
         )}

@@ -7,7 +7,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import { findOverlaps } from '../utils/ganttSchedule';
-import { INQUIRY_KINDS, WORKING_COLUMNS, MAIE_DEFAULTS, PROPOSAL_STATUS } from '../constants/maie';
+import { INQUIRY_KINDS, WORKING_COLUMNS, MAIA_DEFAULTS, PROPOSAL_STATUS } from '../constants/maia';
 import { TASK_STATUS } from '../constants/project';
 
 function normColumnTitle(title) {
@@ -89,7 +89,7 @@ function nearMilestone(project, now, windowDays) {
 }
 
 function staleDaysOf(project) {
-  return project?.settings?.staleDays ?? MAIE_DEFAULTS.staleDays;
+  return project?.settings?.staleDays ?? MAIA_DEFAULTS.staleDays;
 }
 
 function workingDueTime(task, project, now) {
@@ -177,7 +177,7 @@ export function defaultProposalsFor(project, inquiry, { now = new Date() } = {})
       break;
     }
     case INQUIRY_KINDS.MISSING_DATE: {
-      const windowDays = project?.settings?.milestoneWindowDays ?? MAIE_DEFAULTS.milestoneWindowDays;
+      const windowDays = project?.settings?.milestoneWindowDays ?? MAIA_DEFAULTS.milestoneWindowDays;
       const milestone = nearMilestone(project, now, windowDays);
       if (milestone && !task.startDate) {
         proposals.push(

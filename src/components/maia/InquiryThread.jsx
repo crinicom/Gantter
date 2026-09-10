@@ -1,18 +1,18 @@
-// Hilo de una pregunta de Maie (§7 Click → chat, §8 catálogo, §9 propuestas
+// Hilo de una pregunta de Maia (§7 Click → chat, §8 catálogo, §9 propuestas
 // por modo, §11 LLM + fallback templated). Enviar mensaje persiste en el hilo,
-// deja la pregunta en "chatting" y pide la respuesta a Maie; mientras espera la
-// llamada se muestra "Maie está pensando…". Las propuestas (catálogo o del LLM)
+// deja la pregunta en "chatting" y pide la respuesta a Maia; mientras espera la
+// llamada se muestra "Maia está pensando…". Las propuestas (catálogo o del LLM)
 // se aplican en modo confirmar (Sí/No) o auto (aplicar + registro).
 
 import React, { useEffect, useRef, useState } from 'react';
-import { useMaie } from '../../context/MaieContext';
+import { useMaia } from '../../context/MaiaContext';
 import { useAuth } from '../../hooks/useAuth';
 import { ACTIVE_USER } from '../../constants/project';
-import { INQUIRY_KIND_META, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maie';
-import MaieMark from './MaieMark';
+import { INQUIRY_KIND_META, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maia';
+import MaiaMark from './MaiaMark';
 
 // P1 de la review del slice 5/6: rechazar una propuesta no corta la charla.
-// Maie sigue la pregunta ("la pregunta sigue", §17.4) para entender qué hacer.
+// Maia sigue la pregunta ("la pregunta sigue", §17.4) para entender qué hacer.
 const DECLINE_FOLLOW_UP = 'No por ahora. ¿Qué habría que hacer entonces?';
 
 function kindTone(kind) {
@@ -20,7 +20,7 @@ function kindTone(kind) {
 }
 
 function ProposalRow({ inquiry, proposal, applyMode }) {
-  const { applyProposal, dismissProposal, sendThreadMessage } = useMaie();
+  const { applyProposal, dismissProposal, sendThreadMessage } = useMaia();
   const st = proposal.status;
 
   if (st === PROPOSAL_STATUS.APPLIED) {
@@ -42,7 +42,7 @@ function ProposalRow({ inquiry, proposal, applyMode }) {
   if (proposal.needsInput) {
     return (
       <div className="rounded-md border border-gray-200 bg-surface px-3 py-2 text-sm text-muted">
-        {proposal.label} — se completa conversando con Maie.
+        {proposal.label} — se completa conversando con Maia.
       </div>
     );
   }
@@ -84,13 +84,13 @@ function ProposalRow({ inquiry, proposal, applyMode }) {
 }
 
 function bubbleTone(role) {
-  return role === 'maie'
+  return role === 'maia'
     ? 'border border-gray-200 bg-surface text-ink'
     : 'bg-forest-600 text-paper';
 }
 
 export default function InquiryThread({ inquiryId, onClose }) {
-  const { inquiries, applyMode, sendThreadMessage, snoozeInquiry, maieReplying } = useMaie();
+  const { inquiries, applyMode, sendThreadMessage, snoozeInquiry, maiaReplying } = useMaia();
   const { user } = useAuth();
   const activeUser = user || ACTIVE_USER;
   const [draft, setDraft] = useState('');
@@ -129,9 +129,9 @@ export default function InquiryThread({ inquiryId, onClose }) {
         >
           ←
         </button>
-        <MaieMark />
+        <MaiaMark />
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-ink">Pregunta de Maie</h3>
+          <h3 className="truncate text-sm font-medium text-ink">Pregunta de Maia</h3>
           <p className="text-xs text-muted">
             {INQUIRY_KIND_META[inquiry.kind]?.label || inquiry.kind}
             {inquiry.status === INQUIRY_STATUS.CHATTING ? ' · En diálogo' : ''}
@@ -146,19 +146,19 @@ export default function InquiryThread({ inquiryId, onClose }) {
         </article>
 
         {(inquiry.thread || []).map((m) => (
-          <div key={m.id} className={m.role === 'maie' ? 'flex justify-start' : 'flex justify-end'}>
+          <div key={m.id} className={m.role === 'maia' ? 'flex justify-start' : 'flex justify-end'}>
             <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${bubbleTone(m.role)}`}>
               <p className="whitespace-pre-wrap">{m.text}</p>
-              <p className={`mt-0.5 text-[11px] ${m.role === 'maie' ? 'text-muted' : 'text-paper/80'}`}>
-                {(m.role === 'maie' ? 'Maie' : m.author || activeUser.name) || ''}
+              <p className={`mt-0.5 text-[11px] ${m.role === 'maia' ? 'text-muted' : 'text-paper/80'}`}>
+                {(m.role === 'maia' ? 'Maia' : m.author || activeUser.name) || ''}
               </p>
             </div>
           </div>
         ))}
-        {maieReplying && (
+        {maiaReplying && (
           <div className="flex justify-start">
             <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm text-muted">
-              Maie está pensando…
+              Maia está pensando…
             </div>
           </div>
         )}

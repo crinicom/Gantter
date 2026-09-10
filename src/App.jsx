@@ -1,7 +1,7 @@
 import React from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
-import { MaieProvider } from './context/MaieContext';
+import { MaiaProvider } from './context/MaiaContext';
 import ProtectedLayout from './components/auth/ProtectedLayout';
 import AppShell from './components/layout/AppShell';
 import ErrorBoundary from './components/common/ErrorBoundary';
@@ -12,12 +12,12 @@ export default function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ProjectProvider>
-          <MaieProvider>
+          <MaiaProvider>
             <ProtectedLayout>
               <AppShell />
             </ProtectedLayout>
             <FeedbackButton />
-          </MaieProvider>
+          </MaiaProvider>
         </ProjectProvider>
       </AuthProvider>
     </ErrorBoundary>

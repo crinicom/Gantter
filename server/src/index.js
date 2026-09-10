@@ -9,7 +9,7 @@ import projectRoutes from './routes/projects.js';
 import inviteRoutes from './routes/invites.js';
 import realtimeRoutes from './routes/realtime.js';
 import feedbackRoutes from './routes/feedback.js';
-import maieRoutes from './routes/maie.js';
+import maiaRoutes from './routes/maia.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -27,7 +27,7 @@ app.use('/api', projectRoutes);
 app.use('/api', inviteRoutes);
 app.use('/api', realtimeRoutes);
 app.use('/api', feedbackRoutes);
-app.use('/api', maieRoutes);
+app.use('/api', maiaRoutes);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 

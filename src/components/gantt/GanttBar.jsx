@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { dateRangePx, GANTT } from './ganttLayout';
 import { TASK_STATUS } from '../../constants/project';
 import { clampProgress } from '../../utils/progress';
-import { useHuddleHighlights } from '../../context/MaieContext';
+import { useHuddleHighlights } from '../../context/MaiaContext';
 
 export default function GanttBar({ task, startDate, isCritical, overlapped = false }) {
   // Las cartas sin rango completo viven en el canal "Sin fechas"; no se dibuja una barra.

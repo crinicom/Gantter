@@ -1,16 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { INQUIRY_KINDS } from '../../constants/maie';
+import { INQUIRY_KINDS } from '../../constants/maia';
 import { collectTokens, renderPrompt, sectionText } from '../../utils/renderPrompt';
-import thinTemplate from '@maie/templates/thin.md?raw';
-import unassignedTemplate from '@maie/templates/unassigned.md?raw';
-import staleTemplate from '@maie/templates/stale.md?raw';
-import missingDateTemplate from '@maie/templates/missing-date.md?raw';
-import overlapTemplate from '@maie/templates/overlap.md?raw';
-import genericTemplate from '@maie/templates/generic.md?raw';
-import welcomeMd from '@maie/huddle/welcome.md?raw';
-import replyMd from '@maie/huddle/reply.md?raw';
-import demoMd from '@maie/huddle/demo.md?raw';
-import recapMd from '@maie/huddle/recap.md?raw';
+import thinTemplate from '@maia/templates/thin.md?raw';
+import unassignedTemplate from '@maia/templates/unassigned.md?raw';
+import staleTemplate from '@maia/templates/stale.md?raw';
+import missingDateTemplate from '@maia/templates/missing-date.md?raw';
+import overlapTemplate from '@maia/templates/overlap.md?raw';
+import genericTemplate from '@maia/templates/generic.md?raw';
+import welcomeMd from '@maia/huddle/welcome.md?raw';
+import replyMd from '@maia/huddle/reply.md?raw';
+import demoMd from '@maia/huddle/demo.md?raw';
+import recapMd from '@maia/huddle/recap.md?raw';
 
 const KIND_TEMPLATES = {
   [INQUIRY_KINDS.THIN]: thinTemplate,
@@ -20,7 +20,7 @@ const KIND_TEMPLATES = {
   [INQUIRY_KINDS.OVERLAP]: overlapTemplate,
 };
 
-describe('templates de Maie (markdown configurable)', () => {
+describe('templates de Maia (markdown configurable)', () => {
   it('cada kind (y el genérico) declara los tokens que su código le pasa', () => {
     const byKind = {
       [INQUIRY_KINDS.THIN]: ['title'],

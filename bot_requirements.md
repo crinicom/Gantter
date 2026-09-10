@@ -1,6 +1,6 @@
 # Gantter — Requirements
 
-Producto: tablero Kanban + vista Gantt + facilitadora socrática (Maie) con huddle in-app.
+Producto: tablero Kanban + vista Gantt + facilitadora socrática (Maia) con huddle in-app.
 
 Este archivo es la fuente de verdad para implementar. No inventar features fuera de acá. Lo que está en **v2** no se construye ahora.
 
@@ -15,7 +15,7 @@ Gantter no es un clon de Trello con un notetaker pegado. Es **un Scrum Master / 
 Los notetakers (Otter, Tactiq, tl;dv, Fireflies) transcriben la call y *después* tiran action items a Jira. Gantter invierte el flujo:
 
 - El tablero es la fuente de verdad **durante** la reunión.
-- Maie interpela con evidencia del tablero (cartas flacas, sin dueño, estancadas, Gantt en riesgo).
+- Maia interpela con evidencia del tablero (cartas flacas, sin dueño, estancadas, Gantt en riesgo).
 - Lo que se dice en el huddle se propone como cambio concreto sobre cartas.
 - Nada queda en un Google Doc paralelo.
 
@@ -27,7 +27,7 @@ La feature de marketing no es “transcripción”. Es: **el tablero queda más 
 
 | # | Decisión | Valor |
 |---|---|---|
-| 1 | Dónde habla Maie | Solo en Gantter. Nunca por voz en un canal de audio. |
+| 1 | Dónde habla Maia | Solo en Gantter. Nunca por voz en un canal de audio. |
 | 2 | Cómo se responde | Click en la pregunta → se abre chat en el mismo panel. |
 | 3 | Reunión | Huddle propio in-app. No bot de Zoom/Meet en v1. |
 | 4 | Tono | Método socrático. Indagación, no órdenes ni scoring de personas. |
@@ -41,13 +41,13 @@ La feature de marketing no es “transcripción”. Es: **el tablero queda más 
 
 ### Equipo (usuarios)
 
-Gente que mueve trabajo en un tablero: PM, diseño, ingeniería, QA. Entran al tablero, miran Kanban o Gantt, responden a Maie, abren huddles cortos.
+Gente que mueve trabajo en un tablero: PM, diseño, ingeniería, QA. Entran al tablero, miran Kanban o Gantt, responden a Maia, abren huddles cortos.
 
 El usuario activo del MVP se presenta como un miembro del equipo (p. ej. Lucía, PM). No hace falta auth real en v1: identidad demo local, con un equipo seed.
 
-### Maie (facilitadora)
+### Maia (facilitadora)
 
-- Nombre: **Maie** (de *mayéutica*).
+- Nombre: **Maia** (de *mayéutica*).
 - Rol: partera del trabajo. No da lecciones. Pregunta para que el equipo descubra qué le falta a una carta.
 - Habla español rioplatense, breve (2–4 oraciones).
 - Nunca usa emoji.
@@ -64,7 +64,7 @@ Gantter
       ├── Miembros
       ├── Columnas Kanban
       ├── Cartas (las mismas en Kanban y Gantt)
-      ├── Maie
+      ├── Maia
       │    ├── Preguntas (interpelaciones)
       │    ├── Chat por pregunta
       │    ├── Propuestas sí/no (modo confirmar)
@@ -73,7 +73,7 @@ Gantter
 ```
 
 - Home: lista de proyectos del equipo, con un semáforo de higiene (cantidad de preguntas abiertas).
-- Entrar a un proyecto: tablero + panel de Maie siempre visible en desktop.
+- Entrar a un proyecto: tablero + panel de Maia siempre visible en desktop.
 - Un proyecto = un tablero. No hay tablero de portafolio en v1.
 
 ---
@@ -95,9 +95,9 @@ Interacciones:
 - Drag & drop entre columnas
 - Click abre detalle: título, descripción, responsables, fechas inicio/fin, bloqueada + motivo, comentarios
 - Crear carta desde la columna
-- Comentarios de personas y de Maie (Maie se distingue con su marca, no con un avatar de humano)
+- Comentarios de personas y de Maia (Maia se distingue con su marca, no con un avatar de humano)
 
-WIP: si la columna En curso tiene límite y se excede, Maie puede preguntar, pero el WIP no bloquea el drop (Kanban informa, no policial).
+WIP: si la columna En curso tiene límite y se excede, Maia puede preguntar, pero el WIP no bloquea el drop (Kanban informa, no policial).
 
 ---
 
@@ -112,28 +112,28 @@ Las **mismas cartas**. No hay entidades distintas “tarea Gantt”.
 - Color de barra por responsable (paleta de tierra, baja croma)
 - Click en barra abre el mismo detalle de carta
 - Cartas **sin fechas** viven en un canal aparte “Sin fechas”, no se inventa una barra
-- Overlap: si un mismo responsable tiene barras que se pisan, se marca visualmente (anillo o patrón), y Maie puede preguntar
+- Overlap: si un mismo responsable tiene barras que se pisan, se marca visualmente (anillo o patrón), y Maia puede preguntar
 - Hitos cercanos (p. ej. go-live) se ven en el header del timeline
 
 En v1 el Gantt es sobre todo de lectura + click. Arrastrar barras para cambiar fechas es deseable si sale barato; no es bloqueante del MVP.
 
-El Kanban y el Gantt se conmutan desde el chrome del proyecto. Cambiar de vista no pierde el panel de Maie ni el huddle activo.
+El Kanban y el Gantt se conmutan desde el chrome del proyecto. Cambiar de vista no pierde el panel de Maia ni el huddle activo.
 
 ---
 
-## 7. Panel de Maie (siempre visible)
+## 7. Panel de Maia (siempre visible)
 
 Desktop: dock derecho ~360px, no se cierra durante una sesión de tablero.
 
-Mobile: no comprimir el tablero. Maie va a una pestaña o bottom sheet, con badge de preguntas abiertas.
+Mobile: no comprimir el tablero. Maia va a una pestaña o bottom sheet, con badge de preguntas abiertas.
 
 ### Capas del panel (no tres apps)
 
 1. **Preguntas** — interpelaciones abiertas, una tarjeta por pregunta.
 2. **Huddle** — transcript vivo cuando hay sesión.
-3. **Registro** — log de acciones de Maie (auto y confirmadas).
+3. **Registro** — log de acciones de Maia (auto y confirmadas).
 
-Header del panel: marca de Maie + nombre + rol “Facilitadora” + contador de preguntas abiertas.
+Header del panel: marca de Maia + nombre + rol “Facilitadora” + contador de preguntas abiertas.
 
 ### Click → chat
 
@@ -143,10 +143,10 @@ Click en la pregunta:
 
 - Se abre el hilo de esa pregunta, no un chat global.
 - Input abajo para responder como el usuario activo.
-- Maie responde en el hilo (socrática).
-- Si hay suficiente información para un cambio concreto, Maie propone acciones según el modo del tablero (ver §9).
+- Maia responde en el hilo (socrática).
+- Si hay suficiente información para un cambio concreto, Maia propone acciones según el modo del tablero (ver §9).
 
-No hay un chat general con Maie desanclado de una pregunta, salvo un campo corto “preguntarle a Maie por el tablero” que crea un hilo ad-hoc. Prioridad: hilos anclados a cartas/preguntas.
+No hay un chat general con Maia desanclado de una pregunta, salvo un campo corto “preguntarle a Maia por el tablero” que crea un hilo ad-hoc. Prioridad: hilos anclados a cartas/preguntas.
 
 Snooze: “recordame en el próximo standup”. No un snooze abstracto de 3 días sin contexto.
 
@@ -189,7 +189,7 @@ Visible, no enterrado: un control en el chrome del tablero o en settings del pro
 
 ### Modo confirmar
 
-Maie nunca muta el tablero sola.
+Maia nunca muta el tablero sola.
 
 Cada propuesta se ve como una fila:
 
@@ -197,13 +197,13 @@ Cada propuesta se ve como una fila:
 > [Sí] [No]
 
 - Sí → aplica, comenta la carta con el quote/razón, escribe el log, resuelve o actualiza la pregunta.
-- No → no aplica. Maie pregunta una sola vez más: “¿Qué habría que hacer entonces?” Si tampoco hay cambio, queda abierta o se snoozea. No insistir en loop.
+- No → no aplica. Maia pregunta una sola vez más: “¿Qué habría que hacer entonces?” Si tampoco hay cambio, queda abierta o se snoozea. No insistir en loop.
 
 ### Modo auto
 
-Maie aplica el cambio obvio y **siempre** deja:
+Maia aplica el cambio obvio y **siempre** deja:
 
-1. Un comentario en la carta (voz de Maie, con la evidencia).
+1. Un comentario en la carta (voz de Maia, con la evidencia).
 2. Una entrada en el **log de acciones** del panel (timestamp, resumen, carta, origen `auto`).
 
 El log es visible e irreversible en el sentido de auditoría: se puede deshacer el cambio a mano en el tablero, pero el log no se borra.
@@ -220,7 +220,7 @@ No es Zoom. Es una sesión in-app sobre el tablero actual.
 
 Desde el chrome: **Abrir huddle**. Se elige el ritual:
 
-| Ritual | Prioridad de Maie |
+| Ritual | Prioridad de Maia |
 |---|---|
 | Standup / walk the board | Blockers, estancadas, sin dueño |
 | Refinamiento | Cartas flacas, splits, criterios |
@@ -232,14 +232,14 @@ Desde el chrome: **Abrir huddle**. Se elige el ritual:
 - Barra persistente de sesión (quién está, ritual, timer, terminar).
 - En el panel, tab **Huddle**: transcript con speaker, timestamp, texto.
 - Las cartas mencionadas se iluminan en Kanban/Gantt.
-- Maie **no habla por audio**. Solo escribe en el panel, anclada a preguntas/propuestas.
+- Maia **no habla por audio**. Solo escribe en el panel, anclada a preguntas/propuestas.
 
 ### Cómo entra el habla (v1)
 
 Dos entradas, las dos válidas:
 
-1. **Demo de standup** (obligatoria para que el producto se entienda en 60 segundos). Reproduce un guion del equipo seed. Maie reacciona en vivo: aparecen preguntas y sí/no (o auto-aplica). Las cartas se mueven de verdad. Al cerrar, Maie pregunta: “Antes de cortar, ¿qué de todo esto queda sin dueño?”
-2. **Texto del usuario** como si hablara en el huddle (el usuario activo escribe una línea). Maie la interpreta contra el tablero.
+1. **Demo de standup** (obligatoria para que el producto se entienda en 60 segundos). Reproduce un guion del equipo seed. Maia reacciona en vivo: aparecen preguntas y sí/no (o auto-aplica). Las cartas se mueven de verdad. Al cerrar, Maia pregunta: “Antes de cortar, ¿qué de todo esto queda sin dueño?”
+2. **Texto del usuario** como si hablara en el huddle (el usuario activo escribe una línea). Maia la interpreta contra el tablero.
 
 Micrófono / Web Speech es extra, no bloquea v1. Si está, se trata como otra línea de transcript del usuario activo.
 
@@ -247,7 +247,7 @@ Micrófono / Web Speech es extra, no bloquea v1. Si está, se trata como otra l�
 
 Al terminar el huddle:
 
-- Recap corto de Maie: decisiones, propuestas pendientes, cartas que se mencionaron y no se tocaron.
+- Recap corto de Maia: decisiones, propuestas pendientes, cartas que se mencionaron y no se tocaron.
 - Las propuestas no confirmadas siguen en Preguntas, no se tiran.
 - El transcript queda guardado en el proyecto y se puede reabrir (lectura).
 
@@ -280,7 +280,7 @@ Nunca en page load, nunca por tecla, nunca en loop.
 
 System prompt (intención, no texto sagrado):
 
-- Sos Maie, facilitadora socrática de Gantter.
+- Sos Maia, facilitadora socrática de Gantter.
 - Trabajás sobre un tablero Kanban + Gantt que te pasan como contexto (cartas relevantes, miembros, fechas, modo auto/confirm).
 - No das órdenes. Preguntás. 2–4 oraciones, español rioplatense, sin emoji.
 - Si el usuario ya dio un dato accionable, devolvé acciones concretas (ids reales de cartas y miembros).
@@ -377,7 +377,7 @@ Hito visible en Gantt: go-live del portal, ~7 días desde “hoy”.
 
 ### Proyecto 2 — App móvil v2 (equipo Costa)
 
-Pocas cartas, casi todas sanas. Sirve para cambiar de tablero y ver a Maie en silencio (o con 0–1 pregunta).
+Pocas cartas, casi todas sanas. Sirve para cambiar de tablero y ver a Maia en silencio (o con 0–1 pregunta).
 
 Debe haber un **reset a datos demo** en settings, para volver a este estado.
 
@@ -385,7 +385,7 @@ Debe haber un **reset a datos demo** en settings, para volver a este estado.
 
 ## 14. UI / marca
 
-Nombre: **Gantter**. Facilitadora: **Maie**.
+Nombre: **Gantter**. Facilitadora: **Maia**.
 
 Dirección visual: estudio de facilitación, editorial, papel cálido. No SaaS violeta. No neon. No emoji en chrome.
 
@@ -395,17 +395,17 @@ Paleta (tokens, no hex suelto en JSX):
 - Superficie: `#F7F3EC` / `#FFFCF8`
 - Tinta: `#1A1814`
 - Muted: `#6F6A62`
-- Acento único: bosque `#2B4D42` (botones primarios, Maie, foco)
+- Acento único: bosque `#2B4D42` (botones primarios, Maia, foco)
 - Semántica (solo badges chicos): rust para stale/blocked, bosque para ok
 
 Tipografía: una display serif humana (p. ej. Fraunces) para nombre/títulos + una sans para UI (p. ej. Figtree). Máximo 2 familias.
 
-Maie tiene una marca geométrica (monograma / arco de escucha), no una cara fotoreal ni un emoji.
+Maia tiene una marca geométrica (monograma / arco de escucha), no una cara fotoreal ni un emoji.
 
-Desktop: tablero | Gantt ocupan el centro; Maie no se puede “perder”.  
-Mobile (~390): tabs Tablero / Gantt / Maie; targets ≥ 44px; sin overflow horizontal.
+Desktop: tablero | Gantt ocupan el centro; Maia no se puede “perder”.  
+Mobile (~390): tabs Tablero / Gantt / Maia; targets ≥ 44px; sin overflow horizontal.
 
-Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir huddle, Sí, No, Preguntar a Maie, Aplicar y dejar registro.
+Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir huddle, Sí, No, Preguntar a Maia, Aplicar y dejar registro.
 
 ---
 
@@ -416,7 +416,7 @@ Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir hu
 1. Home con ≥2 proyectos.
 2. Kanban usable (crear, mover, asignar, fechas, bloquear, comentar).
 3. Gantt de las mismas cartas, con hoy, overlaps y canal “sin fechas”.
-4. Panel Maie con las 5 interpelaciones reales sobre el seed.
+4. Panel Maia con las 5 interpelaciones reales sobre el seed.
 5. Click en pregunta → chat. LLM si hay key; si no, fallback templated.
 6. Setting auto vs confirmar, visible, persiste por proyecto.
 7. Log de acciones.
@@ -428,7 +428,7 @@ Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir hu
 
 - Facilitador de portafolio (multi-tablero, hitos de empresa).
 - Bot que entra a Zoom / Meet / Teams.
-- Voz de Maie en un canal de audio / TTS.
+- Voz de Maia en un canal de audio / TTS.
 - Video in-app (el huddle es transcript + presencia, no camera grid).
 - Auth, billing, invitaciones, SSO.
 - Scoring de “quién habla mal” o coaching de oratoria.
@@ -440,11 +440,11 @@ Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir hu
 
 ## 16. Lo que no se hace (nunca, o no sin decisión nueva)
 
-- Maie hablando por el micrófono de una call.
+- Maia hablando por el micrófono de una call.
 - Interpelar en público la productividad de una persona.
 - Transcripción como feature de portada.
 - Un documento de notas desconectado del tablero como destino final.
-- Modo “Maie callada con badges rojos”. Si no puede preguntar, no existe.
+- Modo “Maia callada con badges rojos”. Si no puede preguntar, no existe.
 
 ---
 
@@ -452,13 +452,13 @@ Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir hu
 
 Una persona que no leyó este archivo tiene que poder:
 
-1. Abrir Gantter y ver el proyecto **Portal de clientes** con cartas sucias y Maie ya preguntando (sin haber tocado un LLM).
+1. Abrir Gantter y ver el proyecto **Portal de clientes** con cartas sucias y Maia ya preguntando (sin haber tocado un LLM).
 2. Cambiar a Gantt y ver barras, hoy, un overlap de Martín y cartas sin fechas.
-3. Clickear una pregunta de Maie, responder en el chat, ver una propuesta.
+3. Clickear una pregunta de Maia, responder en el chat, ver una propuesta.
 4. En modo confirmar: Sí aplica y la carta cambia; No no aplica y queda log de la negativa o la pregunta sigue.
 5. Pasar a modo auto, reproducir el **standup demo**, ver transcript, ver cartas que se asignan/bloquean/fechan solas, y abrir el **registro**.
-6. Cambiar al proyecto **App móvil v2** y notar que Maie no arrastra el ruido del otro tablero.
-7. En ~390px de ancho, usar Tablero / Gantt / Maie sin scroll horizontal ni controles de 20px.
+6. Cambiar al proyecto **App móvil v2** y notar que Maia no arrastra el ruido del otro tablero.
+7. En ~390px de ancho, usar Tablero / Gantt / Maia sin scroll horizontal ni controles de 20px.
 
 Si el huddle demo no mueve el tablero, el producto no está.
 
@@ -466,13 +466,13 @@ Si el huddle demo no mueve el tablero, el producto no está.
 
 ## 18. Notas para quien implemente
 
-- Un tablero por proyecto significa: el store de Maie, el huddle y el log son **por proyecto**. Cambiar de proyecto desmonta el huddle activo (o lo deja asociado a ese id, no se mezcla el transcript).
-- Re-scan de preguntas después de cada mutación, incluyendo las que hace Maie.
-- Toda mutación de Maie escribe comentario en la carta + log. Sin excepciones en modo auto. En confirmar, el comentario se escribe al Sí.
+- Un tablero por proyecto significa: el store de Maia, el huddle y el log son **por proyecto**. Cambiar de proyecto desmonta el huddle activo (o lo deja asociado a ese id, no se mezcla el transcript).
+- Re-scan de preguntas después de cada mutación, incluyendo las que hace Maia.
+- Toda mutación de Maia escribe comentario en la carta + log. Sin excepciones en modo auto. En confirmar, el comentario se escribe al Sí.
 - El usuario activo (Lucía) es quien firma los mensajes de chat y las líneas de huddle escritas a mano.
 - Idioma de UI: español. IDs internos en inglés (`thin`, `stale`, etc.).
 - No agregar auth, DB ni rutas de login “por si acaso”.
-- Gantter es el nombre del producto. Maie es el personaje. No renombrar a “Asistente IA”.
+- Gantter es el nombre del producto. Maia es el personaje. No renombrar a “Asistente IA”.
 
 ---
 
