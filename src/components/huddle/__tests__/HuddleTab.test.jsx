@@ -223,4 +223,33 @@ describe('HuddleTab micrófono (feature-detect)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Dejar de escuchar' }));
     expect(FakeSpeechRecognition.stopped).toBe(1);
   });
+
+  it('el corte del navegador re-escucha sin volver a tocar el botón', async () => {
+    window.SpeechRecognition = FakeSpeechRecognition;
+    renderTab({ huddle: session({ pending: [] }), submitHuddleMicLine: vi.fn() });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escuchar reunión' }));
+    expect(FakeSpeechRecognition.started).toBe(1);
+
+    const rec1 = FakeSpeechRecognition.instances[0];
+    await act(async () => {
+      rec1.onend();
+    });
+    expect(FakeSpeechRecognition.started).toBe(2);
+    expect(screen.getByRole('button', { name: 'Dejar de escuchar' })).toBeInTheDocument();
+  });
+
+  it('un stop manual corta y no vuelve a escuchar', async () => {
+    window.SpeechRecognition = FakeSpeechRecognition;
+    renderTab({ huddle: session({ pending: [] }) });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Escuchar reunión' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Dejar de escuchar' }));
+
+    const rec1 = FakeSpeechRecognition.instances[0];
+    await act(async () => {
+      rec1.onend();
+    });
+    expect(FakeSpeechRecognition.started).toBe(1);
+  });
 });

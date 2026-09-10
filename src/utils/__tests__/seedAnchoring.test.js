@@ -66,12 +66,11 @@ describe('reanchorSeedDates', () => {
   it('desplaza timestamps de actividad y comentarios', () => {
     const out = reanchorSeedDates(fullProject(), { anchorCardId: 'card_go_live', daysAhead: 7 });
     const hito = out.cards.find((c) => c.id === 'card_go_live');
-    // El delta aplicado al timestamp es el mismo delta calendario del hito.
+    // El delta aplicado al timestamp es el mismo delta calendario del hito. Se
+    // compara contra el mismo addDays (días de calendario en hora local) para no
+    // asumir días de exactamente 24 h cuando el TZ cruza un cambio de horario.
     const delta = differenceInCalendarDays(parseISO(hito.endDate), parseISO('2026-09-12'));
-    expect(
-      new Date(hito.lastActivityAt).getTime() -
-      new Date('2026-09-01T09:00:00.000Z').getTime(),
-    ).toBe(delta * DAY);
+    expect(hito.lastActivityAt).toBe(addDays(parseISO('2026-09-01T09:00:00.000Z'), delta).toISOString());
     expect(hito.comments[0].createdAt).toMatch(/T\d{2}:/);
   });
 

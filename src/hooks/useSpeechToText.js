@@ -33,10 +33,12 @@ export function useSpeechToText({
   onFinalRef.current = onFinal;
 
   const stopRef = useRef(false);
+  const runningRef = useRef(false);
   const recognitionRef = useRef(null);
 
   const stop = useCallback(() => {
     stopRef.current = true;
+    runningRef.current = false;
     const rec = recognitionRef.current;
     recognitionRef.current = null;
     if (rec) {
@@ -51,7 +53,7 @@ export function useSpeechToText({
   }, []);
 
   const start = useCallback(() => {
-    if (!supported || listening) return;
+    if (!supported || runningRef.current) return;
     const SR = getRecognition();
     if (!SR) return;
     stopRef.current = false;
@@ -77,32 +79,35 @@ export function useSpeechToText({
     };
 
     rec.onerror = () => {
+      // Error de permiso/audio: no reintentar en bucle hasta nuevo start manual.
+      runningRef.current = false;
+      stopRef.current = true;
       setListening(false);
       setInterim('');
     };
 
     rec.onend = () => {
+      runningRef.current = false;
       recognitionRef.current = null;
       setListening(false);
       setInterim('');
       if (autoRestart && !stopRef.current && supported) {
         // El navegador corta solo: re-escuchamos para seguir el huddle.
-        startRef.current?.();
+        start();
       }
     };
 
+    runningRef.current = true;
     recognitionRef.current = rec;
     setListening(true);
     try {
       rec.start();
     } catch (_) {
+      runningRef.current = false;
       setListening(false);
       setInterim('');
     }
-  }, [supported, listening, lang, interimResults, continuous, autoRestart]);
-
-  const startRef = useRef(start);
-  startRef.current = start;
+  }, [supported, lang, interimResults, continuous, autoRestart]);
 
   useEffect(() => () => stop(), [stop]);
 

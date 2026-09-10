@@ -116,6 +116,12 @@ export default function HuddleTab() {
   const session = huddle;
 
   useEffect(() => {
+    if (session?.endedAt && mic.listening) {
+      mic.stop();
+    }
+  }, [session?.endedAt, mic.listening, mic]);
+
+  useEffect(() => {
     const el = bottomRef.current;
     if (el && typeof el.scrollIntoView === 'function') {
       el.scrollIntoView({ block: 'end' });
