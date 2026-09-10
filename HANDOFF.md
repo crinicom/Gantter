@@ -36,7 +36,7 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-08 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 12 — Información del proyecto: documentos markdown por proyecto (ficha, OneNote-like) |
+| Slice en curso | 13 — Onboarding de proyecto nuevo: preguntas con autosave y dictado → Ficha del proyecto |
 | Owner | **opencode** |
 | Status | `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
@@ -65,7 +65,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 9 | Rename Maie → Maia (identidad y código, cero `maie`) | opencode | **done** | global, este archivo | commit `4c58631` (55 files, 420/420 sustituciones); dirs y alias `@maia` |
 | 10 | Números de carta `#N` por proyecto (referencia humana + ancla del ASR) | opencode | **review** | §12 (Card.number), §10 | backfill 1..N, max+1 en crear, chips Kanban/Gantt, labels con `#N`; commit slice 10 |
 | 11 | Huddle real: escuchar reunión (Web Speech), matcher determinístico, 0 tokens LLM | opencode | **review** | §10, §12 | `useSpeechToText` + `liveLineMatcher` + UI mic; commit slice 11 |
-| 12 | Información del proyecto: documentos markdown (ficha OneNote-like) | opencode | **in-progress** → `review` | §12 (Document) | `documents[]` en storage, API `create/update/deleteDocument` en ProjectContext, `ProjectInfoView` + pestaña, seed con ficha de ejemplo; commit slice 12 |
+| 12 | Información del proyecto: documentos markdown (ficha OneNote-like) | opencode | **done** | §12 (Document) | `documents[]` en storage, API `create/update/deleteDocument` en ProjectContext, `ProjectInfoView` + pestaña, seed con ficha de ejemplo; commit slice 12 `928313f` |
+| 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **in-progress** → `review` | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -339,7 +340,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961` y el commit del slice 12.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f` y el commit del slice 13.
 
 ### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
 
@@ -361,5 +362,15 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - **UI**: pestaña "Información del proyecto" en `TabsSwitcher` (`VIEWS.INFO`) → `ProjectInfoView` en `AppShell`. Seeds (Portal y App móvil) con 1 doc "Ficha del proyecto" markdown de ejemplo, **sin** onboarding (slice 13).
 - Tests: **302/302** (projectStorage +2 round-trip/backfill documents, markdownPreview 4, ProjectInfoView 8 con el patrón de mock de ProjectsLanding, TabsSwitcher 2) · `npm run build` OK.
 - **Siguiente**: slice 13 = onboarding (modal de preguntas por proyecto nuevo con dictado + autosave; la "Ficha del proyecto" pasa a ser el doc donde se agregan las respuestas) — alcance y decisiones de §19 pendientes si el humano lo pide.
+
+### 13 · Onboarding de proyecto nuevo (2026-09-10) — notas para Grok
+
+- **Preguntas configurables**: `maia/onboarding/questions.md` (= convenio de templates de Maia, se re-empaqueta en cada deploy). `## Título` = pregunta (id derivado `slugId` en inglés/kebab; título pasa como heading de la Ficha); líneas con una sola `#` son comentarios. Parser puro en `src/utils/parseOnboarding.js` (`parseOnboardingQuestions`, `slugId`, `answeredCount`).
+- **Modelo `Onboarding`** (§12): `{ answers, currentQuestionId?, done }`. Proyectos nuevos (`createDefaultProject`) lo traen activo; legacy y seeds (`"onboarding": null` en `sample_data.json`) quedan sin bloque. `normalizeOnboarding`/`defaultOnboarding`/`buildFichaContent`/`syncFichaDocument` en `src/services/onboardingService.js` (backfill round-trip canónico en `projectStorage`).
+- **Ficha regenerada hasta `done`**: `syncFichaDocument` crea/actualiza el Document "Ficha del proyecto" (solo respuestas con texto, en el orden de las preguntas); al marcar `done` queda congelada (editable a mano en la pestaña). Es dato del proyecto (§12/§16), no una nota desconectada.
+- **API en `ProjectContext.jsx`**: `updateOnboarding(patch)` (nav y done), `saveOnboardingAnswer(qid, text)` (funde answers + sincroniza la Ficha), `completeOnboarding()` → `done`. Sin tocar en paralelo.
+- **UI**: bloque "Ficha del proyecto" arriba de Preguntas en `MaiaPanel` (progreso N de M + botón "Responder estas preguntas"); `OnboardingModal` (`max-w-xl`) responde una por una con **autosave** (sin botón guardar: blur, nav, cerrar y Listo), Dictado opcional (`useSpeechToText` `autoRestart:false`/`continuous:false` → una frase por toque; oculto sin soporte), Anterior/Siguiente/Listo y barra de progreso.
+- Tests: **322/322** (parseOnboarding 8, onboardingService 7, projectStorage +2 onboarding, OnboardingModal 5, MaiaPanel envuelto con `ProjectContext.Provider` por el nuevo bloque) · `npm run build` OK.
+- **Revisar contra §12/§7/§16**: que la Ficha siga siendo dato del proyecto (no localStorage suelto), que el dictado en el modal no deje el reconocimiento activo, y que las seeds no rompan el round-trip (`onboarding: null`).
 
 ---

@@ -6,11 +6,16 @@
 import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { FileText, PencilLine } from 'lucide-react';
 import MaiaMark from './MaiaMark';
 import ApplyModeToggle from './ApplyModeToggle';
 import InquiryThread from './InquiryThread';
 import HuddleTab from '../huddle/HuddleTab';
+import OnboardingModal from '../onboarding/OnboardingModal';
 import { useMaia } from '../../context/MaiaContext';
+import { useProject } from '../../hooks/useProject';
+import { getOnboardingQuestions } from '../../services/onboardingService';
+import { answeredCount } from '../../utils/parseOnboarding';
 import {
   INQUIRY_KIND_META,
   INQUIRY_STATUS,
@@ -42,7 +47,47 @@ function KindBadge({ kind }) {
   );
 }
 
-function QuestionsTab({ onOpen }) {
+function OnboardingPrompt({ onOpen }) {
+  const { project } = useProject();
+  const onboarding = project?.onboarding;
+  if (!onboarding || onboarding.done) {
+    return onboarding?.done ? (
+      <div className="border-b border-gray-100 px-4 py-3">
+        <p className="flex items-center gap-2 text-xs text-muted">
+          <FileText size={13} />
+          La Ficha del proyecto está lista. Podés editarla en «Información del proyecto».
+        </p>
+      </div>
+    ) : null;
+  }
+  const { questions } = getOnboardingQuestions();
+  const done = answeredCount(onboarding.answers || {});
+  return (
+    <div className="border-b border-forest-200 bg-forest-50/60 px-4 py-3">
+      <p className="flex items-center gap-2 text-xs font-medium text-forest-800">
+        <FileText size={13} />
+        Ficha del proyecto
+      </p>
+      <p className="mt-1 text-sm text-ink">
+        Armá la ficha respondiendo unas preguntas cortas. Van directo a «Información del
+        proyecto».
+      </p>
+      <button
+        type="button"
+        onClick={onOpen}
+        className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-forest-600 px-3 py-2 text-sm font-medium text-paper hover:bg-forest-700"
+      >
+        <PencilLine size={15} />
+        Responder estas preguntas
+      </button>
+      <p className="mt-2 text-xs text-muted">
+        {done} de {questions.length} {done === 1 ? 'pregunta' : 'preguntas'}
+      </p>
+    </div>
+  );
+}
+
+function QuestionsTab({ onOpen, onOpenOnboarding }) {
   const { inquiries } = useMaia();
   const open = inquiries.filter(
     (i) => i.status === INQUIRY_STATUS.OPEN || i.status === INQUIRY_STATUS.CHATTING,
@@ -51,9 +96,12 @@ function QuestionsTab({ onOpen }) {
 
   if (open.length === 0 && parked.length === 0) {
     return (
-      <p className="px-4 py-6 text-sm text-muted">
-        No hay preguntas abiertas. Maia pregunta cuando algo se queda flaco, sin dueño o estancado.
-      </p>
+      <>
+        <OnboardingPrompt onOpen={onOpenOnboarding} />
+        <p className="px-4 py-6 text-sm text-muted">
+          No hay preguntas abiertas. Maia pregunta cuando algo se queda flaco, sin dueño o estancado.
+        </p>
+      </>
     );
   }
 
@@ -78,6 +126,7 @@ function QuestionsTab({ onOpen }) {
 
   return (
     <div>
+      <OnboardingPrompt onOpen={onOpenOnboarding} />
       {open.length > 0 && <div>{rows(open)}</div>}
       {parked.length > 0 && (
         <div>
@@ -129,6 +178,7 @@ export default function MaiaPanel() {
   const { openCount, applyMode, setApplyMode } = useMaia();
   const [tab, setTab] = useState(TABS[0].id);
   const [chatInquiryId, setChatInquiryId] = useState(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
 
   return (
     <aside
@@ -170,7 +220,9 @@ export default function MaiaPanel() {
       </nav>
 
       <div className="flex-1 overflow-y-auto bg-paper/40">
-        {tab === 'questions' && <QuestionsTab onOpen={setChatInquiryId} />}
+        {tab === 'questions' && (
+          <QuestionsTab onOpen={setChatInquiryId} onOpenOnboarding={() => setOnboardingOpen(true)} />
+        )}
         {tab === 'huddle' && <HuddleTab />}
         {tab === 'log' && <LogTab />}
       </div>
@@ -178,6 +230,8 @@ export default function MaiaPanel() {
       {chatInquiryId && (
         <InquiryThread inquiryId={chatInquiryId} onClose={() => setChatInquiryId(null)} />
       )}
+
+      <OnboardingModal open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
     </aside>
   );
 }

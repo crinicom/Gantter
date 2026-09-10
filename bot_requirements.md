@@ -129,7 +129,7 @@ Mobile: no comprimir el tablero. Maia va a una pestaña o bottom sheet, con badg
 
 ### Capas del panel (no tres apps)
 
-1. **Preguntas** — interpelaciones abiertas, una tarjeta por pregunta.
+1. **Preguntas** — interpelaciones abiertas, una tarjeta por pregunta. Arriba, cuando el proyecto tiene onboarding activo, va el bloque **Ficha del proyecto** con el botón "Responder estas preguntas" que abre el modal de onboarding en primer plano.
 2. **Huddle** — transcript vivo cuando hay sesión.
 3. **Registro** — log de acciones de Maia (auto y confirmadas).
 
@@ -347,7 +347,12 @@ active, projectId, mode, startedAt, transcript[], joinedIds[], playingDemo
 **Document**  
 id, title, content (markdown), createdAt, updatedAt
 
-`Project.documents[]` son documentos markdown del proyecto (la "Ficha del proyecto" es el primero, creado por el onboarding). Se editan y persisten como dato del proyecto (viajan en el documento canónico junto con el resto de la entidad, no son "notas desconectadas"). Se muestran en la vista "Información del proyecto" (OneNote-like: lista de documentos + editor con Ver/Editar y autosave).
+`Project.documents[]` son documentos markdown del proyecto (la "Ficha del proyecto" es el primero, creado por el onboarding). Se editan y persisten como dato del proyecto (viajan en el documento canónico junto con el resto de la entidad, no son "notas desconectadas"). Se muestran en la vista "Información del proyecto" (pestaña en el tab bar: OneNote-like — lista de documentos + editor con Ver/Editar y autosave).
+
+**Onboarding**  
+answers `{[qid]: text}`, currentQuestionId?, done (bool)
+
+Las preguntas del onboarding viven en `maia/onboarding/questions.md` (un archivo de markdown, config a nivel app que se re-empaqueta en cada deploy; convenio de `## Título` en los templates de Maia). El panel de Maia muestra un bloque "Ficha del proyecto" con "Responder estas preguntas"; el modal en primer plano responde una por una, con dictado opcional y **autosave** (sin botón guardar). Mientras `done` sea false, la "Ficha del proyecto" se **regenera** desde `answers` (sección `## <pregunta>` por respuesta) en `Project.documents[]`; al cerrar (`done`) queda congelada y libre para edición manual. Proyectos nuevos parten con onboarding activo; proyectos legacy/seeds con ficha de ejemplo lo traen `null` (sin bloque).
 
 Las cartas son la única fuente para Kanban y Gantt. `lastActivityAt` se pisa en cualquier move, comentario, assign, cambio de fechas o de bloqueo.
 
@@ -451,7 +456,7 @@ Copy de producto en español. Cero emoji. Cero “✨ magia”. Verbos: Abrir hu
 - Maia hablando por el micrófono de una call.
 - Interpelar en público la productividad de una persona.
 - Transcripción como feature de portada.
-- Un documento de notas desconectado del tablero como destino final.
+- Un documento de notas desconectado del tablero como destino final. (La "Ficha del proyecto" del onboarding **no** es una excepción: es dato del proyecto, viaja en el documento canónico y vive junto a cartas y columnas; su edición sigue siendo local como el resto del store v1.)
 - Modo “Maia callada con badges rojos”. Si no puede preguntar, no existe.
 
 ---

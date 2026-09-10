@@ -10,6 +10,7 @@ import { normalizeMember, MEMBER_ROLES, MEMBER_STATUS } from '../models/member';
 import { normalizeColumn } from '../models/column';
 import { normalizeCard } from '../models/card';
 import { assignTaskNumbers } from '../models/task';
+import { defaultOnboarding, normalizeOnboarding } from './onboardingService';
 import { clampProgress } from '../utils/progress';
 
 const NOW = () => new Date().toISOString();
@@ -87,6 +88,7 @@ export function createDefaultProject() {
     actionLog: [],
     huddle: null,
     documents: [],
+    onboarding: defaultOnboarding(),
     settings: { ...PROJECT_SETTINGS_DEFAULTS },
   };
 }
@@ -246,6 +248,7 @@ function fromDocumentCanonical(project) {
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
     documents: Array.isArray(project.documents) ? project.documents : [],
+    onboarding: normalizeOnboarding(project.onboarding),
     settings: {
       ...PROJECT_SETTINGS_DEFAULTS,
       ...(project.settings || {}),
@@ -283,6 +286,7 @@ export function toDocument(runtime) {
     actionLog: Array.isArray(p.actionLog) ? p.actionLog : [],
     huddle: p.huddle ?? null,
     documents: Array.isArray(p.documents) ? p.documents : [],
+    onboarding: normalizeOnboarding(p.onboarding),
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(p.settings || {}) },
   };
 }
@@ -352,6 +356,7 @@ export function normalizeProject(raw) {
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
     documents: Array.isArray(project.documents) ? project.documents : [],
+    onboarding: normalizeOnboarding(project.onboarding),
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(project.settings || {}) },
   };
 }

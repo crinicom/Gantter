@@ -25,6 +25,7 @@ describe('projectStorage', () => {
     expect(p.actionLog).toEqual([]);
     expect(p.documents).toEqual([]);
     expect(p.huddle).toBeNull();
+    expect(p.onboarding).toMatchObject({ answers: {}, done: false });
   });
 
   it('createProject crea un proyecto con owner activo', () => {
@@ -334,5 +335,35 @@ describe('projectStorage', () => {
     expect(p.documents).toEqual([]);
     const canonical = deserializeProject(serializeProject(p));
     expect(canonical.documents).toEqual([]);
+  });
+
+  it('onboarding: round-trip canónico conserva respuestas y done; legacy queda null', () => {
+    const runtime = {
+      ...createDefaultProject(),
+      id: 'p1',
+      name: 'Portal',
+      ownerId: 'u_lucia',
+      members: [],
+      onboarding: {
+        answers: { objetivo: 'Entregar el portal', equipo: 'Lucía' },
+        currentQuestionId: 'equipo',
+        done: false,
+      },
+    };
+    const doc = JSON.parse(serializeProject(runtime));
+    expect(doc.onboarding).toMatchObject({
+      answers: { objetivo: 'Entregar el portal', equipo: 'Lucía' },
+      currentQuestionId: 'equipo',
+      done: false,
+    });
+    const restored = deserializeProject(serializeProject(runtime));
+    expect(restored.onboarding).toEqual(runtime.onboarding);
+
+    const legacy = normalizeProject({ id: 'p2', name: 'Sin onboarding', members: [], buckets: [], tasks: [] });
+    expect(legacy.onboarding).toBeNull();
+
+    const created = createProject({ name: 'Nuevo', owner: { id: 'u1', name: 'A', email: 'a@b.c' } });
+    expect(created.onboarding).not.toBeNull();
+    expect(created.onboarding.done).toBe(false);
   });
 });

@@ -14,6 +14,11 @@ import { RealtimeService } from '../services/realtimeService';
 import { ServerRealtime } from '../services/serverRealtime';
 import { InviteService } from '../services/inviteService';
 import { createProject } from '../services/projectStorage';
+import {
+  defaultOnboarding,
+  normalizeOnboarding,
+  syncFichaDocument,
+} from '../services/onboardingService';
 import { isServerMode } from '../config/appConfig';
 
 export const ProjectContext = createContext(null);
@@ -748,6 +753,48 @@ export const ProjectProvider = ({ children }) => {
     [commitToStore],
   );
 
+  // ---- Onboarding (slice 13) ----
+  const updateOnboarding = useCallback(
+    (patch) => {
+      commitToStore(
+        (prev) => {
+          const base = normalizeOnboarding(prev.onboarding) || defaultOnboarding();
+          const answers = patch.answers ? { ...base.answers, ...patch.answers } : base.answers;
+          const currentQuestionId =
+            patch.currentQuestionId !== undefined
+              ? patch.currentQuestionId
+              : base.currentQuestionId;
+          const done = patch.done !== undefined ? patch.done : base.done;
+          return { ...prev, onboarding: { answers, currentQuestionId, done } };
+        },
+        { debounce: true },
+      );
+    },
+    [commitToStore],
+  );
+
+  const saveOnboardingAnswer = useCallback(
+    (qid, text) => {
+      commitToStore(
+        (prev) => {
+          const base = normalizeOnboarding(prev.onboarding) || defaultOnboarding();
+          const answers = { ...base.answers, [qid]: String(text || '') };
+          return {
+            ...prev,
+            onboarding: { ...base, answers },
+            documents: syncFichaDocument(prev.documents || [], answers, { done: base.done }),
+          };
+        },
+        { debounce: true },
+      );
+    },
+    [commitToStore],
+  );
+
+  const completeOnboarding = useCallback(() => {
+    updateOnboarding({ done: true });
+  }, [updateOnboarding]);
+
   const projects = useMemo(() => {
     const list = Object.values(store || {});
     return visibleProjects(list, user).sort((a, b) =>
@@ -800,6 +847,9 @@ error,
       createDocument,
       updateDocument,
       deleteDocument,
+      updateOnboarding,
+      saveOnboardingAnswer,
+      completeOnboarding,
     }),
     [
       project,
@@ -841,6 +891,9 @@ error,
       createDocument,
       updateDocument,
       deleteDocument,
+      updateOnboarding,
+      saveOnboardingAnswer,
+      completeOnboarding,
       clearCollabNotice,
       mutateProject,
       setSettings,

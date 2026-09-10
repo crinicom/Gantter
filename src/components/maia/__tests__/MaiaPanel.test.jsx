@@ -2,11 +2,19 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import MaiaPanel from '../MaiaPanel';
 import { MaiaContext } from '../../../context/MaiaContext';
+import { ProjectContext } from '../../../context/ProjectContext';
 import { INQUIRY_STATUS } from '../../../constants/maia';
 
 vi.mock('../../../hooks/useAuth', () => ({
   useAuth: () => ({ user: null }),
 }));
+
+const projectValue = {
+  project: null,
+  saveOnboardingAnswer: vi.fn(),
+  completeOnboarding: vi.fn(),
+  updateOnboarding: vi.fn(),
+};
 
 const baseValue = {
   inquiries: [
@@ -67,9 +75,11 @@ const baseValue = {
 function renderPanel(valueOverrides = {}) {
   const value = { ...baseValue, ...valueOverrides };
   return render(
-    <MaiaContext.Provider value={value}>
-      <MaiaPanel />
-    </MaiaContext.Provider>,
+    <ProjectContext.Provider value={projectValue}>
+      <MaiaContext.Provider value={value}>
+        <MaiaPanel />
+      </MaiaContext.Provider>
+    </ProjectContext.Provider>,
   );
 }
 
