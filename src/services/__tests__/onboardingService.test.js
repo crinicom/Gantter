@@ -10,7 +10,8 @@ import {
 describe('onboardingService', () => {
   it('getOnboardingQuestions lee las preguntas configurables de maia/onboarding', () => {
     const { questions } = getOnboardingQuestions();
-    expect(questions.length).toBeGreaterThanOrEqual(4);
+    expect(questions).toHaveLength(3);
+    expect(questions.map((q) => q.id)).toEqual(['objetivo', 'entregable', 'equipo']);
     expect(questions[0]).toMatchObject({ id: 'objetivo', heading: 'Objetivo' });
     expect(questions[0].text.length).toBeGreaterThan(10);
   });
@@ -40,7 +41,7 @@ describe('onboardingService', () => {
     expect(ficha.indexOf('## Objetivo')).toBeGreaterThan(0);
     expect(ficha.indexOf('## Equipo')).toBeGreaterThan(ficha.indexOf('## Objetivo'));
     expect(ficha).toContain('Entregar el portal');
-    expect(ficha).not.toContain('## Riesgos');
+    expect(ficha).not.toContain('## Fechas');
   });
 
   it('buildFichaContent devuelve vacío sin respuestas', () => {
@@ -71,13 +72,13 @@ describe('onboardingService', () => {
   });
 
   it('buildFichaContent con todas las preguntas produce todas las secciones', () => {
-    const allAnswers = { objetivo: 'A', entregable: 'B', equipo: 'C', fechas: 'D', riesgos: 'E' };
+    const allAnswers = { objetivo: 'A', entregable: 'B', equipo: 'C' };
     const ficha = buildFichaContent(allAnswers);
     expect(ficha).toContain('## Objetivo');
     expect(ficha).toContain('## Entregable');
     expect(ficha).toContain('## Equipo');
-    expect(ficha).toContain('## Fechas');
-    expect(ficha).toContain('## Riesgos');
+    expect(ficha).not.toContain('## Fechas');
+    expect(ficha).not.toContain('## Riesgos');
   });
 
   it('syncFichaDocument actualiza la Ficha existente con nuevas respuestas', () => {

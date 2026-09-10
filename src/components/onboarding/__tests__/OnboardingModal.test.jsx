@@ -50,7 +50,7 @@ describe('OnboardingModal', () => {
     renderModal();
     const { questions } = getOnboardingQuestions();
     expect(screen.getByText(questions[1].text)).toBeInTheDocument();
-    expect(screen.getByText(/Pregunta 2 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 2 de 3/)).toBeInTheDocument();
     expect(screen.getByText(/1 respondida/)).toBeInTheDocument();
   });
 
@@ -60,19 +60,17 @@ describe('OnboardingModal', () => {
     fireEvent.change(textarea, { target: { value: 'Migrar checkout' } });
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
     expect(state.saveOnboardingAnswer).toHaveBeenCalledWith('entregable', 'Migrar checkout');
-    expect(screen.getByText(/Pregunta 3 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 3 de 3/)).toBeInTheDocument();
   });
 
   it('al llegar a la última pregunta, Listo cierra el onboarding', () => {
     state.project.onboarding.answers = {
       objetivo: 'a',
       entregable: 'b',
-      equipo: 'c',
-      fechas: 'd',
     };
     renderModal();
     fireEvent.click(screen.getByRole('button', { name: 'Listo' }));
-    expect(state.saveOnboardingAnswer).toHaveBeenCalledWith('riesgos', '');
+    expect(state.saveOnboardingAnswer).toHaveBeenCalledWith('equipo', '');
     expect(state.completeOnboarding).toHaveBeenCalled();
   });
 
@@ -80,9 +78,9 @@ describe('OnboardingModal', () => {
     state.project.onboarding.answers = {};
     renderModal();
     fireEvent.click(screen.getByRole('button', { name: 'Siguiente' }));
-    expect(screen.getByText(/Pregunta 2 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 2 de 3/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Anterior' }));
-    expect(screen.getByText(/Pregunta 1 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 1 de 3/)).toBeInTheDocument();
   });
 
   it('avisa cuando el dictado no está disponible', () => {
@@ -93,11 +91,11 @@ describe('OnboardingModal', () => {
   it('guardar con blur no salta de pregunta a mitad de sesión', () => {
     state.project.onboarding.answers = {};
     renderModal();
-    expect(screen.getByText(/Pregunta 1 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 1 de 3/)).toBeInTheDocument();
     const textarea = screen.getByPlaceholderText(/Escribí acá/);
     fireEvent.change(textarea, { target: { value: 'Un objetivo clarito' } });
     fireEvent.blur(textarea);
     expect(state.saveOnboardingAnswer).toHaveBeenCalledWith('objetivo', 'Un objetivo clarito');
-    expect(screen.getByText(/Pregunta 1 de 5/)).toBeInTheDocument();
+    expect(screen.getByText(/Pregunta 1 de 3/)).toBeInTheDocument();
   });
 });

@@ -333,7 +333,8 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 ### Punch list abierta para un próximo ciclo (review Grok 2026-09-09) — pendiente de implementar
 
-- ~~**P1-rework (§9.200)**~~: **DONE** en slice 14 (`declineProposal` local sin LLM, gate `followedUpAt`, sin loop). Review 14 (`1a3c24b`): cubre también el "No" escueto en texto libre (`isDeclineMessage`), pasa el inquiry a `chatting`, y limpia dead code (`dismissProposal` queda solo como API de bajo nivel).
+- ~~**P1-rework (§9.200)**~~: **DONE** en slice 14 (`declineProposal` local sin LLM, gate `followedUpAt`, sin loop). Review 14 (`1a3c24b` + `1875594`): cubre también el "No" escueto en texto libre (`isDeclineMessage`), pasa el inquiry a `chatting`; `dismissProposal` (API de bajo nivel sin uso) se eliminó, y la segunda burbuja queda en "Queda abierta." porque el botón del footer ya ofrece el recordatorio.
+- **Decisión humana (2026-09-10) §9.200**: el **botón "No" del hilo es el camino canónico** de declinación. `isDeclineMessage` solo cubre negaciones escuetas en texto libre; los "No" multi-palabra van al chat LLM y quedan fuera de la protección anti-loop (documentado en `src/utils/declineMessage.js`).
 - **Nota overlap (§8)**: la identidad de un inquiry `overlap` es `kind:anchorId`; si cambia el anchor se pierde el hilo. Para "evidencia viva" de overlap conviene key por responsable. No bloquea.
 - **Mobile (slice 8)**: pasa a **v2** por decisión humana (2026-09-10).
 
@@ -341,7 +342,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b` y el commit de esta nota.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594` y el commit de onboarding v1.
 
 ### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
 
@@ -373,6 +374,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - **UI**: bloque "Ficha del proyecto" arriba de Preguntas en `MaiaPanel` (progreso N de M + botón "Responder estas preguntas"); `OnboardingModal` (`max-w-xl`) responde una por una con **autosave** (sin botón guardar: blur, nav, cerrar y Listo), Dictado opcional (`useSpeechToText` `autoRestart:false`/`continuous:false` → una frase por toque; oculto sin soporte), Anterior/Siguiente/Listo y barra de progreso.
 - Tests: **322/322** (parseOnboarding 8, onboardingService 7, projectStorage +2 onboarding, OnboardingModal 5, MaiaPanel envuelto con `ProjectContext.Provider` por el nuevo bloque) · `npm run build` OK.
 - **Revisar contra §12/§7/§16**: que la Ficha siga siendo dato del proyecto (no localStorage suelto), que el dictado en el modal no deje el reconocimiento activo, y que las seeds no rompan el round-trip (`onboarding: null`).
+- **Contenido v1 (2026-09-10)**: el set de preguntas queda en 3 básicas — **Objetivo**, **Entregable**, **Equipo** (se quitan `Fechas` y `Riesgos`). El set vive en `maia/onboarding/questions.md` (config, no código); los tests de `onboardingService` y `OnboardingModal` se alinean al set (3 preguntas). Consecuencia aceptada: answers legacy de `fechas`/`riesgos` dejan de renderizarse en una ficha regenerada (solo afecta onboardings activos; seeds/legacy tienen ficha congelada).
 
 ### Review OpenCode de 12–13 (2026-09-10) — fixes aplicados
 
