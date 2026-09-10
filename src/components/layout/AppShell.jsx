@@ -5,6 +5,7 @@ import TabsSwitcher, { VIEWS } from './TabsSwitcher';
 import SyncStatusBanner from './SyncStatusBanner';
 import BoardView from '../board/BoardView';
 import GanttView from '../gantt/GanttView';
+import ProjectInfoView from '../projects/ProjectInfoView';
 import ProjectsLanding from '../projects/ProjectsLanding';
 import MaiaPanel from '../maia/MaiaPanel';
 import HuddleSessionBar from '../huddle/HuddleSessionBar';
@@ -37,7 +38,9 @@ export default function AppShell() {
       <HuddleSessionBar />
       <div className="flex min-h-0 flex-1">
         <main className="flex-1 overflow-auto p-4">
-          {activeView === VIEWS.BOARD ? <BoardView /> : <GanttView />}
+          {activeView === VIEWS.BOARD && <BoardView />}
+          {activeView === VIEWS.GANTT && <GanttView />}
+          {activeView === VIEWS.INFO && <ProjectInfoView />}
         </main>
         <MaiaPanel />
       </div>

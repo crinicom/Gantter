@@ -344,6 +344,11 @@ id, at, source (`auto | confirm | manual`), summary, cardId?
 **Huddle**  
 active, projectId, mode, startedAt, transcript[], joinedIds[], playingDemo
 
+**Document**  
+id, title, content (markdown), createdAt, updatedAt
+
+`Project.documents[]` son documentos markdown del proyecto (la "Ficha del proyecto" es el primero, creado por el onboarding). Se editan y persisten como dato del proyecto (viajan en el documento canónico junto con el resto de la entidad, no son "notas desconectadas"). Se muestran en la vista "Información del proyecto" (OneNote-like: lista de documentos + editor con Ver/Editar y autosave).
+
 Las cartas son la única fuente para Kanban y Gantt. `lastActivityAt` se pisa en cualquier move, comentario, assign, cambio de fechas o de bloqueo.
 
 ---

@@ -86,6 +86,7 @@ export function createDefaultProject() {
     inquiries: [],
     actionLog: [],
     huddle: null,
+    documents: [],
     settings: { ...PROJECT_SETTINGS_DEFAULTS },
   };
 }
@@ -244,6 +245,7 @@ function fromDocumentCanonical(project) {
     inquiries: Array.isArray(project.inquiries) ? project.inquiries : [],
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
+    documents: Array.isArray(project.documents) ? project.documents : [],
     settings: {
       ...PROJECT_SETTINGS_DEFAULTS,
       ...(project.settings || {}),
@@ -280,6 +282,7 @@ export function toDocument(runtime) {
     inquiries: Array.isArray(p.inquiries) ? p.inquiries : [],
     actionLog: Array.isArray(p.actionLog) ? p.actionLog : [],
     huddle: p.huddle ?? null,
+    documents: Array.isArray(p.documents) ? p.documents : [],
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(p.settings || {}) },
   };
 }
@@ -348,6 +351,7 @@ export function normalizeProject(raw) {
     inquiries: Array.isArray(project.inquiries) ? project.inquiries : [],
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
+    documents: Array.isArray(project.documents) ? project.documents : [],
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(project.settings || {}) },
   };
 }

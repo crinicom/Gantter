@@ -23,6 +23,8 @@ describe('projectStorage', () => {
     expect(p.settings).toEqual(PROJECT_SETTINGS_DEFAULTS);
     expect(p.inquiries).toEqual([]);
     expect(p.actionLog).toEqual([]);
+    expect(p.documents).toEqual([]);
+    expect(p.huddle).toBeNull();
   });
 
   it('createProject crea un proyecto con owner activo', () => {
@@ -296,5 +298,41 @@ describe('projectStorage', () => {
 
   it('projectStoredVersion es 4', () => {
     expect(projectStoredVersion()).toBe(4);
+  });
+
+  it('documentos: round-trip canónico conserva title/content/timestamps', () => {
+    const runtime = {
+      ...createDefaultProject(),
+      id: 'p1',
+      name: 'Portal',
+      ownerId: 'u_lucia',
+      members: [],
+      documents: [
+        {
+          id: 'doc_1',
+          title: 'Ficha del proyecto',
+          content: '# Ficha\n\n## Objetivo\nEntregar en fecha.',
+          createdAt: '2026-09-05T12:00:00.000Z',
+          updatedAt: '2026-09-05T12:00:00.000Z',
+        },
+      ],
+    };
+    const doc = JSON.parse(serializeProject(runtime));
+    expect(doc.documents).toHaveLength(1);
+    expect(doc.documents[0]).toMatchObject({
+      id: 'doc_1',
+      title: 'Ficha del proyecto',
+      content: '# Ficha\n\n## Objetivo\nEntregar en fecha.',
+    });
+    const restored = deserializeProject(serializeProject(runtime));
+    expect(restored.documents).toEqual(runtime.documents);
+  });
+
+  it('documentos: un documento sin campo documents en legacy se backfillea a []', () => {
+    const legacy = { id: 'p-old', name: 'Legacy', members: [], buckets: [], tasks: [] };
+    const p = normalizeProject(legacy);
+    expect(p.documents).toEqual([]);
+    const canonical = deserializeProject(serializeProject(p));
+    expect(canonical.documents).toEqual([]);
   });
 });

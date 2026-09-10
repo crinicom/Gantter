@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { useAuth } from '../hooks/useAuth';
 import { createEmptyTask, canCompleteTask, nextTaskNumber } from '../models/task';
 import { createEmptyBucket } from '../models/bucket';
@@ -697,6 +698,56 @@ export const ProjectProvider = ({ children }) => {
     [commitToStore],
   );
 
+  // ---- Documentos ("Información del proyecto") ----
+  const nowIso = () => new Date().toISOString();
+
+  const createDocument = useCallback(
+    ({ title, content }) => {
+      const cleanTitle = typeof title === 'string' && title.trim() ? title.trim() : 'Sin título';
+      const doc = {
+        id: uuidv4(),
+        title: cleanTitle,
+        content: typeof content === 'string' ? content : '',
+        createdAt: nowIso(),
+        updatedAt: nowIso(),
+      };
+      commitToStore(
+        (prev) => ({
+          ...prev,
+          documents: [...(prev.documents || []), doc],
+        }),
+        { debounce: true },
+      );
+      return doc.id;
+    },
+    [commitToStore],
+  );
+
+  const updateDocument = useCallback(
+    (docId, patch) => {
+      commitToStore(
+        (prev) => ({
+          ...prev,
+          documents: (prev.documents || []).map((d) =>
+            d.id === docId ? { ...d, ...patch, updatedAt: nowIso() } : d,
+          ),
+        }),
+        { debounce: true },
+      );
+    },
+    [commitToStore],
+  );
+
+  const deleteDocument = useCallback(
+    (docId) => {
+      commitToStore((prev) => ({
+        ...prev,
+        documents: (prev.documents || []).filter((d) => d.id !== docId),
+      }));
+    },
+    [commitToStore],
+  );
+
   const projects = useMemo(() => {
     const list = Object.values(store || {});
     return visibleProjects(list, user).sort((a, b) =>
@@ -746,6 +797,9 @@ error,
       sendInvite,
       acceptInvite,
       revokeMember,
+      createDocument,
+      updateDocument,
+      deleteDocument,
     }),
     [
       project,
@@ -784,6 +838,9 @@ error,
       sendInvite,
       acceptInvite,
       revokeMember,
+      createDocument,
+      updateDocument,
+      deleteDocument,
       clearCollabNotice,
       mutateProject,
       setSettings,

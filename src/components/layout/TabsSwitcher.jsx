@@ -4,6 +4,7 @@ import clsx from 'clsx';
 export const VIEWS = {
   BOARD: 'board',
   GANTT: 'gantt',
+  INFO: 'info',
 };
 
 export default function TabsSwitcher({ activeView, onChange }) {
@@ -12,6 +13,7 @@ export default function TabsSwitcher({ activeView, onChange }) {
       {[
         { key: VIEWS.BOARD, label: 'Tablero' },
         { key: VIEWS.GANTT, label: 'Gantt' },
+        { key: VIEWS.INFO, label: 'Información del proyecto' },
       ].map((tab) => (
         <button
           key={tab.key}

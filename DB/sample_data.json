@@ -178,6 +178,15 @@
       "inquiries": [],
       "actionLog": [],
       "huddle": null,
+      "documents": [
+        {
+          "id": "doc_ficha_portal",
+          "title": "Ficha del proyecto",
+          "content": "# Ficha del proyecto\n\n## Descripción\nRediseño y entrega del portal de clientes: checkout v3, analytics y go-live en ~7 días.\n\n## Equipo\n\n| Miembro | Rol |\n|---|---|\n| Lucía Ríos | PM |\n| Martín Vega | Frontend |\n| Ana Soler | Backend |\n| Sofía Chen | Diseño |\n| Diego Palacios | QA |\n\n## Alcance\n- Checkout migrado al procesador v3.\n- Analytics de conversión del funnel.\n- Go-live del portal.\n\n## Riesgos\n- Webhook de pagos espera certificados del proveedor.\n- Superposición de fechas entre checkout y analytics.",
+          "createdAt": "2026-09-05T12:00:00.000Z",
+          "updatedAt": "2026-09-05T12:00:00.000Z"
+        }
+      ],
       "settings": { "applyMode": "confirm", "staleDays": 15 }
     },
     {
@@ -250,6 +259,15 @@
       "inquiries": [],
       "actionLog": [],
       "huddle": null,
+      "documents": [
+        {
+          "id": "doc_ficha_movil",
+          "title": "Ficha del proyecto",
+          "content": "# Ficha del proyecto\n\n## Descripción\nNueva versión de la app móvil: landing con el nuevo diseño, notificaciones push y fix de crash en iOS.\n\n## Equipo\n\n| Miembro | Rol |\n|---|---|\n| Lucía Ríos | PM |\n| Víctor Ruiz | Mobile |\n| Irma Sol | Backend |\n\n## Alcance\n- Landing app nueva.\n- Notificaciones push.\n- Fix del crash en iOS 17.",
+          "createdAt": "2026-09-05T12:00:00.000Z",
+          "updatedAt": "2026-09-05T12:00:00.000Z"
+        }
+      ],
       "settings": { "applyMode": "confirm", "staleDays": 15 }
     }
   ]
