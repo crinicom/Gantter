@@ -273,11 +273,21 @@ Si el modo es auto, 1, 2 y 4 se aplican y van al log. Si es confirmar, aparecen 
 - El guion del standup demo y las propuestas asociadas.
 - Aplicar / rechazar acciones, log, mutaciones.
 
-### Qué usa LLM (OpenAI, `gpt-4o-mini`)
+### Qué usa LLM (Gateway multi-proveedor: OpenAI / OpenRouter / Anthropic)
 
-Solo cuando el usuario **envía un mensaje** en el chat de una pregunta (o una línea de huddle que no es el guion demo).
+Solo cuando el usuario **envía un mensaje** en el chat de una pregunta (o una línea de huddle que no es el guion demo), o en el diálogo de desglose inicial de trabajo (work breakdown).
 
 Nunca en page load, nunca por tecla, nunca en loop.
+
+### Gateway multi-proveedor y prompts en Markdown
+
+- **Configuración estática:** `server/src/config/llm.config.json` define el proveedor activo (`activeProvider`: `openai`, `openrouter`, `anthropic`, etc.), URL base, modelo, timeout (12s) y variables de entorno para API keys (`OPENAI_API_KEY`, `OPENROUTER_API_KEY`, `ANTHROPIC_API_KEY`). Cambiar el proveedor o modelo se hace editando este archivo y desplegando, sin modificar código JavaScript.
+- **Prompts modulares en `maia/`:**
+  - `maia/system/persona.md`: Identidad de Maia, facilitadora socrática, rioplatense, sin emoji, 2–4 oraciones, hablar del trabajo y no de la persona.
+  - `maia/system/contract.md`: Contrato de salida JSON estructurado.
+  - `maia/workflows/breakdown.md`: Instrucciones y ejemplos few-shot para el desglose de la Ficha del proyecto en 4 a 6 tareas atómicas (esfuerzo 1–3 días por tarea, descripción con criterio de hecho para evitar cartas flacas, asignadas a la columna inicial).
+- **Parseo defensivo:** El gateway extrae el JSON acotado entre el primer `{` y el último `}` para evitar roturas ante texto conversacional o bloques de código markdown.
+- **Timeout y fallback:** Timeout estricto de 12 segundos (vía `AbortSignal.timeout(12000)`). Si no hay API key o falla el call: degradar con respuesta socrática templated según el `kind`, sin inventar mutaciones. Nunca crashear el tablero.
 
 System prompt (intención, no texto sagrado):
 
@@ -302,11 +312,9 @@ Salida estructurada:
 }
 ```
 
-`actions` se traduce a propuestas (modo confirmar) o se aplica + log (modo auto). El `reply` se appendea al hilo.
+`actions` se traduce a propuestas (modo confirmar) o se aplica + log (modo auto). El `reply` se appendea al hilo. Las acciones `create-card` nunca se auto-aplican solas en modo auto: requieren confirmación explícita del usuario (§9).
 
-Si no hay API key o falla el call: degradar con una respuesta socrática templated según el `kind` de la pregunta, sin inventar mutaciones. Nunca crashear el tablero.
-
-Cap de tokens bajo: `max_tokens` de salida 300, contexto acotado ~1200 chars y mensaje del usuario ≤1000 chars. Un reintento máximo. El gasto es del dueño de la app: no escanear el tablero con LLM.
+Cap de tokens y presupuesto: contexto acotado ~1200 chars, mensaje del usuario ≤1000 chars, max_tokens según configuración del proveedor (300–1000). El gasto es del dueño de la app: no escanear el tablero con LLM.
 
 ---
 

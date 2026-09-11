@@ -36,9 +36,9 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-11 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | — |
-| Owner | — |
-| Status | 11–15 en `review` |
+| Slice en curso | 16 |
+| Owner | opencode |
+| Status | in-progress |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
@@ -69,6 +69,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **done** | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
 | 14 | Hardening v1: "No" de Maia (§9.200) + pruebas extensivas + mejoras menores | opencode | **done** | §9.200, §7, §12 | `declineProposal` (local, sin LLM, gate `followedUpAt`), normalize `followedUpAt: null`, 9 tests nuevos; commit slice 14 `e0d06a5` + fixes de review `1a3c24b` |
 | 15 | Accesos directos: pestaña con grid de iconos tipo Explorer (URL + nombre opcional, apertura en pestaña nueva, eliminar inline, máx. 30) | opencode | **review** | §12 (Shortcut) | `shortcutsService` (normalize/validate/label/limit) + `shortcuts[]` en storage (round-trip + backfill) + `addShortcut`/`removeShortcut` en ProjectContext + `ShortcutsView` + modal + tab en `TabsSwitcher`/`AppShell`; commit slice 15 `26c48cd` |
+| 16 | Gateway LLM multi-proveedor + modularización de prompts en Markdown | opencode | **in-progress** | §11 | `llm.config.json` + `llmGateway.js` + relay refactorizado + `maia/workflows/breakdown.md` + tests |
+| 17 | Diálogo de desglose atómico de arranque (Work Breakdown) | opencode | pending | §11, §12 | Interpelación de arranque cuando cards=0 + Ficha lista, batch `create-card`, UI |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -401,5 +403,56 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - Tests: **361/361** (shortcutsService 8, projectStorage +2, ShortcutsView 12 — incl. editar con lápiz, TabsSwitcher 2 actualizado) · `npm run build` OK.
 - **Revisar contra §12**: que `shortcuts[]` no rompa el round-trip de seeds (sin la key → `[]`), que el open use `noopener`, y que el límite de 30 solo afecte a la creación (no al borrar).
 - **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052` y `26c48cd`.
+
+---
+
+### Slice 16 — qué implementar (OpenCode)
+
+Infraestructura de IA: Gateway LLM multi-proveedor configurable estáticamente y modularización de prompts de workflows en Markdown (§11).
+
+#### Objetivo
+
+Reemplazar la llamada cableada a OpenAI en el backend por un Gateway desacoplado y agnóstico de proveedor (`llmGateway.js`), configurable mediante un archivo JSON estático (`llm.config.json`). Además, estructurar los prompts de Maia en Markdown dentro de `maia/`, incorporando `maia/workflows/breakdown.md` (instrucciones para desglosar proyectos en tareas atómicas con ejemplos few-shot) y `maia/system/contract.md`.
+
+#### Archivos esperados
+
+1. **`server/src/config/llm.config.json`** (nuevo):
+   - Definir `activeProvider` (default: `"openai"`).
+   - Mapa `providers`:
+     - `"openai"`: `{ "adapter": "openai-compatible", "baseUrl": "https://api.openai.com/v1", "model": "gpt-4o-mini", "apiKeyEnv": "OPENAI_API_KEY", "maxTokens": 1000, "temperature": 0.3 }`.
+     - `"openrouter"`: `{ "adapter": "openai-compatible", "baseUrl": "https://openrouter.ai/api/v1", "model": "anthropic/claude-3.5-haiku", "apiKeyEnv": "OPENROUTER_API_KEY", "maxTokens": 1000, "temperature": 0.3 }`.
+     - `"anthropic"`: `{ "adapter": "anthropic-native", "baseUrl": "https://api.anthropic.com/v1", "model": "claude-3-5-haiku-20241022", "apiKeyEnv": "ANTHROPIC_API_KEY", "maxTokens": 1000, "temperature": 0.3 }`.
+2. **`server/src/services/llmGateway.js`** (nuevo, puro):
+   - Función principal `callLLM({ systemPrompt, messages, timeoutMs = 12000 })`.
+   - Soporte para adapters: `openai-compatible` (headers estándar + opcionales OpenRouter `HTTP-Referer`/`X-Title`) y `anthropic-native` (`/v1/messages`, `x-api-key`, `anthropic-version: 2023-06-01`).
+   - Parseo defensivo: extraer la subcadena JSON delimitada por el primer `{` y el último `}` antes de parsear, previniendo fallas si el modelo incluye texto conversacional o markdown ```json.
+   - Timeout estricto vía `AbortSignal.timeout(timeoutMs)`.
+   - Si falta la API key del proveedor activo: devolver/lanzar error identificable (`no-key`).
+3. **`server/src/routes/maia.js`** (refactor):
+   - Reemplazar el `fetch` directo a `OPENAI_URL` por `callLLM`.
+   - Cargar el system prompt componiendo `maia/system/persona.md` + `maia/system/contract.md`.
+   - Soportar parámetro opcional `workflow` (e.g. `'breakdown'`) para inyectar `maia/workflows/{workflow}.md` en el system prompt cuando corresponda.
+   - Preservar el contrato actual de respuesta hacia el front: `{ reply, actions }`.
+4. **`maia/system/contract.md`** (nuevo):
+   - Extraer la definición del contrato JSON estricto fuera del código JS.
+5. **`maia/workflows/breakdown.md`** (nuevo):
+   - Prompt para descomponer el objetivo y entregable de la Ficha en 4 a 6 tareas atómicas (1 a 3 días, descripción con criterio de hecho, `bucketId` provisto en contexto).
+   - Incluir 2 ejemplos concretos *few-shot* (input -> output de acciones `create-card`).
+6. **`server/src/services/__tests__/llmGateway.test.js`** (nuevo):
+   - Tests con mocks de fetch: ruteo hacia OpenAI, ruteo hacia OpenRouter, ruteo hacia Anthropic, parseo defensivo ante JSON rodeado de texto, manejo de timeout y error si falta la API key configurada.
+
+#### No tocar
+
+- `ProjectContext.jsx`, `projectStorage.js`, `AppShell.jsx`.
+- Componentes visuales de frontend (el cableado de UI para el diálogo de desglose pertenece al Slice 17).
+- No cambiar los contratos de datos de `actionLog` ni de las entidades de §12.
+
+#### Criterios de Aceptación
+
+- Cambiar `activeProvider` en `llm.config.json` conmuta el endpoint y modelo sin tocar código JavaScript.
+- El gateway procesa respuestas válidas con ambos adapters (`openai-compatible` y `anthropic-native`).
+- El parseo defensivo no se rompe si el modelo devuelve ```json {...} ``` o texto explicativo.
+- Timeout controlado de 12 segundos.
+- `npm test` y `npm run build` pasan limpios.
 
 ---
