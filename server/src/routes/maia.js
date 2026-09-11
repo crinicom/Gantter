@@ -1,25 +1,23 @@
-// Relay de Maia (§11 Contrato de IA): recibe el contexto acotado del tablero y
-// el mensaje del usuario, llama a OpenAI (`gpt-4o-mini`, el modelo grande más
-// barato) con la clave del dueño, y devuelve `{ reply, actions }` estructurado.
-// Si no hay clave, falla el upstream o se rompe el JSON: responde 50x/400 para
-// que el cliente degrade a la respuesta socrática templated, sin gasto. Nunca
-// se llama en page load: solo por mensaje.
+// Relay de Maia (§11 Contrato de IA, slice 16): recibe el contexto acotado del
+// tablero y el mensaje del usuario, compone el system prompt con los prompts
+// Markdown de `maia/` (persona + contrato + workflow opcional) y delega la
+// llamada en el gateway multi-proveedor `llmGateway` (config `llm.config.json`).
+// Devuelve `{ reply, actions }` estructurado. Si no hay clave, falla el
+// upstream o se rompe el JSON: responde 50x/400 para que el cliente degrade a
+// la respuesta socrática templated, sin gasto. Nunca se llama en page load:
+// solo por mensaje.
 
 import { Router } from 'express';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { requireAuth } from '../middleware/auth.js';
+import { callLLM } from '../services/llmGateway.js';
 
 const router = Router();
 
-const OPENAI_URL = 'https://api.openai.com/v1/chat/completions';
-const OPENAI_MODEL = process.env.OPENAI_MODEL || 'gpt-4o-mini';
-
-// Intención del system prompt (§11, no es texto sagrado). La persona se lee de
-// `maia/system/persona.md` (config a nivel app, editable sin tocar código);
-// el contrato JSON de salida es estructural (el parsing depende de su forma
-// exacta) y queda fijo acá. Corto: cada token de entrada cuesta; el cap del
-// presupuesto está en max_tokens.
+// Intención del system prompt (§11, no es texto sagrado). La persona y el
+// contrato se leen de `maia/system/*.md` (config a nivel app, editable sin
+// tocar código); estos textos son solo el fallback si el archivo no existe.
 const DEFAULT_PERSONA_PROMPT = [
   'Sos Maia, facilitadora socrática de Gantter, sobre un tablero Kanban + Gantt (contexto: cartas, miembros, fechas, modo auto/confirm).',
   'No das órdenes: preguntás. 2-4 oraciones, español rioplatense, sin emoji.',
@@ -28,8 +26,8 @@ const DEFAULT_PERSONA_PROMPT = [
   'Si el tipo de pregunta es "huddle", seguí la conversación del "Hilo reciente" y contestá dentro de ese contexto: no reinicies la misma pregunta que ya respondió.',
 ].join(' ');
 
-const SYS_CONTRACT = [
-  'Respondé SOLO JSON válido: {"reply": "string", "actions": [{"type": "assign|move|set-dates|set-description|set-blocked|add-comment|create-card", "payload": {"taskId":"...","memberId":"...","bucketId":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","text":"...","title":"..."}}]}.',
+const DEFAULT_SYS_CONTRACT = [
+  'Respondé SOLO un JSON válido, sin prosa fuera de llaves: {"reply": "string", "actions": [{"type": "assign|move|set-dates|set-description|set-blocked|add-comment|create-card", "payload": {"taskId":"...","memberId":"...","bucketId":"...","startDate":"YYYY-MM-DD","endDate":"YYYY-MM-DD","text":"...","title":"..."}}]}.',
   'Sin acción concreta y segura: actions va vacío.',
 ].join(' ');
 
@@ -38,31 +36,53 @@ const SYS_CONTRACT = [
 // volumen. Las líneas con `#` son comentarios que no llegan al modelo.
 const DEFAULT_PROMPTS_DIR = fileURLToPath(new URL('../../../maia', import.meta.url));
 
-function personaPromptText() {
+// Lee un prompt Markdown de `maia/`; devuelve el texto plano (sin comentarios)
+// o null si falta el archivo. `relativePath` viene saneado por el caller.
+function readPromptFile(relativePath) {
   const dir = process.env.MAIA_PROMPTS_DIR || DEFAULT_PROMPTS_DIR;
   try {
-    return readFileSync(`${dir}/system/persona.md`, 'utf8')
+    return readFileSync(`${dir}/${relativePath}`, 'utf8')
       .split(/\r?\n/)
       .filter((line) => !/^\s*#/.test(line))
       .map((line) => line.trim())
       .filter(Boolean)
       .join(' ');
   } catch {
-    return DEFAULT_PERSONA_PROMPT;
+    return null;
   }
 }
 
-function systemPrompt() {
-  return `${personaPromptText()} ${SYS_CONTRACT}`;
+function personaPromptText() {
+  return readPromptFile('system/persona.md') ?? DEFAULT_PERSONA_PROMPT;
+}
+
+function contractPromptText() {
+  return readPromptFile('system/contract.md') ?? DEFAULT_SYS_CONTRACT;
+}
+
+// Compone el system prompt: persona + contrato + workflow opcional (texto ya
+// cargado y validado por el caller).
+function systemPrompt({ workflow = null } = {}) {
+  const base = `${personaPromptText()} ${contractPromptText()}`;
+  return workflow ? `${base} ${workflow}` : base;
 }
 
 router.post('/maia/chat', requireAuth, async (req, res) => {
-  const { kind, mode, boardContext, userText, threadTail } = req.body || {};
+  const { kind, mode, boardContext, userText, threadTail, workflow } = req.body || {};
   if (typeof boardContext !== 'string' || typeof userText !== 'string' || !userText.trim()) {
     return res.status(400).json({ error: 'Faltan contexto y mensaje' });
   }
-  if (!process.env.OPENAI_API_KEY) {
-    return res.status(503).json({ error: 'no-key', message: 'Maia está sin clave' });
+
+  // Workflow opcional (e.g. "breakdown"): activa instrucciones + few-shot del
+  // desglose. Siempre que llegue algo, el archivo debe existir en maia/workflows.
+  const workflowName =
+    typeof workflow === 'string' && workflow.trim() ? workflow.trim().toLowerCase() : null;
+  if (workflowName && !/^[a-z][a-z0-9-]{0,40}$/.test(workflowName)) {
+    return res.status(400).json({ error: 'workflow-invalid' });
+  }
+  const workflowText = workflowName ? readPromptFile(`workflows/${workflowName}.md`) : null;
+  if (workflowName && workflowText === null) {
+    return res.status(400).json({ error: 'workflow-missing' });
   }
 
   const parts = [
@@ -76,47 +96,19 @@ router.post('/maia/chat', requireAuth, async (req, res) => {
   parts.push(`Mensaje del usuario:\n${String(userText).slice(0, 1000)}`);
 
   try {
-    const up = await fetch(OPENAI_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: OPENAI_MODEL,
-        messages: [
-          { role: 'system', content: systemPrompt() },
-          { role: 'user', content: parts.join('\n\n') },
-        ],
-        max_tokens: 300,
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-      }),
+    const result = await callLLM({
+      systemPrompt: systemPrompt({ workflow: workflowText }),
+      messages: [{ role: 'user', content: parts.join('\n\n') }],
     });
-
-    if (!up.ok) {
-      return res.status(502).json({ error: 'llm-upstream', upstream: up.status });
+    return res.json(result);
+  } catch (err) {
+    if (err?.code === 'no-key') {
+      return res.status(503).json({ error: 'no-key', message: 'Maia está sin clave' });
     }
-
-    const data = await up.json();
-    const raw = data?.choices?.[0]?.message?.content || '';
-    let parsed;
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return res.status(502).json({ error: 'llm-parse' });
+    if (err?.code === 'llm-upstream') {
+      return res.status(502).json({ error: 'llm-upstream', upstream: err.status });
     }
-    if (
-      !parsed ||
-      typeof parsed.reply !== 'string' ||
-      !parsed.reply.trim() ||
-      !Array.isArray(parsed.actions)
-    ) {
-      return res.status(502).json({ error: 'llm-shape' });
-    }
-    return res.json({ reply: parsed.reply, actions: parsed.actions });
-  } catch {
-    return res.status(502).json({ error: 'llm-call' });
+    return res.status(502).json({ error: err?.code || 'llm-call' });
   }
 });
 

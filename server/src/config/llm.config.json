@@ -1,0 +1,32 @@
+{
+  "activeProvider": "openai",
+  "timeoutMs": 12000,
+  "providers": {
+    "openai": {
+      "adapter": "openai-compatible",
+      "baseUrl": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "maxTokens": 1000,
+      "temperature": 0.3,
+      "jsonObject": true
+    },
+    "openrouter": {
+      "adapter": "openai-compatible",
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "model": "anthropic/claude-3.5-haiku",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "maxTokens": 1000,
+      "temperature": 0.3,
+      "jsonObject": false
+    },
+    "anthropic": {
+      "adapter": "anthropic-native",
+      "baseUrl": "https://api.anthropic.com/v1",
+      "model": "claude-3-5-haiku-20241022",
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "maxTokens": 1000,
+      "temperature": 0.3
+    }
+  }
+}
