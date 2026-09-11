@@ -21,6 +21,7 @@ export function defaultOnboarding() {
     answers: {},
     currentQuestionId: first ? first.id : null,
     done: false,
+    bootstrapCompleted: false,
   };
 }
 
@@ -30,6 +31,9 @@ export function normalizeOnboarding(value) {
     answers: value.answers && typeof value.answers === 'object' ? { ...value.answers } : {},
     currentQuestionId: typeof value.currentQuestionId === 'string' ? value.currentQuestionId : null,
     done: Boolean(value.done),
+    // Desglose de arranque aplicado (§12 Estado): evita re-preguntar el
+    // breakdown aunque el tablero vuelva a quedar en blanco.
+    bootstrapCompleted: Boolean(value.bootstrapCompleted),
   };
 }
 

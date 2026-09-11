@@ -13,7 +13,7 @@ import { useProject } from '../hooks/useProject';
 import { useAuth } from '../hooks/useAuth';
 import { scanInquiries } from '../services/inquiryEngine';
 import { autoEligible } from '../services/proposalEngine';
-import { canApply, apply as applyAction, selectAutoActions } from '../services/applyEngine';
+import { canApply, apply as applyAction, applyBatch, selectAutoActions } from '../services/applyEngine';
 import { requestMaiaChat, actionsToProposals } from '../services/maiaChat';
 import {
   createHuddleSession,
@@ -596,6 +596,47 @@ export function MaiaProvider({ children }) {
     [mutateProject],
   );
 
+  // §12 Estado bootstrap (slice 17): aplica de una el lote `create-card` del
+  // desglose de arranque (una sola mutateProject), deja log source 'confirm',
+  // marca las propuestas applied y setea `onboarding.bootstrapCompleted` para
+  // que el scanner no vuelva a proponer breakdown.
+  const applyBreakdownBatch = React.useCallback(
+    (inquiryId) => {
+      const at = new Date().toISOString();
+      mutateProject((prev) => {
+        const inq = (prev.inquiries || []).find((i) => i.id === inquiryId);
+        const pending = (inq?.proposals || []).filter(
+          (p) => p.status === PROPOSAL_STATUS.PENDING && p.action === 'create-card',
+        );
+        if (!inq || pending.length === 0) return prev;
+        const { project: np, appliedProposalIds } = applyBatch(prev, pending, {
+          source: 'confirm',
+        });
+        return {
+          ...np,
+          onboarding: prev.onboarding
+            ? { ...prev.onboarding, bootstrapCompleted: true }
+            : prev.onboarding,
+          inquiries: (prev.inquiries || []).map((i) =>
+            i.id === inquiryId
+              ? {
+                  ...i,
+                  proposals: (i.proposals || []).map((p) =>
+                    appliedProposalIds.includes(p.id)
+                      ? { ...p, status: PROPOSAL_STATUS.APPLIED, appliedAt: at }
+                      : p,
+                  ),
+                  updatedAt: at,
+                }
+              : i,
+          ),
+          actionLog: np.actionLog,
+        };
+      });
+    },
+    [mutateProject],
+  );
+
   // §9.200: "No" de Lucía → burbuja Maia "¿Qué habría que hacer entonces?"
   // (local, sin LLM). Segunda vez → offer snooze, sin loop. Cambia el estado
   // del inquiry (CHATTING), descarta la propuesta apuntada (o todas en el texto
@@ -683,6 +724,7 @@ export function MaiaProvider({ children }) {
       applyProposal,
       declineProposal,
       snoozeInquiry,
+      applyBreakdownBatch,
       startHuddle,
       stopHuddle,
       toggleDemo,
@@ -705,6 +747,7 @@ export function MaiaProvider({ children }) {
       applyProposal,
       declineProposal,
       snoozeInquiry,
+      applyBreakdownBatch,
       startHuddle,
       stopHuddle,
       toggleDemo,

@@ -348,6 +348,7 @@ describe('projectStorage', () => {
         answers: { objetivo: 'Entregar el portal', equipo: 'Lucía' },
         currentQuestionId: 'equipo',
         done: false,
+        bootstrapCompleted: false,
       },
     };
     const doc = JSON.parse(serializeProject(runtime));

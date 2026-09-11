@@ -112,6 +112,21 @@ export function buildBoardContext({ project, inquiry, now = new Date() } = {}) {
     }
   }
 
+  if (inquiry?.kind === INQUIRY_KINDS.BREAKDOWN) {
+    const initial =
+      buckets.find((b) => /por hacer|backlog|todo|to do/i.test(b.name)) || buckets[0];
+    lines.push(
+      `Columnas (id=nombre): ${buckets.map((b) => `${b.id}=${b.name}`).join(', ') || 'sin columnas.'}`,
+    );
+    if (initial) {
+      lines.push(`Columna inicial para las tareas: «${initial.name}» (id ${initial.id}).`);
+    }
+    const ficha = (project?.documents || []).find((d) => d.title === 'Ficha del proyecto');
+    if (ficha && ficha.content) {
+      lines.push(`Ficha del proyecto:\n${truncate(ficha.content, 500)}`);
+    }
+  }
+
   let context = lines.join('\n');
   if (context.length > MAX_CONTEXT_CHARS) context = context.slice(0, MAX_CONTEXT_CHARS);
   return context;
@@ -308,7 +323,53 @@ function fetchWithTimeout(url, options, timeoutMs) {
   );
 }
 
+function breakdownFallback(project) {
+  const buckets = project?.buckets || [];
+  const initial =
+    buckets.find((b) => /por hacer|backlog|todo|to do/i.test(b.name)) || buckets[0];
+  if (!initial) {
+    return {
+      reply:
+        'Sin conexión con el modelo y el tablero no tiene columnas para anotar tareas. Agregá una columna y volvé a pedírmelo.',
+      actions: [],
+    };
+  }
+  const examples = [
+    {
+      title: 'Definir el alcance de la primera semana',
+      description:
+        'Poner en una frase qué entra y qué no en esta ronda. Hecho cuando el equipo lo nombre en el huddle.',
+    },
+    {
+      title: 'Elegir el primer hito',
+      description:
+        'Un resultado concreto que se pueda marcar como hito y fechar en los próximos 15 días. Hecho cuando haya una carta hito con fecha.',
+    },
+    {
+      title: 'Anotar las tareas del primer paso',
+      description:
+        'Escribir en el tablero las 2 o 3 acciones atómicas que llevan al hito. Hecho cuando cada una tenga título y criterio de hecho.',
+    },
+    {
+      title: 'Repartir responsables',
+      description:
+        'Darle dueño a cada tarea en columnas de trabajo. Hecho cuando ninguna carta activa esté sin responsable.',
+    },
+  ];
+  return {
+    reply:
+      'Sin conexión con el modelo, te dejo un desglose base para arrancar: cuatro tareas atómicas de la primera semana. Revisá, ajustá lo que no cierre y creá las que sirvan.',
+    actions: examples.map((e) => ({
+      type: 'create-card',
+      payload: { bucketId: initial.id, title: e.title, description: e.description },
+    })),
+  };
+}
+
 function templatedResponse({ project, inquiry, now }) {
+  if (inquiry?.kind === INQUIRY_KINDS.BREAKDOWN) {
+    return { ...breakdownFallback(project), source: 'templated' };
+  }
   return {
     reply: templatedMaiaReply({ project, inquiry, now }),
     actions: [],
@@ -342,6 +403,7 @@ export async function requestMaiaChat({
     threadTail: (inquiry.thread || [])
       .slice(-MAX_THREAD_TURNS)
       .map((m) => (typeof m === 'string' ? m : `${m.role || 'maia'}: ${m.text || ''}`)),
+    ...(inquiry.kind === INQUIRY_KINDS.BREAKDOWN ? { workflow: 'breakdown' } : {}),
   };
 
   let attempt = 0;

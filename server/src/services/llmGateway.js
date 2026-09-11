@@ -105,7 +105,7 @@ async function openAiCompatible({ provider, systemPrompt, messages, signal, fetc
     Authorization: `Bearer ${process.env[provider.apiKeyEnv]}`,
   };
   if (provider.id === 'openrouter') {
-    headers['HTTP-Referer'] = process.env.APP_BASE_URL || '';
+    headers['HTTP-Referer'] = process.env.APP_BASE_URL || 'https://gantter.fly.dev';
     headers['X-Title'] = process.env.APP_TITLE || 'Gantter';
   }
   const body = {

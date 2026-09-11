@@ -85,6 +85,7 @@ const KIND_RESOLVE_TEXTS = {
     return `«${titleOf(t)}» salió del trabajo activo`;
   },
   [INQUIRY_KINDS.OVERLAP]: () => 'Se despejó el solapamiento de barras',
+  [INQUIRY_KINDS.BREAKDOWN]: () => 'El tablero ya tiene tareas cargadas',
 };
 
 function resolveReasonFor(inq, tasks, ctx) {
@@ -129,6 +130,20 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
 
   // --- Genera candidatos por kind -------------------------------------------
   const candidates = [];
+
+  // breakdown: arranque del proyecto. Ficha lista (onboarding done) y tablero
+  // en blanco -> Maia ayuda a desglosar el primer paso en tareas atómicas.
+  const onboarding = project?.onboarding;
+  if (tasks.length === 0 && onboarding?.done === true && !onboarding?.bootstrapCompleted) {
+    candidates.push({
+      id: 'breakdown:init',
+      kind: INQUIRY_KINDS.BREAKDOWN,
+      cardId: null,
+      evidence: 'Objetivo definido en la Ficha, sin tareas cargadas aún.',
+      question:
+        'Ficha del proyecto lista, pero el tablero está en blanco. ¿Cómo damos el primer paso?',
+    });
+  }
 
   tasks.forEach((t) => {
     if (!workingTask(t)) return;
@@ -260,7 +275,7 @@ export function scanInquiries(project, { existingInquiries = [], now = new Date(
   });
 
   wanted.forEach((c) => {
-    const id = uuidv4();
+    const id = c.id || uuidv4();
     const base = {
       id,
       projectId: project?.id || null,

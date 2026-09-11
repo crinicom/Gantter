@@ -8,7 +8,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useMaia } from '../../context/MaiaContext';
 import { useAuth } from '../../hooks/useAuth';
 import { ACTIVE_USER } from '../../constants/project';
-import { INQUIRY_KIND_META, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maia';
+import { INQUIRY_KIND_META, INQUIRY_KINDS, INQUIRY_STATUS, PROPOSAL_STATUS } from '../../constants/maia';
 import MaiaMark from './MaiaMark';
 
 // §9.200: el "No" ahora es local (sin LLM) vía declineProposal en MaiaContext.
@@ -86,6 +86,36 @@ function bubbleTone(role) {
     : 'bg-forest-600 text-paper';
 }
 
+// Slice 17 (§12 Estado bootstrap): el desglose de arranque se confirma como
+// lote (una sola mutación), no carta por carta.
+function BreakdownBlock({ inquiryId, pending }) {
+  const { applyBreakdownBatch } = useMaia();
+  return (
+    <div className="rounded-md border border-forest/30 bg-forest/5 px-3 py-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-forest-700">
+        Desglose propuesto
+      </p>
+      <ul className="mt-2 space-y-2">
+        {pending.map((p) => (
+          <li key={p.id}>
+            <p className="text-sm font-medium text-ink">{p.payload?.title || p.label}</p>
+            {p.payload?.description ? (
+              <p className="text-xs text-muted">{p.payload.description}</p>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={() => applyBreakdownBatch(inquiryId)}
+        className="mt-3 w-full rounded-md bg-forest-600 px-3 py-2 text-sm font-medium text-paper hover:bg-forest-700"
+      >
+        Crear estas tareas en el tablero
+      </button>
+    </div>
+  );
+}
+
 export default function InquiryThread({ inquiryId, onClose }) {
   const { inquiries, applyMode, sendThreadMessage, snoozeInquiry, maiaReplying } = useMaia();
   const { user } = useAuth();
@@ -114,6 +144,11 @@ export default function InquiryThread({ inquiryId, onClose }) {
   const proposals = inquiry.proposals || [];
   const pendingCount = proposals.filter((p) => p.status === PROPOSAL_STATUS.PENDING).length;
   const resolvedCondition = inquiry.status === INQUIRY_STATUS.RESOLVED;
+  const isBreakdown = inquiry.kind === INQUIRY_KINDS.BREAKDOWN;
+  const breakdownPending = isBreakdown
+    ? proposals.filter((p) => p.status === PROPOSAL_STATUS.PENDING && p.action === 'create-card')
+    : [];
+  const genericProposals = proposals.filter((p) => !breakdownPending.includes(p));
 
   return (
     <div className="absolute inset-0 z-10 flex flex-col bg-paper" aria-label="Hilo de la pregunta">
@@ -155,19 +190,26 @@ export default function InquiryThread({ inquiryId, onClose }) {
         {maiaReplying && (
           <div className="flex justify-start">
             <div className="rounded-lg border border-gray-200 bg-surface px-3 py-2 text-sm text-muted">
-              Maia está pensando…
+              {isBreakdown ? 'Maia está estructurando tareas atómicas…' : 'Maia está pensando…'}
             </div>
           </div>
         )}
         <div ref={bottomRef} />
       </div>
 
-      {(proposals.length > 0 || resolvedCondition) && (
+      {(genericProposals.length > 0 || breakdownPending.length > 0 || resolvedCondition) && (
         <div className="space-y-2 border-t border-gray-200 px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Propuestas</p>
-          {proposals.map((p) => (
-            <ProposalRow key={p.id} inquiry={inquiry} proposal={p} applyMode={applyMode} />
-          ))}
+          {breakdownPending.length > 0 && (
+            <BreakdownBlock inquiryId={inquiry.id} pending={breakdownPending} />
+          )}
+          {genericProposals.length > 0 && (
+            <>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted">Propuestas</p>
+              {genericProposals.map((p) => (
+                <ProposalRow key={p.id} inquiry={inquiry} proposal={p} applyMode={applyMode} />
+              ))}
+            </>
+          )}
           {pendingCount === 0 && resolvedCondition && (
             <p className="text-sm text-forest-700">Esta pregunta ya se resolvió sola.</p>
           )}

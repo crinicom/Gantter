@@ -270,4 +270,37 @@ describe('scanInquiries', () => {
       expect(inq.followedUpAt).toBeNull();
     }
   });
+
+  it('breakdown aparece con tablero en blanco y onboarding done sin bootstrapCompleted', () => {
+    const { inquiries } = scanInquiries(
+      portalProject({
+        tasks: [],
+        onboarding: { done: true, bootstrapCompleted: false, answers: { q1: 'Landing' } },
+      }),
+    );
+    const bd = inquiries.find((i) => i.kind === 'breakdown');
+    expect(bd).toBeDefined();
+    expect(bd.id).toBe('breakdown:init');
+    expect(bd.cardId).toBeNull();
+    expect(bd.question).toContain('tablero está en blanco');
+    expect(bd.evidence).toContain('Ficha');
+  });
+
+  it('breakdown no aparece si hay tareas, onboarding no done o bootstrapCompleted', () => {
+    const base = portalProject({ tasks: [], onboarding: { done: true, bootstrapCompleted: false, answers: {} } });
+    expect(scanInquiries(portalProject({ tasks: [task()], onboarding: base.onboarding })).inquiries.find((i) => i.kind === 'breakdown')).toBeUndefined();
+    expect(scanInquiries(portalProject({ tasks: [], onboarding: { done: false, bootstrapCompleted: false, answers: {} } })).inquiries.find((i) => i.kind === 'breakdown')).toBeUndefined();
+    expect(scanInquiries(portalProject({ tasks: [], onboarding: { done: true, bootstrapCompleted: true, answers: {} } })).inquiries.find((i) => i.kind === 'breakdown')).toBeUndefined();
+  });
+
+  it('breakdown se resuelve cuando aparecen tareas con motivo El tablero ya tiene tareas cargadas', () => {
+    const first = scanInquiries(portalProject({ tasks: [], onboarding: { done: true, bootstrapCompleted: false, answers: {} } }));
+    expect(first.inquiries.find((i) => i.kind === 'breakdown')).toBeDefined();
+    const { inquiries, logEntries } = scanInquiries(portalProject({ tasks: [task()], onboarding: { done: true, bootstrapCompleted: false, answers: {} } }), { existingInquiries: first.inquiries });
+    const resolved = inquiries.find((i) => i.kind === 'breakdown');
+    expect(resolved).toBeDefined();
+    expect(resolved.status).toBe(INQUIRY_STATUS.RESOLVED);
+    expect(resolved.resolvedNote).toBe('El tablero ya tiene tareas cargadas');
+    expect(logEntries).toEqual(expect.arrayContaining([expect.objectContaining({ summary: 'El tablero ya tiene tareas cargadas' })]));
+  });
 });

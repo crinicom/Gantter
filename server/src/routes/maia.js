@@ -64,7 +64,7 @@ function contractPromptText() {
 // cargado y validado por el caller).
 function systemPrompt({ workflow = null } = {}) {
   const base = `${personaPromptText()} ${contractPromptText()}`;
-  return workflow ? `${base} ${workflow}` : base;
+  return workflow ? `${base}\n\n${workflow}` : base;
 }
 
 router.post('/maia/chat', requireAuth, async (req, res) => {

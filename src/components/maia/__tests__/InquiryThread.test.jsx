@@ -49,6 +49,7 @@ function baseValue(overrides = {}) {
     applyProposal: vi.fn(),
     declineProposal: vi.fn(),
     snoozeInquiry: vi.fn(),
+    applyBreakdownBatch: vi.fn(),
     ...overrides,
   };
 }
@@ -152,5 +153,58 @@ describe('InquiryThread', () => {
     expect(screen.getByText(/Aplicada:/)).toBeInTheDocument();
     expect(screen.getByText(/Descartada:/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sí' })).toBeInTheDocument();
+  });
+
+  it('breakdown: muestra el desglose propuesto con título y descripción, sin Sí/No por carta', () => {
+    renderThread({
+      inquiries: [
+        {
+          ...baseValue().inquiries[0],
+          kind: 'breakdown',
+          cardId: null,
+          proposals: [
+            { ...pendingProposal(), id: 'bd1', action: 'create-card', payload: { bucketId: 'b_backlog', title: 'Definir alcance', description: 'Poder nombrar qué entra y qué no.' } },
+            { ...pendingProposal(), id: 'bd2', action: 'create-card', payload: { bucketId: 'b_backlog', title: 'Elegir primer hito', description: 'Una carta hito con fecha.' } },
+          ],
+        },
+      ],
+    });
+    expect(screen.getByText('Desglose propuesto')).toBeInTheDocument();
+    expect(screen.getByText('Definir alcance')).toBeInTheDocument();
+    expect(screen.getByText('Elegir primer hito')).toBeInTheDocument();
+    expect(screen.getByText('Poder nombrar qué entra y qué no.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Crear estas tareas en el tablero' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sí' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'No' })).not.toBeInTheDocument();
+  });
+
+  it('breakdown: el botón de lote confirma todas las cartas de una', () => {
+    const applyBreakdownBatch = vi.fn();
+    renderThread({
+      applyBreakdownBatch,
+      inquiries: [
+        {
+          ...baseValue().inquiries[0],
+          kind: 'breakdown',
+          cardId: null,
+          proposals: [
+            { ...pendingProposal(), id: 'bd1', action: 'create-card', payload: { bucketId: 'b_backlog', title: 'Definir alcance' } },
+          ],
+        },
+      ],
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Crear estas tareas en el tablero' }));
+    expect(applyBreakdownBatch).toHaveBeenCalledWith('q1');
+  });
+
+  it('breakdown: mientras Maia responde muestra el texto de estructuración atómica', () => {
+    renderThread({
+      maiaReplying: true,
+      inquiries: [
+        { ...baseValue().inquiries[0], kind: 'breakdown', cardId: null },
+      ],
+    });
+    expect(screen.getByText('Maia está estructurando tareas atómicas…')).toBeInTheDocument();
+    expect(screen.queryByText('Maia está pensando…')).not.toBeInTheDocument();
   });
 });

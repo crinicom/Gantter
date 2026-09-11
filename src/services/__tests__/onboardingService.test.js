@@ -30,7 +30,12 @@ describe('onboardingService', () => {
     });
     expect(resolveOnboarding(null)).toBeNull();
     expect(resolveOnboarding({ done: true, answers: {} })).toMatchObject({ done: true });
-    expect(resolveOnboarding({})).toEqual({ answers: {}, currentQuestionId: null, done: false });
+    expect(resolveOnboarding({})).toEqual({
+      answers: {},
+      currentQuestionId: null,
+      done: false,
+      bootstrapCompleted: false,
+    });
   });
 
   it('normalizeOnboarding deja null lo que no es onboarding object (seeds/legacy)', () => {
@@ -40,7 +45,12 @@ describe('onboardingService', () => {
   });
 
   it('normalizeOnboarding completa defaults de un object parcial', () => {
-    expect(normalizeOnboarding({})).toEqual({ answers: {}, currentQuestionId: null, done: false });
+    expect(normalizeOnboarding({})).toEqual({
+      answers: {},
+      currentQuestionId: null,
+      done: false,
+      bootstrapCompleted: false,
+    });
     expect(normalizeOnboarding({ done: true, answers: { a: 'z' } })).toMatchObject({
       done: true,
       answers: { a: 'z' },
@@ -103,6 +113,18 @@ describe('onboardingService', () => {
 
   it('normalizeOnboarding descarta campos extra sin romper', () => {
     const result = normalizeOnboarding({ done: true, extra: 'field', answers: { a: 'b' } });
-    expect(result).toEqual({ answers: { a: 'b' }, currentQuestionId: null, done: true });
+    expect(result).toEqual({
+      answers: { a: 'b' },
+      currentQuestionId: null,
+      done: true,
+      bootstrapCompleted: false,
+    });
+  });
+
+  it('normalizeOnboarding conserva bootstrapCompleted (flag durable del desglose de arranque)', () => {
+    expect(
+      normalizeOnboarding({ done: true, answers: {}, bootstrapCompleted: true }).bootstrapCompleted,
+    ).toBe(true);
+    expect(defaultOnboarding().bootstrapCompleted).toBe(false);
   });
 });

@@ -180,6 +180,23 @@ export function apply(project, proposal, { source = 'confirm', now = new Date() 
   };
 }
 
+// Lote atómico del desglose de arranque (§12 Estado: bootstrap): aplica las
+// cartas `create-card` pendientes de forma consecutiva sobre el proyecto
+// acumulado (#1..#N correlativos). Las que ya no aplican se saltean sin abortar.
+export function applyBatch(project, proposals, { source = 'confirm', now = new Date() } = {}) {
+  let acc = project;
+  const logEntries = [];
+  const appliedProposalIds = [];
+  (proposals || []).forEach((proposal) => {
+    if (!canApply(acc, proposal, { now })) return;
+    const out = apply(acc, proposal, { source, now });
+    acc = out.project;
+    logEntries.push(out.logEntry);
+    appliedProposalIds.push(proposal.id);
+  });
+  return { project: acc, logEntries, appliedProposalIds };
+}
+
 // Ordena qué propuestas puede aplicar el modo auto sobre el set de inquiries.
 export function selectAutoActions(project, inquiries, { canAutoApply } = {}) {
   return (inquiries || [])
@@ -193,4 +210,4 @@ export function selectAutoActions(project, inquiries, { canAutoApply } = {}) {
     );
 }
 
-export const applyEngine = { canApply, apply, selectAutoActions };
+export const applyEngine = { canApply, apply, applyBatch, selectAutoActions };

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { canApply, apply, selectAutoActions, applyEngine } from '../applyEngine';
+import { canApply, apply, applyBatch, selectAutoActions, applyEngine } from '../applyEngine';
 
 const DAY = 86400000;
 const day = (offset) => new Date(Date.now() + offset * DAY).toISOString();
@@ -227,6 +227,56 @@ describe('selectAutoActions', () => {
   it('exporta applyEngine con la API pública', () => {
     expect(applyEngine.canApply).toBe(canApply);
     expect(applyEngine.apply).toBe(apply);
+    expect(applyEngine.applyBatch).toBe(applyBatch);
     expect(applyEngine.selectAutoActions).toBe(selectAutoActions);
+  });
+});
+
+describe('applyBatch', () => {
+  it('aplica un lote de create-card con numeración correlativa #1..#N y un comentario por carta', () => {
+    const now = new Date('2026-09-08T10:00:00Z');
+    const proposals = ['Setup CI', 'Elegir stack', 'Caso de uso feliz'].map((title, i) =>
+      pendingProposal({
+        id: `bd${i}`,
+        action: 'create-card',
+        payload: { bucketId: 'b_backlog', title, description: 'Criterio de hecho listo.' },
+      }),
+    );
+    const out = applyBatch(project(), proposals, { source: 'confirm', now });
+    expect(out.project.tasks).toHaveLength(3);
+    expect(out.project.tasks.map((t) => `${t.number}:${t.name}`)).toEqual([
+      '1:Setup CI',
+      '2:Elegir stack',
+      '3:Caso de uso feliz',
+    ]);
+    out.project.tasks.forEach((t) => {
+      expect(t.comments).toHaveLength(1);
+      expect(t.comments[0]).toMatchObject({ author: 'Maia' });
+    });
+    expect(out.project.actionLog).toHaveLength(3);
+    expect(out.appliedProposalIds).toEqual(['bd0', 'bd1', 'bd2']);
+  });
+
+  it('saltea propuestas que ya no aplican sin abortar el resto del lote', () => {
+    const now = new Date('2026-09-08T10:00:00Z');
+    const proposals = [
+      pendingProposal({ id: 'ok1', action: 'create-card', payload: { bucketId: 'b_backlog', title: 'Ok' } }),
+      pendingProposal({ id: 'bad', action: 'create-card', payload: { bucketId: 'b_ausente', title: 'Sin columna' } }),
+      pendingProposal({ id: 'ok2', action: 'create-card', payload: { bucketId: 'b_backlog', title: 'Ok dos' } }),
+    ];
+    const out = applyBatch(project(), proposals, { source: 'confirm', now });
+    expect(out.appliedProposalIds).toEqual(['ok1', 'ok2']);
+    expect(out.project.tasks).toHaveLength(2);
+    expect(out.project.tasks.map((t) => t.number)).toEqual([1, 2]);
+  });
+
+  it('numeración sigue la carta más alta del proyecto previo (#4..#6 tras una #3)', () => {
+    const now = new Date('2026-09-08T10:00:00Z');
+    const p = project({ tasks: [task({ id: 't1', number: 3 })] });
+    const proposals = ['A', 'B', 'C'].map((title, i) =>
+      pendingProposal({ id: `bd${i}`, action: 'create-card', payload: { bucketId: 'b_backlog', title } }),
+    );
+    const out = applyBatch(p, proposals, { source: 'confirm', now });
+    expect(out.project.tasks.filter((t) => t.id !== 't1').map((t) => t.number)).toEqual([4, 5, 6]);
   });
 });

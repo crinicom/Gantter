@@ -7,6 +7,7 @@ export const INQUIRY_KINDS = {
   STALE: 'stale',
   MISSING_DATE: 'missing-date',
   OVERLAP: 'overlap',
+  BREAKDOWN: 'breakdown',
 };
 
 export const INQUIRY_STATUS = {
@@ -61,6 +62,7 @@ export const INQUIRY_KIND_META = {
   [INQUIRY_KINDS.STALE]: { label: 'Estancada', tone: 'rust' },
   [INQUIRY_KINDS.MISSING_DATE]: { label: 'Sin fechas', tone: 'muted' },
   [INQUIRY_KINDS.OVERLAP]: { label: 'Solapada', tone: 'rust' },
+  [INQUIRY_KINDS.BREAKDOWN]: { label: 'Arranque', tone: 'forest' },
 };
 
 export const INQUIRY_STATUS_LABELS = {

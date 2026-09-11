@@ -99,6 +99,19 @@ describe('buildBoardContext', () => {
     });
     expect(ctx).toContain('Cartas con fechas visibles');
   });
+
+  it('en kind breakdown anuncia la columna inicial y la Ficha para que el lote use bucketId real', () => {
+    const withFicha = project({ documents: [{ title: 'Ficha del proyecto', content: '# Ficha\nObjetivo: landing que convierta.' }] });
+    const ctx = maiaChatModule.buildBoardContext({
+      project: withFicha,
+      inquiry: inquiry({ kind: 'breakdown' }),
+      now: new Date('2026-09-08T00:00:00Z'),
+    });
+    expect(ctx).toContain('Columna inicial para las tareas');
+    expect(ctx).toContain('Columnas (id=nombre)');
+    expect(ctx).toContain('Ficha del proyecto');
+    expect(ctx).toContain('b_backlog');
+  });
 });
 
 describe('templatedMaiaReply', () => {
@@ -189,6 +202,23 @@ describe('requestMaiaChat', () => {
     expect(typeof res.reply).toBe('string');
   });
 
+  it('breakdown sin server degrada a un desglose templated con 4 create-card y bucketId real', async () => {
+    const res = await maiaChatModule.requestMaiaChat({
+      project: project(),
+      inquiry: inquiry({ kind: 'breakdown', cardId: null }),
+      userText: 'Dale, desglosá.',
+    });
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(res.source).toBe('templated');
+    expect(res.actions).toHaveLength(4);
+    res.actions.forEach((a) => {
+      expect(a.type).toBe('create-card');
+      expect(['b_curso', 'b_backlog']).toContain(a.payload.bucketId);
+      expect(String(a.payload.title).trim()).not.toBe('');
+      expect(String(a.payload.description || '').trim()).not.toBe('');
+    });
+  });
+
   it('en server mode llama al relay y devuelve reply + acciones del LLM', async () => {
     vi.mocked(appConfig.isServerMode).mockReturnValue(true);
     vi.mocked(appConfig.apiBase).mockReturnValue('https://gantter.fly.dev');
@@ -209,6 +239,29 @@ describe('requestMaiaChat', () => {
     expect(res.source).toBe('llm');
     expect(res.reply).toBe('Vamos a verlo.');
     expect(res.actions).toHaveLength(1);
+  });
+
+  it('breakdown en server mode manda workflow breakdown en el body', async () => {
+    vi.mocked(appConfig.isServerMode).mockReturnValue(true);
+    vi.mocked(appConfig.apiBase).mockReturnValue('https://gantter.fly.dev');
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ reply: 'Armemos el primer paso.', actions: [] }),
+    });
+    const res = await maiaChatModule.requestMaiaChat({
+      project: project(),
+      inquiry: inquiry({ kind: 'breakdown', cardId: null }),
+      userText: 'Dale.',
+    });
+    const [, options] = global.fetch.mock.calls[0];
+    const body = JSON.parse(options.body);
+    expect(body.workflow).toBe('breakdown');
+    expect(res.source).toBe('llm');
+
+    const normal = inquiry();
+    await maiaChatModule.requestMaiaChat({ project: project(), inquiry: normal, userText: 'Dale.' });
+    const [, normalOptions] = global.fetch.mock.calls[1];
+    expect(JSON.parse(normalOptions.body).workflow).toBeUndefined();
   });
 
   it('con fallo del upstream reintenta una vez y degrada a templated', async () => {
