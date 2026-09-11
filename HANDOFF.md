@@ -402,7 +402,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - **UI**: pestaña "Accesos directos" en `TabsSwitcher` (`VIEWS.SHORTCUTS`) → `ShortcutsView` en `AppShell`.
 - Tests: **361/361** (shortcutsService 8, projectStorage +2, ShortcutsView 12 — incl. editar con lápiz, TabsSwitcher 2 actualizado) · `npm run build` OK.
 - **Revisar contra §12**: que `shortcuts[]` no rompa el round-trip de seeds (sin la key → `[]`), que el open use `noopener`, y que el límite de 30 solo afecte a la creación (no al borrar).
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052`, `26c48cd`, `4a455fe`, `7f02324`, `e484098`, `a3bd5dc` y `ed07feb`.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052`, `26c48cd`, `4a455fe`, `7f02324`, `e484098`, `a3bd5dc`, `ed07feb`, `b191d5e` y `628ab73`.
 
 ---
 
@@ -558,6 +558,6 @@ Fixes P2 del slice 16 aplicados primero: `HTTP-Referer` con fallback `'https://g
 - Tests: **385/385** (antes 372; +13) · `npm run build` OK · dev server responde. Nuevos: `inquiryEngine` (+3: aparición, ausencias, resolución), `applyEngine` (+3: lote correlativo, salteo de inválidas, continuación tras `#3`), `maiaChat` (+3: contexto breakdown con Ficha, `workflow` solo en breakdown, fallback templated con 4 create-card y bucket real), `InquiryThread` (+3: render del lote sin Sí/No, botón → `applyBreakdownBatch('q1')`, texto de espera), `onboardingService` (+1 flag durable; 3 assertions `toEqual` actualizadas al nuevo campo, incluida `projectStorage` round-trip).
 - **Revisar contra §11/§12**: que el `workflow` solo viaje en breakdown, que `bootstrapCompleted` no se setee por la vía `updateOnboarding` (solo por el lote), que el fallback templated de breakdown no genere ruido duplicado en el hilo (dedupe por `action|payload` ya existente), y que ninguna seed dispare el breakdown (`onboarding: null`).
 
-**Pendiente humano**: push a `origin` (Gitea) de los commits pendientes del slice 15 y 16 (`2fa797b`…`a3bd5dc` → ver lista en sección 15) más los nuevos del slice 17 (`ed07feb` y este commit).
+**Pendiente humano**: push a `origin` (Gitea) de los commits pendientes del slice 15 y 16 (`2fa797b`…`a3bd5dc`, `ed07feb` → ver lista en sección 15) más los del slice 17 (`b191d5e` y `628ab73`).
 
 ---
