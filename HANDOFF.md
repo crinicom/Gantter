@@ -36,9 +36,9 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 |---|---|
 | Fecha | 2026-09-11 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | — |
-| Owner | — |
-| Status | 11–16 en `review` |
+| Slice en curso | 17 |
+| Owner | opencode |
+| Status | 11–15 en `review` · 16 en `done` · 17 en `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
@@ -69,8 +69,8 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **done** | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
 | 14 | Hardening v1: "No" de Maia (§9.200) + pruebas extensivas + mejoras menores | opencode | **done** | §9.200, §7, §12 | `declineProposal` (local, sin LLM, gate `followedUpAt`), normalize `followedUpAt: null`, 9 tests nuevos; commit slice 14 `e0d06a5` + fixes de review `1a3c24b` |
 | 15 | Accesos directos: pestaña con grid de iconos tipo Explorer (URL + nombre opcional, apertura en pestaña nueva, eliminar inline, máx. 30) | opencode | **review** | §12 (Shortcut) | `shortcutsService` (normalize/validate/label/limit) + `shortcuts[]` en storage (round-trip + backfill) + `addShortcut`/`removeShortcut` en ProjectContext + `ShortcutsView` + modal + tab en `TabsSwitcher`/`AppShell`; commit slice 15 `26c48cd` |
-| 16 | Gateway LLM multi-proveedor + modularización de prompts en Markdown | opencode | **review** | §11 | `llm.config.json` + `llmGateway.js` + relay refactorizado + `maia/workflows/breakdown.md` + tests; commit slice 16 `a3bd5dc` |
-| 17 | Diálogo de desglose atómico de arranque (Work Breakdown) | opencode | pending | §11, §12 | Interpelación de arranque cuando cards=0 + Ficha lista, batch `create-card`, UI |
+| 16 | Gateway LLM multi-proveedor + modularización de prompts en Markdown | opencode | **done** | §11 | `llm.config.json` + `llmGateway.js` + relay refactorizado + `maia/workflows/breakdown.md` + tests; commit slice 16 `a3bd5dc` |
+| 17 | Diálogo de desglose atómico de arranque (Work Breakdown) | opencode | **review** | §11, §12 | Interpelación de arranque cuando cards=0 + Ficha lista, batch `create-card`, UI |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -402,7 +402,7 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - **UI**: pestaña "Accesos directos" en `TabsSwitcher` (`VIEWS.SHORTCUTS`) → `ShortcutsView` en `AppShell`.
 - Tests: **361/361** (shortcutsService 8, projectStorage +2, ShortcutsView 12 — incl. editar con lápiz, TabsSwitcher 2 actualizado) · `npm run build` OK.
 - **Revisar contra §12**: que `shortcuts[]` no rompa el round-trip de seeds (sin la key → `[]`), que el open use `noopener`, y que el límite de 30 solo afecte a la creación (no al borrar).
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052`, `26c48cd`, `4a455fe`, `7f02324`, `e484098` y `a3bd5dc`.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052`, `26c48cd`, `4a455fe`, `7f02324`, `e484098`, `a3bd5dc` y `ed07feb`.
 
 ---
 
@@ -469,5 +469,95 @@ Reemplazar la llamada cableada a OpenAI en el backend por un Gateway desacoplado
 - **`server/.env.example`**: bloque opcional `OPENAI_API_KEY`/`OPENROUTER_API_KEY`/`ANTHROPIC_API_KEY`/`MAIA_PROMPTS_DIR`/`LLM_CONFIG_PATH` (sin valores; `.env` sigue ignorado). Nota: el `.env` local de dev no trae `OPENAI_API_KEY` (vive como secret en Fly): en local el endpoint 503ea y Maia degrada a templated, como antes.
 - Tests: **372/372** (nuevos `server/src/services/__tests__/llmGateway.test.js` con 11 tests: config real del repo, ruteo a los 3 proveedores, parseo defensivo, shape inválida, sin key, timeout corto 30ms abort, upstream 429) · `npm run build` OK. Los mocks usan `vi.stubGlobal('fetch')` + `vi.stubEnv` (config hermética inyectada por test).
 - **Revisar contra §11**: conmutar `activeProvider` sin tocar código; timeout 12s; degrade sin clave/fallo; prompts en markdown editables; `jsonObject` por proveedor (decisión humana aprobada).
+
+---
+
+### Review del slice 16 (Grok, 2026-09-11) — aprobado; observaciones P2 para corregir
+
+Diff revisado contra §11 de `bot_requirements.md`. Verificación limpia: 372/372 tests verdes, `npm run build` OK.
+
+- **Conmutación de proveedor**: `llm.config.json` conmuta `openai`/`openrouter`/`anthropic` sin tocar JS.
+- **Adapters**: `openai-compatible` (con headers openrouter condicionales) y `anthropic-native` validados con tests unitarios.
+- **Parseo defensivo**: `extractJson` aísla el bloque `{...}` tolerando fences y texto previo.
+- **Timeout y degrade**: 12s estricto con `AbortSignal.timeout`, degrade 503 sin clave.
+- **Workflow breakdown**: prompt y examples few-shot listos en `maia/workflows/breakdown.md`.
+- **Aislamiento**: `src/**` no fue tocado. Cero emoji verificado.
+
+**Observaciones P2 para aplicar al inicio del slice 17**:
+1. En `server/src/services/llmGateway.js` (L108): `headers['HTTP-Referer'] = process.env.APP_BASE_URL || 'https://gantter.fly.dev';` (usar fallback de URL en lugar de string vacío).
+2. En `server/src/routes/maia.js` (L67): separar el workflow con doble salto de línea: `${base}\n\n${workflow}` en vez de espacio.
+
+**Slice 16 → `done`**. Promovido a Slice 17.
+
+---
+
+### Slice 17 — qué implementar (OpenCode)
+
+Diálogo de desglose atómico de arranque (Work Breakdown) sobre la Ficha del proyecto (§11, §12).
+
+#### Objetivo
+
+Resolver el síndrome del tablero vacío en proyectos nuevos: cuando un proyecto tiene su Ficha completa (`onboarding.done === true`) y 0 cartas (`tasks.length === 0`), Maia abre una interpelación especial de arranque en el dock lateral. A través de un diálogo breve guiado por el workflow `breakdown`, Maia genera una propuesta en lote de 4 a 6 tareas atómicas (1 a 3 días, descripción con criterio de hecho, sin cartas flacas), que el usuario aprueba con un click para crearlas en el Kanban con numeración consecutiva `#1..#N`.
+
+#### Tareas previas (fixes P2 del Slice 16)
+1. En `server/src/services/llmGateway.js`: `headers['HTTP-Referer'] = process.env.APP_BASE_URL || 'https://gantter.fly.dev'`.
+2. En `server/src/routes/maia.js`: unir workflow con `\n\n` en el system prompt (`${base}\n\n${workflow}`).
+
+#### Archivos a tocar
+
+1. **`src/constants/maia.js`**:
+   - Agregar kind `BREAKDOWN: 'breakdown'` a `INQUIRY_KINDS`.
+   - Agregar meta en `INQUIRY_KIND_META`: `[INQUIRY_KINDS.BREAKDOWN]: { label: 'Arranque', tone: 'forest' }`.
+2. **`src/services/inquiryEngine.js`**:
+   - Detección de arranque: si `(project.tasks || []).length === 0 && project.onboarding?.done && !project.onboarding?.bootstrapCompleted`:
+     - Generar inquiry `kind: 'breakdown'`, anclada a `breakdown:init`, con status `open`.
+     - `question`: *"Ficha del proyecto lista, pero el tablero está en blanco. ¿Cómo damos el primer paso?"*.
+     - `evidence`: *"Objetivo definido en la Ficha, sin tareas cargadas aún."*.
+3. **`src/services/maiaChat.js`**:
+   - Al invocar `requestMaiaChat` para una inquiry de `kind === 'breakdown'`, pasar `workflow: 'breakdown'` en el body de la petición POST a `/api/maia/chat`.
+   - Fallback templated si responde 503 o falla: proponer respuesta contextual con tareas de ejemplo para no dejar el hilo roto.
+4. **`src/services/applyEngine.js`**:
+   - Soportar aplicación en lote de acciones `create-card`: cuando una propuesta o set de propuestas contenga múltiples `create-card`, aplicarlas consecutivamente en una única llamada a `mutateProject`, asegurando que `nextTaskNumber` se incremente `#1..#N` correctamente para cada una y cada carta nazca con su comentario de Maia.
+   - Respeto estricto de §9: `create-card` nunca se auto-aplica en modo auto; siempre exige confirmación del usuario.
+5. **`src/components/maia/InquiryThread.jsx`**:
+   - Cuando el inquiry es de tipo `breakdown` y contiene múltiples propuestas `create-card` pendientes:
+     - Renderizar la lista de tareas propuestas con su título y descripción (criterio de hecho).
+     - Botón de confirmación en bloque: *"Crear estas tareas en el tablero"*.
+     - Estado visual de espera sutil mientras `maiaReplying`: *"Maia está estructurando tareas atómicas..."*.
+6. **Tests**:
+   - `src/services/__tests__/inquiryEngine.test.js`: test para la detección de la inquiry `breakdown` cuando tasks=0 y onboarding.done=true; test de que no aparece si hay tareas o si onboarding no está done.
+   - `src/services/__tests__/applyEngine.test.js`: test de aplicación de lote `create-card` con numeración secuencial `#1..#N`.
+   - `src/components/maia/__tests__/InquiryThread.test.jsx`: render del lote de tareas y confirmación.
+
+#### No tocar
+
+- `ProjectContext.jsx` (consumir `mutateProject` existente, no tocar en paralelo).
+- `projectStorage.js`, `AppShell.jsx`.
+- Componentes de Gantt, Huddle ni Collab.
+
+#### Criterios de Aceptación
+
+- Proyecto nuevo con onboarding completado y 0 tareas muestra la interpelación de Arranque en Maia.
+- Al interactuar con el hilo, el cliente envía `workflow: 'breakdown'` al relay.
+- Maia devuelve 4 a 6 tareas atómicas con título y descripción.
+- Al hacer click en "Crear estas tareas en el tablero", se crean las cartas en el Kanban con numeración consecutiva `#1..#N` y comentarios de Maia.
+- `npm test` y `npm run build` pasan limpios.
+
+---
+
+### 17 · Diálogo de desglose atómico de arranque (2026-09-11) — notas para Grok
+
+Fixes P2 del slice 16 aplicados primero: `HTTP-Referer` con fallback `'https://gantter.fly.dev'` en `llmGateway.js` y workflow con doble salto de línea (`${base}\n\n${workflow}`) en `routes/maia.js`.
+
+- **Interpelación de arranque** (`inquiryEngine.js` + `constants/maia.js`): kind `breakdown` con meta `{ label: 'Arranque', tone: 'forest' }`. Dispara con `(tasks || []).length === 0 && onboarding?.done === true && !onboarding?.bootstrapCompleted`; pregunta/evidencia literales del slice, `id: 'breakdown:init'` (el merge de `wanted` usa `c.id || uuidv4()`, así el id no se regenera) y clave de hilo `breakdown:`. Se auto-resuelve con *"El tablero ya tiene tareas cargadas"* apenas aparecen cartas. El scanner demo no la genera (seeds tienen `onboarding: null`).
+- **Flag durable `bootstrapCompleted`** (extensión del listado, necesaria para la regla 4 de AGENTS): `normalizeOnboarding` descartaba campos desconocidos, así el flag **no persistía** en el round-trip canónico. `src/services/onboardingService.js` lo agrega a `defaultOnboarding` (`false`) y `normalizeOnboarding` (`Boolean`); `bot_requirements.md` §12 (Onboarding) lo documenta. El flag se setea solo en `applyBreakdownBatch` (una vez), no al cerrar la Ficha.
+- **Chat + workflow** (`maiaChat.js`): `requestMaiaChat` agrega `workflow: 'breakdown'` al body cuando `kind === BREAKDOWN` (no en otros kinds). `buildBoardContext` suma para breakdown: `Columnas (id=nombre)` + `Columna inicial` (casquea `/por hacer|backlog|todo/i`, fallback `buckets[0]`) + recorte de la Ficha (Document "Ficha del proyecto", ≤500 chars) — así el LLM emite `bucketId` real y desglosa sobre el objetivo. Fallback templated de breakdown (`breakdownFallback`): si 503/offline, devuelve 4 `create-card` de ejemplo con bucket real (nunca `{ reply, actions: [] }`, el hilo no queda roto).
+- **Lote `create-card`** (`applyEngine.js`): `applyBatch(project, proposals, { source, now })` aplica consecutivamente sobre el proyecto acumulado (`canApply` + `apply` en loop), devuelve `{ project, logEntries, appliedProposalIds }` con numeración `#1..#N` vía `nextTaskNumber` y comentario de Maia por carta; saltea las que dejaron de aplicar sin abortar. `create-card` nunca auto-aplica (§9): `deliverMaiaReply` lo salta en auto y `selectAutoActions` no lo incluye.
+- **Confirmación en lote** (`MaiaContext.jsx`, permitido — no está en "No tocar"): `applyBreakdownBatch(inquiryId)` en **una sola `mutateProject`** aplica el lote (`source: 'confirm'`), marca las propuestas `applied`, junta el log y setea `onboarding.bootstrapCompleted = true`; expuesto en el `value`.
+- **UI** (`InquiryThread.jsx`): kind breakdown con propuestas `create-card` pendientes → bloque "Desglose propuesto" (títulos + descripciones/criterio de hecho) + botón **"Crear estas tareas en el tablero"**, sin Sí/No por carta (aplicadas/descartadas siguen como chips); mientras `maiaReplying` → *"Maia está estructurando tareas atómicas…"* (el resto de los kinds conserva "Maia está pensando…").
+- Tests: **385/385** (antes 372; +13) · `npm run build` OK · dev server responde. Nuevos: `inquiryEngine` (+3: aparición, ausencias, resolución), `applyEngine` (+3: lote correlativo, salteo de inválidas, continuación tras `#3`), `maiaChat` (+3: contexto breakdown con Ficha, `workflow` solo en breakdown, fallback templated con 4 create-card y bucket real), `InquiryThread` (+3: render del lote sin Sí/No, botón → `applyBreakdownBatch('q1')`, texto de espera), `onboardingService` (+1 flag durable; 3 assertions `toEqual` actualizadas al nuevo campo, incluida `projectStorage` round-trip).
+- **Revisar contra §11/§12**: que el `workflow` solo viaje en breakdown, que `bootstrapCompleted` no se setee por la vía `updateOnboarding` (solo por el lote), que el fallback templated de breakdown no genere ruido duplicado en el hilo (dedupe por `action|payload` ya existente), y que ninguna seed dispare el breakdown (`onboarding: null`).
+
+**Pendiente humano**: push a `origin` (Gitea) de los commits pendientes del slice 15 y 16 (`2fa797b`…`a3bd5dc` → ver lista en sección 15) más los nuevos del slice 17 (`ed07feb` y este commit).
 
 ---
