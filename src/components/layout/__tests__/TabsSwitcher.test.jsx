@@ -4,14 +4,15 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import TabsSwitcher, { VIEWS } from '../TabsSwitcher';
 
 describe('TabsSwitcher', () => {
-  it('ofrece Tablero, Gantt e Información del proyecto', () => {
+  it('ofrece Tablero, Gantt, Información del proyecto y Accesos directos', () => {
     const onChange = vi.fn();
     render(<TabsSwitcher activeView={VIEWS.BOARD} onChange={onChange} />);
     expect(screen.getByRole('button', { name: 'Tablero' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Gantt' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Información del proyecto' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Información del proyecto' }));
-    expect(onChange).toHaveBeenCalledWith(VIEWS.INFO);
+    expect(screen.getByRole('button', { name: 'Accesos directos' })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Accesos directos' }));
+    expect(onChange).toHaveBeenCalledWith(VIEWS.SHORTCUTS);
   });
 
   it('marca la vista activa', () => {

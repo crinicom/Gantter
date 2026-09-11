@@ -11,6 +11,7 @@ import { normalizeColumn } from '../models/column';
 import { normalizeCard } from '../models/card';
 import { assignTaskNumbers } from '../models/task';
 import { defaultOnboarding, normalizeOnboarding } from './onboardingService';
+import { normalizeShortcut } from './shortcutsService';
 import { clampProgress } from '../utils/progress';
 
 const NOW = () => new Date().toISOString();
@@ -88,6 +89,7 @@ export function createDefaultProject() {
     actionLog: [],
     huddle: null,
     documents: [],
+    shortcuts: [],
     onboarding: defaultOnboarding(),
     settings: { ...PROJECT_SETTINGS_DEFAULTS },
   };
@@ -248,6 +250,7 @@ function fromDocumentCanonical(project) {
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
     documents: Array.isArray(project.documents) ? project.documents : [],
+    shortcuts: Array.isArray(project.shortcuts) ? project.shortcuts.map(normalizeShortcut) : [],
     onboarding: normalizeOnboarding(project.onboarding),
     settings: {
       ...PROJECT_SETTINGS_DEFAULTS,
@@ -286,6 +289,7 @@ export function toDocument(runtime) {
     actionLog: Array.isArray(p.actionLog) ? p.actionLog : [],
     huddle: p.huddle ?? null,
     documents: Array.isArray(p.documents) ? p.documents : [],
+    shortcuts: Array.isArray(p.shortcuts) ? p.shortcuts.map(normalizeShortcut) : [],
     onboarding: normalizeOnboarding(p.onboarding),
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(p.settings || {}) },
   };
@@ -356,6 +360,7 @@ export function normalizeProject(raw) {
     actionLog: Array.isArray(project.actionLog) ? project.actionLog : [],
     huddle: project.huddle ?? null,
     documents: Array.isArray(project.documents) ? project.documents : [],
+    shortcuts: Array.isArray(project.shortcuts) ? project.shortcuts.map(normalizeShortcut) : [],
     onboarding: normalizeOnboarding(project.onboarding),
     settings: { ...PROJECT_SETTINGS_DEFAULTS, ...(project.settings || {}) },
   };

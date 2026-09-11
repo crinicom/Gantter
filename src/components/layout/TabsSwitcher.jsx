@@ -5,6 +5,7 @@ export const VIEWS = {
   BOARD: 'board',
   GANTT: 'gantt',
   INFO: 'info',
+  SHORTCUTS: 'shortcuts',
 };
 
 export default function TabsSwitcher({ activeView, onChange }) {
@@ -14,6 +15,7 @@ export default function TabsSwitcher({ activeView, onChange }) {
         { key: VIEWS.BOARD, label: 'Tablero' },
         { key: VIEWS.GANTT, label: 'Gantt' },
         { key: VIEWS.INFO, label: 'Información del proyecto' },
+        { key: VIEWS.SHORTCUTS, label: 'Accesos directos' },
       ].map((tab) => (
         <button
           key={tab.key}

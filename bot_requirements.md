@@ -349,6 +349,11 @@ id, title, content (markdown), createdAt, updatedAt
 
 `Project.documents[]` son documentos markdown del proyecto (la "Ficha del proyecto" es el primero, creado por el onboarding). Se editan y persisten como dato del proyecto (viajan en el documento canónico junto con el resto de la entidad, no son "notas desconectadas"). Se muestran en la vista "Información del proyecto" (pestaña en el tab bar: OneNote-like — lista de documentos + editor con Ver/Editar y autosave).
 
+**Shortcut**  
+id, url, label, createdAt
+
+`Project.shortcuts[]` guardan enlaces a recursos externos del proyecto (Figma, Jira, drive, etc.), mostrados en la pestaña **"Accesos directos"** del tab bar como un grid de iconos de carpeta tipo Explorer. El primer ítem ("nuevo acceso directo") abre un modal con URL (obligatoria) y nombre (opcional); si el nombre queda vacío se deriva del hostname de la URL. Click en un acceso abre el enlace en una pestaña nueva del navegador (`window.open` con `noopener`); hover muestra un botón de eliminar con confirmación inline. La URL se valida al guardar: se agrega `https://` si no trae scheme y solo se aceptan `http:`/`https:` (se bloquean `javascript:`, `data:`, etc.). Máximo 30 accesos por proyecto. Los accesos viajan en el documento canónico (backfill `[]` idempotente para docs legacy).
+
 **Onboarding**  
 answers `{[qid]: text}`, currentQuestionId?, done (bool)
 

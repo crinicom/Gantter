@@ -366,4 +366,37 @@ describe('projectStorage', () => {
     expect(created.onboarding).not.toBeNull();
     expect(created.onboarding.done).toBe(false);
   });
+
+  it('shortcuts: round-trip canónico conserva url/label y deriva label en normalize', () => {
+    const runtime = {
+      ...createDefaultProject(),
+      id: 'p1',
+      name: 'Portal',
+      ownerId: 'u_lucia',
+      members: [],
+      shortcuts: [
+        { id: 's1', url: 'https://figma.com/file/x', createdAt: '2026-09-10T10:00:00.000Z' },
+        { id: 's2', url: 'https://jira.example.com/x', label: 'Jira', createdAt: '2026-09-10T11:00:00.000Z' },
+      ],
+    };
+    const doc = JSON.parse(serializeProject(runtime));
+    expect(doc.shortcuts).toMatchObject([
+      { id: 's1', url: 'https://figma.com/file/x', label: 'figma.com' },
+      { id: 's2', url: 'https://jira.example.com/x', label: 'Jira' },
+    ]);
+    const restored = deserializeProject(serializeProject(runtime));
+    expect(restored.shortcuts).toEqual([
+      { id: 's1', url: 'https://figma.com/file/x', label: 'figma.com', createdAt: '2026-09-10T10:00:00.000Z' },
+      { id: 's2', url: 'https://jira.example.com/x', label: 'Jira', createdAt: '2026-09-10T11:00:00.000Z' },
+    ]);
+  });
+
+  it('shortcuts: un proyecto sin campo shortcuts se backfillea a []', () => {
+    const legacy = { id: 'p-old', name: 'Legacy', members: [], buckets: [], tasks: [] };
+    const p = normalizeProject(legacy);
+    expect(p.shortcuts).toEqual([]);
+    const canonical = deserializeProject(serializeProject(p));
+    expect(canonical.shortcuts).toEqual([]);
+    expect(createDefaultProject().shortcuts).toEqual([]);
+  });
 });

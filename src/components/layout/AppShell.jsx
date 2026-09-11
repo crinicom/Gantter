@@ -6,6 +6,7 @@ import SyncStatusBanner from './SyncStatusBanner';
 import BoardView from '../board/BoardView';
 import GanttView from '../gantt/GanttView';
 import ProjectInfoView from '../projects/ProjectInfoView';
+import ShortcutsView from '../shortcuts/ShortcutsView';
 import ProjectsLanding from '../projects/ProjectsLanding';
 import MaiaPanel from '../maia/MaiaPanel';
 import HuddleSessionBar from '../huddle/HuddleSessionBar';
@@ -41,6 +42,7 @@ export default function AppShell() {
           {activeView === VIEWS.BOARD && <BoardView />}
           {activeView === VIEWS.GANTT && <GanttView />}
           {activeView === VIEWS.INFO && <ProjectInfoView />}
+          {activeView === VIEWS.SHORTCUTS && <ShortcutsView />}
         </main>
         <MaiaPanel />
       </div>

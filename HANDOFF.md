@@ -34,11 +34,11 @@ Un writer por conjunto de archivos. No implementar en paralelo sobre `ProjectCon
 
 | Campo | Valor |
 |---|---|
-| Fecha | 2026-09-08 |
+| Fecha | 2026-09-11 |
 | Spec | `bot_requirements.md` (v1) |
-| Slice en curso | 13 — Onboarding de proyecto nuevo: preguntas con autosave y dictado → Ficha del proyecto |
-| Owner | **opencode** |
-| Status | `review` |
+| Slice en curso | — |
+| Owner | — |
+| Status | 11–15 en `review` |
 | Slice 0 | `done` (docs commitado por OpenCode) |
 | Slice 2 | `done` (fixes aplicados por OpenCode, review Grok) |
 | Slice 3 | `done` (review Grok por OpenCode, fix H1) |
@@ -68,6 +68,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 12 | Información del proyecto: documentos markdown (ficha OneNote-like) | opencode | **done** | §12 (Document) | `documents[]` en storage, API `create/update/deleteDocument` en ProjectContext, `ProjectInfoView` + pestaña, seed con ficha de ejemplo; commit slice 12 `928313f` |
 | 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **done** | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
 | 14 | Hardening v1: "No" de Maia (§9.200) + pruebas extensivas + mejoras menores | opencode | **done** | §9.200, §7, §12 | `declineProposal` (local, sin LLM, gate `followedUpAt`), normalize `followedUpAt: null`, 9 tests nuevos; commit slice 14 `e0d06a5` + fixes de review `1a3c24b` |
+| 15 | Accesos directos: pestaña con grid de iconos tipo Explorer (URL + nombre opcional, apertura en pestaña nueva, eliminar inline, máx. 30) | opencode | **review** | §12 (Shortcut) | `shortcutsService` (normalize/validate/label/limit) + `shortcuts[]` en storage (round-trip + backfill) + `addShortcut`/`removeShortcut` en ProjectContext + `ShortcutsView` + modal + tab en `TabsSwitcher`/`AppShell`; commit slice 15 `eadc3d9` |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -342,7 +343,6 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 
 - **9 · Rename Maie → Maia** (`4c58631`, 55 files, 420/420 sustituciones, `rg -i 'maie'` = 0): dirs `maie/`→`maia/`, `components/maie`→`components/maia` (MaieMark→MaiaMark, MaiePanel→MaiaPanel), `MaieContext.jsx`→`MaiaContext.jsx`, `maieChat.js`→`maiaChat.js`, `constants/maie.js`→`constants/maia.js`, `server/src/routes/maie.js`→`maia.js`, alias Vite `@maie`→`@maia`, Dockerfile `COPY /app/maia`, docs (bot_requirements, HANDOFF, AGENTS, README, TASKS, adr-001), prompts `maia/*.md`. UTF-8 intacto (sin U+FFFD). Tests **266/266**.
 - **10 · Números de carta `#N` por proyecto** (slice en curso): `number` = etiqueta inmutable por proyecto (no id, no se reusa tras borrado), asignada `max+1` al crear (`addTask` en `ProjectContext`, `create-card` en `applyEngine`); tareas sin número reciben **backfill 1..N en orden** en `normalizeProject` y `fromDocumentCanonical`; se conserva en el round-trip canónico (`toCards` escribe `number`, `normalizeCard` la pasa). UI: chip `#N` en `TaskCard` y `GanttBar`; labels de propuestas con `#N` (`proposalEngine.cardRef`, `maiaChat.taskTitle`). `bot_requirements.md` §12 (Card entidad): campo `number` documentado. Tests **270/270** (task +5, applyEngine +1, projectStorage +1/backfill) · `npm run build` OK.
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678` y `7fccb15`.
 
 ### 11 · Huddle real: escuchar la reunión (2026-09-09) — notas para Grok
 
@@ -384,5 +384,22 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 3. **P2 — modo server perdía onboarding/ficha**: `createNewProject` (server) guarda el doc raw de `projectStore.createProject` (sin `onboarding`/`documents`) → ahora se normaliza antes de `applyToStore` y, vía `resolveOnboarding`, el onboarding queda **activo de verdad** cuando la key falta (paridad con el path local). `resetDemo` (server) no copiaba `documents`/`onboarding`/`inquiries`/`actionLog`/`huddle` → copiados por paridad con los seeds.
 4. **P3 — contador del modal contaba claves vacías** → `answeredCount` (solo texto); el botón de dictado se deriva de `speech.listening` (con `continuous:false` el `onend` corta solo y ya no quedaba "Detener" sin escucha).
 - Tests **324/324** · `npm run build` OK. Slices 12 y 13 quedan en `review` para Grok (humano puede cerrarlos).
+
+### Review OpenCode del auto-open (2026-09-11) — fixes aplicados `9529052`
+
+- **R1 (P1) — el helper del test no testeaba el "volver al proyecto"**: `activeProjectWithOnboarding({ id: 'p_otro' })` vertía los overrides dentro del objeto `onboarding`, así que `project.id` nunca cambiaba y el efecto no re-disparaba (aserciones vacuamente verdaderas). El helper ahora usa firma `(onbOver, projectOver)` y el test afirma el estado intermedio (el modal SÍ abre para `p_otro`).
+- **R2 (P2) — el modal no se cerraba al volver a un proyecto descartado**: si el usuario descartaba el onboarding de A, abría B (modal abierto por B) y volvía a A, `dismissedRef` impedía re-abrir pero no cerraba el modal que quedó abierto de B. El effect ahora hace `setOnboardingOpen(false)` cuando el proyecto está descartado.
+
+### 15 · Accesos directos (2026-09-11) — notas para Grok
+
+- **Entidad `Shortcut`** (§12): id, url, label (nombre visible), createdAt. `Project.shortcuts[]` viaja en el documento canónico (`createDefaultProject` `[]`, passthrough en `fromDocumentCanonical`/`toDocument`/`normalizeProject`; backfill `[]` idempotente para legacy y seeds sin la key).
+- **`src/services/shortcutsService.js`** (nuevo, puro): `normalizeUrl` (auto-prepend `https://` si no trae scheme, solo `http:`/`https:`, bloquea `javascript:`/`data:`/`file:` → null), `labelForUrl` (hostname limpio sin `www.`), `normalizeShortcut` (deriva label si vacío), `defaultShortcuts`, `SHORTCUTS_MAX = 30`. El label se deriva también al crear en la vista (para que el tile no quede sin nombre hasta la primera persistencia).
+- **API en `ProjectContext.jsx`**: `addShortcut({ url, label })` (devuelve id, debounce) y `removeShortcut(id)` (inmediato), mismo patrón que documentos. Expuestos en `value`.
+- **`src/components/shortcuts/ShortcutsView.jsx`** (nuevo): grid auto-fill tipo Explorer — primer ítem "nuevo acceso directo" (carpeta con `+`, border dashed; se oculta al llegar a 30) abre el modal; tiles `FolderClosed` con label que abren `window.open(url, '_blank', 'noopener')`; hover muestra `Trash2` y el click pide confirmación inline "¿Eliminar? ✓/✕" (patrón ProjectCard). Contador N/30 y aviso "Máximo 30 accesos directos".
+- **Modal "Nuevo acceso directo"**: `Modal.jsx` (`max-w-sm`) con Nombre (opcional, autofocus) + URL (obligatoria; Guardar deshabilitado si vacía; inválida → mensaje de error inline). Cancelar/Guardar.
+- **UI**: pestaña "Accesos directos" en `TabsSwitcher` (`VIEWS.SHORTCUTS`) → `ShortcutsView` en `AppShell`.
+- Tests: **347/347** (shortcutsService 8, projectStorage +2, ShortcutsView 9, TabsSwitcher 2 actualizado) · `npm run build` OK.
+- **Revisar contra §12**: que `shortcuts[]` no rompa el round-trip de seeds (sin la key → `[]`), que el open use `noopener`, y que el límite de 30 solo afecte a la creación (no al borrar).
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052` y <hash slice 15>.
 
 ---

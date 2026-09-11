@@ -766,6 +766,37 @@ export const ProjectProvider = ({ children }) => {
     [commitToStore],
   );
 
+  // ---- Accesos directos (slice 15) ----
+  const addShortcut = useCallback(
+    ({ url, label }) => {
+      const shortcut = {
+        id: uuidv4(),
+        url: typeof url === 'string' ? url : '',
+        label: typeof label === 'string' && label.trim() ? label.trim() : '',
+        createdAt: nowIso(),
+      };
+      commitToStore(
+        (prev) => ({
+          ...prev,
+          shortcuts: [...(prev.shortcuts || []), shortcut],
+        }),
+        { debounce: true },
+      );
+      return shortcut.id;
+    },
+    [commitToStore],
+  );
+
+  const removeShortcut = useCallback(
+    (shortcutId) => {
+      commitToStore((prev) => ({
+        ...prev,
+        shortcuts: (prev.shortcuts || []).filter((s) => s.id !== shortcutId),
+      }));
+    },
+    [commitToStore],
+  );
+
   // ---- Onboarding (slice 13) ----
   const updateOnboarding = useCallback(
     (patch) => {
@@ -860,6 +891,8 @@ error,
       createDocument,
       updateDocument,
       deleteDocument,
+      addShortcut,
+      removeShortcut,
       updateOnboarding,
       saveOnboardingAnswer,
       completeOnboarding,
@@ -904,6 +937,8 @@ error,
       createDocument,
       updateDocument,
       deleteDocument,
+      addShortcut,
+      removeShortcut,
       updateOnboarding,
       saveOnboardingAnswer,
       completeOnboarding,
