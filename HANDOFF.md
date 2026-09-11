@@ -68,7 +68,7 @@ Estados: `pending` · `in-progress` · `review` · `done` · `blocked`.
 | 12 | Información del proyecto: documentos markdown (ficha OneNote-like) | opencode | **done** | §12 (Document) | `documents[]` en storage, API `create/update/deleteDocument` en ProjectContext, `ProjectInfoView` + pestaña, seed con ficha de ejemplo; commit slice 12 `928313f` |
 | 13 | Onboarding de proyecto nuevo: preguntas configurables (autosave + dictado) → Ficha del proyecto | opencode | **done** | §12 (Onboarding), §7, §16 | `maia/onboarding/questions.md` + parser + `onboardingService` (ficha regenerada hasta done), API en ProjectContext, bloque Preguntas en MaiaPanel + `OnboardingModal`; commit slice 13 |
 | 14 | Hardening v1: "No" de Maia (§9.200) + pruebas extensivas + mejoras menores | opencode | **done** | §9.200, §7, §12 | `declineProposal` (local, sin LLM, gate `followedUpAt`), normalize `followedUpAt: null`, 9 tests nuevos; commit slice 14 `e0d06a5` + fixes de review `1a3c24b` |
-| 15 | Accesos directos: pestaña con grid de iconos tipo Explorer (URL + nombre opcional, apertura en pestaña nueva, eliminar inline, máx. 30) | opencode | **review** | §12 (Shortcut) | `shortcutsService` (normalize/validate/label/limit) + `shortcuts[]` en storage (round-trip + backfill) + `addShortcut`/`removeShortcut` en ProjectContext + `ShortcutsView` + modal + tab en `TabsSwitcher`/`AppShell`; commit slice 15 `eadc3d9` |
+| 15 | Accesos directos: pestaña con grid de iconos tipo Explorer (URL + nombre opcional, apertura en pestaña nueva, eliminar inline, máx. 30) | opencode | **review** | §12 (Shortcut) | `shortcutsService` (normalize/validate/label/limit) + `shortcuts[]` en storage (round-trip + backfill) + `addShortcut`/`removeShortcut` en ProjectContext + `ShortcutsView` + modal + tab en `TabsSwitcher`/`AppShell`; commit slice 15 `26c48cd` |
 
 Paralelo permitido **después de que 1 esté `done`**: OpenCode en 2–3, Grok en 4+, **si** Maia no vive en `ProjectContext.jsx`. Maia va a `MaiaContext` / `services/inquiryEngine` / `services/huddleEngine` (nombres orientativos).
 
@@ -400,6 +400,6 @@ Decisión humana previa al build: **slice 7 → opencode** (mismo precedente que
 - **UI**: pestaña "Accesos directos" en `TabsSwitcher` (`VIEWS.SHORTCUTS`) → `ShortcutsView` en `AppShell`.
 - Tests: **347/347** (shortcutsService 8, projectStorage +2, ShortcutsView 9, TabsSwitcher 2 actualizado) · `npm run build` OK.
 - **Revisar contra §12**: que `shortcuts[]` no rompa el round-trip de seeds (sin la key → `[]`), que el open use `noopener`, y que el límite de 30 solo afecte a la creación (no al borrar).
-- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052` y <hash slice 15>.
+- **Pendiente humano**: push a `origin` (Gitea) de `2fa797b`, `030f526`, `4c58631`, `b6ae202`, `095c961`, `928313f`, `2b542e1`, `1e9ba4e`, `8700fc3`, `e0d06a5`, `1a3c24b`, `aaaad34`, `1875594`, `bf53678`, `7fccb15`, `9529052` y `26c48cd`.
 
 ---
