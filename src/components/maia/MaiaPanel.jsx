@@ -189,7 +189,10 @@ export default function MaiaPanel() {
     const onb = project?.onboarding;
     if (!onb || onb.done) return;
     if (answeredCount(onb.answers || {}) > 0) return;
-    if (onboardingDismissedRef.current === project.id) return;
+    if (onboardingDismissedRef.current === project.id) {
+      setOnboardingOpen(false);
+      return;
+    }
     setOnboardingOpen(true);
   }, [project?.id]);
 

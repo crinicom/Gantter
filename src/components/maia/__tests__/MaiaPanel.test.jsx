@@ -16,12 +16,13 @@ const projectValue = {
   updateOnboarding: vi.fn(),
 };
 
-function activeProjectWithOnboarding(over = {}) {
+function activeProjectWithOnboarding(onbOver = {}, projectOver = null) {
   return {
     id: 'p_new',
     name: 'Proyecto nuevo',
     documents: [],
-    onboarding: { answers: {}, currentQuestionId: 'objetivo', done: false, ...over },
+    onboarding: { answers: {}, currentQuestionId: 'objetivo', done: false, ...onbOver },
+    ...(projectOver || {}),
   };
 }
 
@@ -171,14 +172,16 @@ describe('MaiaPanel', () => {
     expect(screen.getByText(/La Ficha del proyecto está lista/)).toBeInTheDocument();
   });
 
-  it('tras cerrar a mano no se vuelve a abrir en la misma sesión, ni al volver al proyecto', () => {
+  it('tras cerrar a mano no se vuelve a abrir en la misma sesión, ni al volver al proyecto', async () => {
     projectValue.project = activeProjectWithOnboarding();
     const { rerender } = renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
     expect(screen.queryByPlaceholderText(/Escribí acá/)).not.toBeInTheDocument();
 
-    projectValue.project = activeProjectWithOnboarding({ id: 'p_otro' });
+    projectValue.project = activeProjectWithOnboarding({}, { id: 'p_otro' });
     rerender(renderTree());
+    expect(await screen.findByText(/Pregunta 1 de 3/)).toBeInTheDocument();
+
     projectValue.project = activeProjectWithOnboarding();
     rerender(renderTree());
     expect(screen.queryByText(/Pregunta 1 de 3/)).not.toBeInTheDocument();
