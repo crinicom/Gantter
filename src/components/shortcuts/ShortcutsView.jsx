@@ -1,30 +1,42 @@
 // Vista "Accesos directos" (§12 Shortcut): grid de iconos tipo Explorer con
 // los enlaces externos del proyecto (Figma, Jira, etc.). El primer ítem crea
 // un acceso nuevo (URL + nombre opcional); click en un ítem abre el enlace en
-// nueva pestaña; hover muestra el basurero para eliminar (confirmación inline).
+// nueva pestaña; hover muestra el lápiz (editar) y el basurero (eliminar, con
+// confirmación inline). El modal es el mismo para crear y editar.
 
 import React, { useState } from 'react';
 import clsx from 'clsx';
-import { Check, FolderClosed, FolderPlus, Trash2, X } from 'lucide-react';
+import { Check, FolderClosed, FolderPlus, Pencil, Trash2, X } from 'lucide-react';
 import { useProject } from '../../hooks/useProject';
 import Modal from '../common/Modal';
 import { normalizeUrl, labelForUrl, SHORTCUTS_MAX } from '../../services/shortcutsService';
 
 export default function ShortcutsView() {
-  const { project, addShortcut, removeShortcut } = useProject();
+  const { project, addShortcut, updateShortcut, removeShortcut } = useProject();
   const shortcuts = project?.shortcuts || [];
 
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [urlDraft, setUrlDraft] = useState('');
   const [nameDraft, setNameDraft] = useState('');
   const [error, setError] = useState('');
   const [confirmingId, setConfirmingId] = useState(null);
 
   const atLimit = shortcuts.length >= SHORTCUTS_MAX;
+  const editing = editingId ? shortcuts.find((s) => s.id === editingId) || null : null;
 
   const openModal = () => {
+    setEditingId(null);
     setUrlDraft('');
     setNameDraft('');
+    setError('');
+    setModalOpen(true);
+  };
+
+  const openEditModal = (shortcut) => {
+    setEditingId(shortcut.id);
+    setUrlDraft(shortcut.url);
+    setNameDraft(shortcut.label || '');
     setError('');
     setModalOpen(true);
   };
@@ -35,7 +47,12 @@ export default function ShortcutsView() {
       setError('Ingresá una URL válida, por ejemplo https://figma.com/archivo');
       return;
     }
-    addShortcut({ url, label: nameDraft.trim() || labelForUrl(url) });
+    const label = nameDraft.trim() || labelForUrl(url);
+    if (editingId) {
+      updateShortcut(editingId, { url, label });
+    } else {
+      addShortcut({ url, label });
+    }
     setModalOpen(false);
   };
 
@@ -85,6 +102,16 @@ export default function ShortcutsView() {
               <span className="max-w-full truncate text-xs text-gray-700">{shortcut.label}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => openEditModal(shortcut)}
+              aria-label="Editar acceso"
+              title="Editar acceso"
+              className="absolute left-1.5 top-1.5 rounded p-1 text-gray-400 opacity-0 hover:bg-gray-100 hover:text-forest-600 group-hover:opacity-100"
+            >
+              <Pencil size={14} />
+            </button>
+
             {confirmingId === shortcut.id ? (
               <div className="flex w-full items-center justify-center gap-1 text-[11px] text-gray-500">
                 ¿Eliminar?
@@ -127,7 +154,7 @@ export default function ShortcutsView() {
       <Modal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        title="Nuevo acceso directo"
+        title={editingId ? 'Editar acceso directo' : 'Nuevo acceso directo'}
         width="max-w-sm"
         footer={
           <>

@@ -16,6 +16,7 @@ function shortcut(overrides = {}) {
 
 const mocks = {
   addShortcut: vi.fn(),
+  updateShortcut: vi.fn(),
   removeShortcut: vi.fn(),
 };
 
@@ -27,6 +28,10 @@ function renderView({ shortcuts: initial = [] } = {}) {
       addShortcut: (payload) => {
         mocks.addShortcut(payload);
         setShortcuts((s) => [...s, { ...payload, id: 's_nuevo', createdAt: '2026-09-11T00:00:00.000Z' }]);
+      },
+      updateShortcut: (id, patch) => {
+        mocks.updateShortcut(id, patch);
+        setShortcuts((s) => s.map((x) => (x.id === id ? { ...x, ...patch } : x)));
       },
       removeShortcut: (id) => {
         mocks.removeShortcut(id);
@@ -141,6 +146,41 @@ describe('ShortcutsView', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancelar eliminación' }));
     expect(mocks.removeShortcut).not.toHaveBeenCalled();
     expect(screen.getByText('figma.com')).toBeInTheDocument();
+  });
+
+  it('el lápiz abre el modal de edición con los datos existentes', () => {
+    renderView({ shortcuts: [shortcut({ label: 'Maqueta', url: 'https://figma.com/file/x' })] });
+    fireEvent.click(screen.getByRole('button', { name: 'Editar acceso' }));
+    expect(screen.getByRole('heading', { name: 'Editar acceso directo' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre (opcional)')).toHaveValue('Maqueta');
+    expect(screen.getByLabelText('URL')).toHaveValue('https://figma.com/file/x');
+  });
+
+  it('guardar en edición llama updateShortcut y cierra el modal', () => {
+    renderView({ shortcuts: [shortcut()] });
+    fireEvent.click(screen.getByRole('button', { name: 'Editar acceso' }));
+    fireEvent.change(screen.getByLabelText('Nombre (opcional)'), {
+      target: { value: 'Nuevo nombre' },
+    });
+    fireEvent.change(screen.getByLabelText('URL'), {
+      target: { value: 'jira.example.com/browse/X' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Guardar' }));
+    expect(mocks.updateShortcut).toHaveBeenCalledWith('s1', {
+      url: 'https://jira.example.com/browse/X',
+      label: 'Nuevo nombre',
+    });
+    expect(mocks.addShortcut).not.toHaveBeenCalled();
+    expect(screen.queryByRole('heading', { name: 'Editar acceso directo' })).not.toBeInTheDocument();
+    expect(screen.getByText('Nuevo nombre')).toBeInTheDocument();
+  });
+
+  it('la creación sigue abriendo el modal con el título y drafts vacíos', () => {
+    renderView({ shortcuts: [shortcut()] });
+    fireEvent.click(screen.getByRole('button', { name: /nuevo acceso directo/ }));
+    expect(screen.getByRole('heading', { name: 'Nuevo acceso directo' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Nombre (opcional)')).toHaveValue('');
+    expect(screen.getByLabelText('URL')).toHaveValue('');
   });
 
   it('en el límite de 30 oculta el botón de nuevo acceso', () => {

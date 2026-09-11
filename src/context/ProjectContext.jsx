@@ -797,6 +797,21 @@ export const ProjectProvider = ({ children }) => {
     [commitToStore],
   );
 
+  const updateShortcut = useCallback(
+    (shortcutId, patch) => {
+      commitToStore(
+        (prev) => ({
+          ...prev,
+          shortcuts: (prev.shortcuts || []).map((s) =>
+            s.id === shortcutId ? { ...s, ...patch } : s,
+          ),
+        }),
+        { debounce: true },
+      );
+    },
+    [commitToStore],
+  );
+
   // ---- Onboarding (slice 13) ----
   const updateOnboarding = useCallback(
     (patch) => {
@@ -893,6 +908,7 @@ error,
       deleteDocument,
       addShortcut,
       removeShortcut,
+      updateShortcut,
       updateOnboarding,
       saveOnboardingAnswer,
       completeOnboarding,
@@ -939,6 +955,7 @@ error,
       deleteDocument,
       addShortcut,
       removeShortcut,
+      updateShortcut,
       updateOnboarding,
       saveOnboardingAnswer,
       completeOnboarding,
