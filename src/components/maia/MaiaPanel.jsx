@@ -3,7 +3,7 @@
 // (actionLog read-only). El hilo de cada pregunta (click → chat, propuestas)
 // llega en el slice 5.
 
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { FileText, PencilLine } from 'lucide-react';
@@ -176,9 +176,27 @@ function LogTab() {
 
 export default function MaiaPanel() {
   const { openCount, applyMode, setApplyMode } = useMaia();
+  const { project } = useProject();
   const [tab, setTab] = useState(TABS[0].id);
   const [chatInquiryId, setChatInquiryId] = useState(null);
   const [onboardingOpen, setOnboardingOpen] = useState(false);
+  const onboardingDismissedRef = useRef(null);
+
+  // Auto-apertura del onboarding: un proyecto que arranca con onboarding activo
+  // y sin respuestas abre el modal en primer plano. Después de un cierre manual
+  // no se vuelve a abrir en esta sesión (reabre siempre con el botón del bloque).
+  useEffect(() => {
+    const onb = project?.onboarding;
+    if (!onb || onb.done) return;
+    if (answeredCount(onb.answers || {}) > 0) return;
+    if (onboardingDismissedRef.current === project.id) return;
+    setOnboardingOpen(true);
+  }, [project?.id]);
+
+  const closeOnboarding = () => {
+    onboardingDismissedRef.current = project?.id ?? null;
+    setOnboardingOpen(false);
+  };
 
   return (
     <aside
@@ -231,7 +249,7 @@ export default function MaiaPanel() {
         <InquiryThread inquiryId={chatInquiryId} onClose={() => setChatInquiryId(null)} />
       )}
 
-      <OnboardingModal open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
+      <OnboardingModal open={onboardingOpen} onClose={closeOnboarding} />
     </aside>
   );
 }

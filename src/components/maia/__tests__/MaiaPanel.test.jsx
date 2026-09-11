@@ -16,6 +16,30 @@ const projectValue = {
   updateOnboarding: vi.fn(),
 };
 
+function activeProjectWithOnboarding(over = {}) {
+  return {
+    id: 'p_new',
+    name: 'Proyecto nuevo',
+    documents: [],
+    onboarding: { answers: {}, currentQuestionId: 'objetivo', done: false, ...over },
+  };
+}
+
+function renderTree(maiaOverrides = {}) {
+  const maia = { ...baseValue, ...maiaOverrides };
+  return (
+    <ProjectContext.Provider value={projectValue}>
+      <MaiaContext.Provider value={maia}>
+        <MaiaPanel />
+      </MaiaContext.Provider>
+    </ProjectContext.Provider>
+  );
+}
+
+function renderPanel(valueOverrides = {}) {
+  return render(renderTree(valueOverrides));
+}
+
 const baseValue = {
   inquiries: [
     {
@@ -68,22 +92,14 @@ const baseValue = {
   setApplyMode: vi.fn(),
   sendThreadMessage: vi.fn(),
   applyProposal: vi.fn(),
-  dismissProposal: vi.fn(),
   snoozeInquiry: vi.fn(),
 };
 
-function renderPanel(valueOverrides = {}) {
-  const value = { ...baseValue, ...valueOverrides };
-  return render(
-    <ProjectContext.Provider value={projectValue}>
-      <MaiaContext.Provider value={value}>
-        <MaiaPanel />
-      </MaiaContext.Provider>
-    </ProjectContext.Provider>,
-  );
-}
-
 describe('MaiaPanel', () => {
+  beforeEach(() => {
+    projectValue.project = null;
+  });
+
   it('muestra la identidad de Maia y el contador de preguntas abiertas', () => {
     renderPanel();
     expect(screen.getByText('Maia')).toBeInTheDocument();
@@ -126,5 +142,46 @@ describe('MaiaPanel', () => {
     renderPanel();
     fireEvent.click(screen.getByRole('button', { name: 'Registro' }));
     expect(screen.getByText('Auto')).toBeInTheDocument();
+  });
+
+  it('un proyecto nuevo con onboarding activo y sin respuestas abre el modal automáticamente', async () => {
+    projectValue.project = activeProjectWithOnboarding();
+    renderPanel();
+    expect(await screen.findByText(/Pregunta 1 de 3/)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Escribí acá/)).toBeInTheDocument();
+    expect(screen.getByText(/¿Cuál es el objetivo principal/)).toBeInTheDocument();
+  });
+
+  it('no abre el modal si ya hay respuestas', async () => {
+    projectValue.project = activeProjectWithOnboarding({ answers: { objetivo: 'un objetivo' } });
+    renderPanel();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByPlaceholderText(/Escribí acá/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Pregunta 1 de 3/)).not.toBeInTheDocument();
+  });
+
+  it('no abre el modal si el onboarding quedó done', async () => {
+    projectValue.project = activeProjectWithOnboarding({
+      done: true,
+      answers: { objetivo: 'a', entregable: 'b', equipo: 'c' },
+    });
+    renderPanel();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(screen.queryByPlaceholderText(/Escribí acá/)).not.toBeInTheDocument();
+    expect(screen.getByText(/La Ficha del proyecto está lista/)).toBeInTheDocument();
+  });
+
+  it('tras cerrar a mano no se vuelve a abrir en la misma sesión, ni al volver al proyecto', () => {
+    projectValue.project = activeProjectWithOnboarding();
+    const { rerender } = renderPanel();
+    fireEvent.click(screen.getByRole('button', { name: 'Cerrar' }));
+    expect(screen.queryByPlaceholderText(/Escribí acá/)).not.toBeInTheDocument();
+
+    projectValue.project = activeProjectWithOnboarding({ id: 'p_otro' });
+    rerender(renderTree());
+    projectValue.project = activeProjectWithOnboarding();
+    rerender(renderTree());
+    expect(screen.queryByText(/Pregunta 1 de 3/)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/Escribí acá/)).not.toBeInTheDocument();
   });
 });

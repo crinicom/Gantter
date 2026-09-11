@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   defaultOnboarding,
   normalizeOnboarding,
+  resolveOnboarding,
   buildFichaContent,
   syncFichaDocument,
   getOnboardingQuestions,
@@ -19,6 +20,17 @@ describe('onboardingService', () => {
   it('defaultOnboarding arranca en la primera pregunta sin respuestas', () => {
     const o = defaultOnboarding();
     expect(o).toMatchObject({ answers: {}, done: false, currentQuestionId: 'objetivo' });
+  });
+
+  it('resolveOnboarding activa onboarding solo para docs sin la key (server-create) y respeta null explícito (seeds/legacy)', () => {
+    expect(resolveOnboarding(undefined)).toMatchObject({
+      answers: {},
+      done: false,
+      currentQuestionId: 'objetivo',
+    });
+    expect(resolveOnboarding(null)).toBeNull();
+    expect(resolveOnboarding({ done: true, answers: {} })).toMatchObject({ done: true });
+    expect(resolveOnboarding({})).toEqual({ answers: {}, currentQuestionId: null, done: false });
   });
 
   it('normalizeOnboarding deja null lo que no es onboarding object (seeds/legacy)', () => {

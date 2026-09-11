@@ -17,6 +17,7 @@ import { createProject, normalizeProject } from '../services/projectStorage';
 import {
   defaultOnboarding,
   normalizeOnboarding,
+  resolveOnboarding,
   syncFichaDocument,
 } from '../services/onboardingService';
 import { isServerMode } from '../config/appConfig';
@@ -251,8 +252,12 @@ export const ProjectProvider = ({ children }) => {
         backendRef.current.createProject({ name, description }).then((doc) => {
           if (!doc) return;
           // El server crea un doc legacy (buckets/tasks) sin los campos de §12:
-          // normalizar agrega onboarding activo, documents[], inquiries[], etc.
-          const normalized = normalizeProject(doc);
+          // normalizar agrega documents[], inquiries[], etc.; el onboarding de un
+          // proyecto recién creado arranca activo (paridad con el path local).
+          const normalized = {
+            ...normalizeProject(doc),
+            onboarding: resolveOnboarding(doc.onboarding),
+          };
           const map = { ...storeRef.current, [normalized.id]: normalized };
           storeRef.current = map;
           setStore(map);

@@ -33,6 +33,14 @@ export function normalizeOnboarding(value) {
   };
 }
 
+// Onboarding del proyecto cuando llega un doc sin la key (el server crea docs
+// legacy): un proyecto recién creado arranca con onboarding activo. Un null
+// explícito (seeds/legacy con "onboarding": null) se respeta tal cual.
+export function resolveOnboarding(value) {
+  if (value === undefined) return defaultOnboarding();
+  return normalizeOnboarding(value);
+}
+
 // Markdown de la Ficha desde las respuestas, en el orden de las preguntas y
 // solo con las que tienen texto. Vacío si no hay ninguna respuesta.
 export function buildFichaContent(answers = {}, { questions } = {}) {
